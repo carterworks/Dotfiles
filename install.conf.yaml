@@ -7,5 +7,5 @@
         create: true
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
-
+    ~/.spacemacs: spacemacs
 
