@@ -9,6 +9,6 @@
 [format]
 	pretty = "%H %ci %ce %ae %d %s"
 [include]
-	path = ~/dev/gitalias.txt
+	path = ~/.gitaliases
 [push]
 	default = current

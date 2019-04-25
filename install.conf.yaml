@@ -8,4 +8,5 @@
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
     ~/.spacemacs: spacemacs
+    ~/.gitaliases: gitaliases
 
