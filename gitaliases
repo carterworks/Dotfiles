@@ -1160,3 +1160,11 @@
 
   ull = pull
   ush = push
+
+  #########################################################################
+
+  ##
+  # Git aliases for other, custom functions
+  ##
+
+	master-update = pull --rebase --autostash origin master

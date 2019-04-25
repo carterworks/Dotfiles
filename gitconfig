@@ -1,11 +1,6 @@
 [user]
 	name = Carter McBride
 	email = junk@carter.works
-[alias]
-# 	ignore = update-index --skip-worktree
-# 	unignore = update-index --no-skip-worktree
-	list-ignored = !git ls-files -v . | rg ^S
-	master-update = pull --rebase --autostash origin master
 [format]
 	pretty = "%H %ci %ce %ae %d %s"
 [include]
