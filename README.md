@@ -1,5 +1,10 @@
 # Dotfiles
 
+## Installation
+
+Clone the repo into `~/.dotfiles` with `git clone --recurse-submodules`
+ 
+
 ## Includes
 
 - vim
