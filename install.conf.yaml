@@ -9,6 +9,10 @@
     ~/.vimrc: vimrc
     ~/.spacemacs: spacemacs
     ~/.gitaliases: gitaliases
+    "~/Library/Application Support/Code/User/settings.json":
+        path: vscode/settings.json
+        create: true
     ~/.config/fish:
         path: fish/
+
 

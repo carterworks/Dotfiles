@@ -1,0 +1,46 @@
+{
+    "workbench.colorTheme": "One Dark Pro",
+    "editor.fontFamily": "'FuraCode Nerd Font', Menlo, Monaco, 'Courier New', monospace",
+    "editor.fontLigatures": true,
+    "editor.fontSize": 14,
+    "editor.renderWhitespace": "all",
+    "editor.smoothScrolling": true,
+    "editor.suggest.localityBonus": true,
+    "git.enableSmartCommit": true,
+    "window.nativeTabs": true,
+    "git.confirmSync": false,
+    "eslint.nodePath": "/Users/cmcbride/.nvm/versions/node/v10.15.0/bin/node",
+    "eslint.packageManager": "yarn",
+    "npm.packageManager": "yarn",
+    "breadcrumbs.enabled": true,
+    "tslint.packageManager": "yarn",
+    "tslint.nodePath": "/Users/cmcbride/.nvm/versions/node/v10.15.0/bin/node",
+    "workbench.statusBar.feedback.visible": false,
+    "gitlens.hovers.enabled": false,
+    "gitlens.codeLens.authors.enabled": false,
+    "gitlens.statusBar.enabled": false,
+    "gitlens.views.search.enabled": false,
+    "gitlens.views.compare.enabled": false,
+    "git.autofetch": true,
+    "git.fetchOnPull": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "workbench.panel.defaultLocation": "right",
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    },
+    "workbench.startupEditor": "newUntitledFile",
+    "extensions.ignoreRecommendations": false,
+    "editor.find.autoFindInSelection": true,
+    "editor.minimap.enabled": false,
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}
