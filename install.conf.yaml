@@ -9,4 +9,6 @@
     ~/.vimrc: vimrc
     ~/.spacemacs: spacemacs
     ~/.gitaliases: gitaliases
+    ~/.config/fish:
+        path: fish/
 
