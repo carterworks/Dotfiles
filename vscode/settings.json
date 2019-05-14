@@ -23,8 +23,8 @@
     "gitlens.views.compare.enabled": false,
     "git.autofetch": true,
     "git.fetchOnPull": true,
-    "editor.formatOnPaste": true,
-    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
     "editor.formatOnType": false,
     "workbench.panel.defaultLocation": "right",
     "files.exclude": {
@@ -49,6 +49,9 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
     "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     }
 }
