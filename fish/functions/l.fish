@@ -1,3 +1,3 @@
 function l
-	exa -F --group-directories-first $argv
+	lsd -F --group-dirs first $argv
 end
