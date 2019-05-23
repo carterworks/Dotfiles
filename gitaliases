@@ -1167,4 +1167,5 @@
   # Git aliases for other, custom functions
   ##
 
-	master-update = pull --rebase --autostash origin master
+master-update = pull --rebase --autostash origin master
+current-branch = rev-parse --abbrev-ref HEAD
