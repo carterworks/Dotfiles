@@ -14,5 +14,5 @@
         create: true
     ~/.config/fish:
         path: fish/
-
+    ~/.config/kitty/kitty.conf: kitty.conf
 
