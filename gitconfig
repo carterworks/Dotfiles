@@ -7,3 +7,5 @@
 	path = ~/.gitaliases
 [push]
 	default = current
+[fetch]
+	prune = true
