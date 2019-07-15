@@ -15,5 +15,7 @@
     ~/.config/fish:
         path: fish/
     ~/.config/kitty/kitty.conf: kitty.conf
-    ~/.config/micro/settings.json: micro.json
+    ~/.config/micro/settings.json:
+        path: micro.json
+        create: true
 
