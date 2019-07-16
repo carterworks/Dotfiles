@@ -7,6 +7,9 @@
         create: true
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
+    ~/.config/nvim/init.vim:
+        path: neovim-init.vim
+        create: true
     ~/.spacemacs: spacemacs
     ~/.gitaliases: gitaliases
     "~/Library/Application Support/Code/User/settings.json":
