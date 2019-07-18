@@ -1,6 +1,0 @@
-
-test -e {$HOME}/.iterm2_shell_integration.fish ; and source {$HOME}/.iterm2_shell_integration.fish
-
-set -g fish_user_paths "/usr/local/opt/mongodb@3.4/bin" $fish_user_paths
-
-source ~/.asdf/asdf.fish

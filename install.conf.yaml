@@ -15,8 +15,6 @@
     "~/Library/Application Support/Code/User/settings.json":
         path: vscode/settings.json
         create: true
-    ~/.config/fish:
-        path: fish/
     ~/.config/kitty/kitty.conf: kitty.conf
     ~/.config/micro/settings.json:
         path: micro.json
