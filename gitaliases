@@ -1169,3 +1169,4 @@
 
 master-update = pull --rebase --autostash origin master
 current-branch = rev-parse --abbrev-ref HEAD
+chekcout = checkout
