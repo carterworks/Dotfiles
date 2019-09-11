@@ -6,3 +6,17 @@ ControlMaster auto
 ControlPath /tmp/%r@%h:%p
 ControlPersist yes
 
+# Romulus, the RPi2
+Host romulus
+    HostName 192.168.1.118
+    Port 22
+    User pirate
+# Remus, the RPi3. Attached to the TV
+Host remus
+    HostName 192.168.1.243
+    Port 22
+    User pi
+Host cs
+    HostName schizo.cs.byu.edu
+    User cartermc
+
