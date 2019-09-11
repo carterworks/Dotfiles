@@ -11,10 +11,6 @@
         path: neovim-init.vim
         create: true
     ~/.gitaliases: gitaliases
-    "~/Library/Application Support/Code/User/settings.json":
-        path: vscode/settings.json
-        create: true
-    ~/.config/kitty/kitty.conf: kitty.conf
     ~/.config/micro/settings.json:
         path: micro.json
         create: true
