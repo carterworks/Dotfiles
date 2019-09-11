@@ -14,4 +14,9 @@
     ~/.config/micro/settings.json:
         path: micro.json
         create: true
-
+    ~/.config/fish/fishfile:
+        path: fish/fishfile
+        force: true
+    ~/.config/fish/config.fish:
+        path: fish/config.fish
+        force: true
