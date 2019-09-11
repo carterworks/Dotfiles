@@ -1,25 +1,18 @@
 - clean: ['~']
-
+- defaults:
+    link:
+        create: true
+        force: true
 - link:
     ~/.gitconfig: gitconfig
-    ~/.ssh/config:
-        path: ssh/config
-        create: true
+    ~/.ssh/config: ssh/config
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
-    ~/.config/nvim/init.vim:
-        path: neovim-init.vim
-        create: true
+    ~/.config/nvim/init.vim: neovim-init.vim
     ~/.gitaliases: gitaliases
-    ~/.config/micro/settings.json:
-        path: micro.json
-        create: true
-    ~/.config/fish/fishfile:
-        path: fish/fishfile
-        force: true
-    ~/.config/fish/config.fish:
-        path: fish/config.fish
-        force: true
+    ~/.config/micro/settings.json: micro.json
+    ~/.config/fish/fishfile: fish/fishfile
+    ~/.config/fish/config.fish: fish/config.fish
     ~/.config/fish/functions/:
         glob: true
         path: fish/functions/*
