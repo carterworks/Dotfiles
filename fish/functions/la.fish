@@ -1,5 +1,5 @@
 function la
-	if command -s lsd
+	if command -qs lsd
 		lsd -a $argv
 	else
 		/bin/ls -A $argv

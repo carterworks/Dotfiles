@@ -1,5 +1,5 @@
 # Initialize pyenv
-if command -s pyenv
+if command -qs pyenv
     set -x PYENV_ROOT $HOME/.pyenv
     set -x PATH $PYENV_ROOT/bin $PATH
     status --is-interactive; and . (pyenv init -|psub)
@@ -11,6 +11,6 @@ if not functions -q fisher
     fish -c fisher
 end
 # Initalize spaceship prompt
-if command -s starship
+if command -qs starship
     eval (starship init fish)
 end

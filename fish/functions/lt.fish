@@ -1,5 +1,5 @@
 function lt
-	if command -s lsd
+	if command -qs lsd
 		lsd --tree $argv
 	else
 		tree $argv
