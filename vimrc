@@ -102,8 +102,10 @@ if empty(glob('~/.vim/autoload/plug.vim'))
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
-call plug#begin('~/.vim/plugged')
+
+" ==============================================================
 " Start list of plugins
+call plug#begin('~/.vim/plugged')
 
 " Universal Text Linking, for making hyperlinks work
 " https://github.com/vim-scripts/utl.vim
@@ -120,6 +122,10 @@ Plug 'vim-scripts/SyntaxRange'
 " Org-mode support for vim
 " https://github.com/jceb/vim-orgmode
 Plug 'jceb/vim-orgmode'
+
+" Indent Guides
+" https://github.com/nathanaelkane/vim-indent-guides
+Plug 'nathanaelkane/vim-indent-guides'
 
 call plug#end()
 
