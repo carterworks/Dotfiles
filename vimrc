@@ -1,3 +1,5 @@
+set nocompatible
+
 " ==============================================================
 " vim-plug installation
 " https://github.com/junegunn/vim-plug/wiki/tips#automatic-installation
@@ -39,3 +41,5 @@ call plug#end()
 " Turn on line numbers
 set number
 
+" Disable automatic text wrapping
+autocmd VimEnter * set textwidth=0
