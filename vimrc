@@ -31,13 +31,10 @@ Plug 'vim-scripts/SyntaxRange'
 " https://github.com/jceb/vim-orgmode
 Plug 'jceb/vim-orgmode'
 
-" Indent Guides
-" https://github.com/nathanaelkane/vim-indent-guides
-Plug 'nathanaelkane/vim-indent-guides'
-
 call plug#end()
 
 " ==============================================================
 
+" Turn on line numbers
 set number
 
