@@ -15,15 +15,16 @@ call plug#begin('~/.vim/plugged')
 " https://github.com/tpope/vim-sensible
 Plug 'tpope/vim-sensible'
 
-" Universal Text Linking, for making hyperlinks work
+" Universal Text Linking - for making hyperlinks work
 " https://github.com/vim-scripts/utl.vim
 Plug 'vim-scripts/utl.vim'
 
-" Speeddating, for using CTRL-A/CTRL-X to increment dates, times, etc.
+" Speeddating - for using CTRL-A/CTRL-X to increment dates, times, etc.
+" Required for Org-mode
 " https://github.com/tpope/vim-speeddating
 Plug 'tpope/vim-speeddating'
 
-" SyntaxRange, defining a different filetype syntax on regions of a buffer
+" SyntaxRange - defining a different filetype syntax on regions of a buffer
 " https://github.com/vim-scripts/SyntaxRange
 Plug 'vim-scripts/SyntaxRange'
 
