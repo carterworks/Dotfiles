@@ -14,3 +14,7 @@ end
 if command -qs starship
     eval (starship init fish)
 end
+
+if test -e /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
+    source /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
+end
