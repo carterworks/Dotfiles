@@ -43,3 +43,6 @@ set number
 
 " Disable automatic text wrapping
 autocmd VimEnter * set textwidth=0
+
+" Copy to the MacOS clipboard
+set clipboard=unnamed
