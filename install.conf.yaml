@@ -16,3 +16,4 @@
     ~/.config/fish/functions/:
         glob: true
         path: fish/functions/*
+    ~/.config/starship.toml: starship.toml

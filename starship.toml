@@ -1,0 +1,4 @@
+scan_timeout = 10
+
+[git_status]
+disabled = true
