@@ -10,10 +10,6 @@ if not functions -q fisher
     curl https://git.io/fisher --create-dirs -sLo $XDG_CONFIG_HOME/fish/functions/fisher.fish
     fish -c fisher
 end
-# Initalize spaceship prompt
-if command -qs starship
-    eval (starship init fish)
-end
 
 if test -e /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
     source /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
