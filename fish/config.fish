@@ -10,7 +10,7 @@ if not functions -q fisher
     curl https://git.io/fisher --create-dirs -sLo $XDG_CONFIG_HOME/fish/functions/fisher.fish
     fish -c fisher
 end
-
+set pure_color_mute grey
 if test -e /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
     source /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
 end
