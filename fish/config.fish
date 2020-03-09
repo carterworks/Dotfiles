@@ -11,6 +11,10 @@ if not functions -q fisher
     fish -c fisher
 end
 set pure_color_mute grey
+# Initalize spaceship prompt
+ if command -qs starship
+    starship init fish | source
+end
 if test -e /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
     source /Users/cmcbride/Library/Preferences/org.dystroy.broot/launcher/fish/br
 end
