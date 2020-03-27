@@ -5,7 +5,6 @@
         force: true
 - link:
     ~/.gitconfig: gitconfig
-    ~/.ssh/config: ssh/config
     ~/.tmux.conf: tmux.conf
     ~/.vimrc: vimrc
     ~/.config/nvim/init.vim: neovim-init.vim
