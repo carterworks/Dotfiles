@@ -2,16 +2,21 @@
 
 ## Installation
 
-Clone the repo into `~/.dotfiles` with `git clone --recurse-submodules`
+- Clone the repo into `~/.dotfiles` with `git clone --recurse-submodules`
+- Install the [nix package manager](https://nixos.org/nix/) (usually with `curl -L https://nixos.org/nix/install | sh`, requires `curl` and `xz` from `xz-utils`)
+- Install [`home-manager`](https://github.com/rycee/home-manager) (usually with `nix-channel --add https://github.com/rycee/home-manager/archive/master.tar.gz home-manager`)
  
 
 ## Includes
 
+- [home-manager]()
 - vim
 - gitconfig
 - spacemacs
 - tmux
 - sshconfig
+- fish
+- and more!
 
 ## Other
 
