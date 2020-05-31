@@ -24,6 +24,11 @@
   # Enable github.com/target/lorri, for managing build environments
   services.lorri.enable = true;
 
+  programs.lsd = {
+    enable = true;
+    enableAliases = true;
+  };
+
   home.packages = [
     pkgs.htop
     pkgs.direnv
@@ -36,5 +41,6 @@
     pkgs.git
     pkgs.python3
     pkgs.tmux
+    pkgs.starship
   ];
 }
