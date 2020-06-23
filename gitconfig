@@ -9,3 +9,7 @@
 	default = current
 [fetch]
 	prune = true
+[core]
+	pager = delta --plus-color="#012800" --minus-color="#340001" --theme='OneHalfDark'
+[interactive]
+	diffFilter = delta --color-only
