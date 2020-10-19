@@ -9,7 +9,14 @@
 	default = current
 [fetch]
 	prune = true
+[diff]
+	colorMoved = default
 [core]
-	pager = delta --plus-color="#012800" --minus-color="#340001" --theme='OneHalfDark'
+	pager = delta 
 [interactive]
 	diffFilter = delta --color-only
+[delta]
+	plus-color = "#012800"
+	minus-color = "#340001"
+	theme = OneHalfDark
+	line-numbers = true
