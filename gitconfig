@@ -13,10 +13,15 @@
 	colorMoved = default
 [core]
 	pager = delta 
+	excludesfile = /Users/cmcbride/.gitignore_global
 [interactive]
 	diffFilter = delta --color-only
 [delta]
-	plus-color = "#012800"
-	minus-color = "#340001"
 	theme = OneHalfDark
 	line-numbers = true
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path = 
+[mergetool "sourcetree"]
+	cmd = /Users/cmcbride/Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
