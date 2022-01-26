@@ -21,19 +21,6 @@ Plug 'tpope/vim-sensible'
 " https://github.com/vim-scripts/utl.vim
 Plug 'vim-scripts/utl.vim'
 
-" Speeddating - for using CTRL-A/CTRL-X to increment dates, times, etc.
-" Required for Org-mode
-" https://github.com/tpope/vim-speeddating
-Plug 'tpope/vim-speeddating'
-
-" SyntaxRange - defining a different filetype syntax on regions of a buffer
-" https://github.com/vim-scripts/SyntaxRange
-Plug 'vim-scripts/SyntaxRange'
-
-" Org-mode support for vim
-" https://github.com/jceb/vim-orgmode
-Plug 'jceb/vim-orgmode'
-
 call plug#end()
 
 " ==============================================================
