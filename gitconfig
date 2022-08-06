@@ -18,3 +18,5 @@
 	line-numbers = true
 [init]
 	defaultBranch = main
+[user]
+	name = Carter McBride
