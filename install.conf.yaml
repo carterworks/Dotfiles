@@ -16,5 +16,4 @@
         glob: true
         path: fish/functions/*
     ~/.config/starship.toml: starship.toml
-    ~/.config/nixpkgs/home.nix: home.nix
     ~/.config/alacritty/alacritty.yml: alacritty.yml
