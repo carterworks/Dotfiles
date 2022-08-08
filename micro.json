@@ -2,7 +2,6 @@
     "*.md": {
         "softwrap": true
     },
-    "autoclose": true,
     "eofnewline": false,
     "fastdirty": true,
     "hidehelp": false,
