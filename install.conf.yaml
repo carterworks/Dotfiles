@@ -18,3 +18,4 @@
     ~/.config/starship.toml: starship.toml
     ~/.config/alacritty/alacritty.yml: alacritty.yml
     ~/.nixpkgs/darwin-configuration.nix: darwin-configuration.nix
+    ~/.config/helix/config.toml: helix-config.toml

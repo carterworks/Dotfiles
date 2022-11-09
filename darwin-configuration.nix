@@ -9,8 +9,10 @@
       pkgs.bat
       pkgs.delta
       pkgs.fd
+      pkgs.ffmpeg
       pkgs.fzf
       pkgs.git
+      pkgs.helix
       pkgs.jq
       pkgs.lsd
       pkgs.micro
