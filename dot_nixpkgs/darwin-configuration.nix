@@ -7,6 +7,7 @@
     [ 
       pkgs.any-nix-shell
       pkgs.bat
+      pkgs.chezmoi
       pkgs.delta
       pkgs.fd
       pkgs.ffmpeg
@@ -15,9 +16,7 @@
       pkgs.helix
       pkgs.jq
       pkgs.lsd
-      pkgs.micro
       pkgs.neofetch
-      pkgs.neovim
       pkgs.ripgrep
       pkgs.rnix-lsp
       pkgs.nodePackages.typescript
@@ -66,7 +65,7 @@
   fonts.fonts = [ pkgs.nerdfonts ];
   system.defaults = {
     dock = {
-      autohide = true;
+      autohide = false;
       mineffect = "scale";
       minimize-to-application = true;
       orientation = "left";
