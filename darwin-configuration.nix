@@ -19,7 +19,13 @@
       pkgs.neofetch
       pkgs.neovim
       pkgs.ripgrep
+      pkgs.rnix-lsp
+      pkgs.nodePackages.typescript
+      pkgs.nodePackages.typescript-language-server
       pkgs.starship
+      pkgs.taplo
+      pkgs.nodePackages.vscode-langservers-extracted
+      pkgs.nodePackages.yaml-language-server
       pkgs.zoxide
     ];
 
