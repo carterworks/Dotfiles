@@ -1,5 +1,15 @@
 # Dotfiles
 
+
+## Includes
+
+- fish shell
+- helix
+- git
+- nix-darwin
+- tmux
+- starship prompt
+
 ## Installation
 
 1. Install the dependencies
@@ -10,11 +20,18 @@
     - `nix-shell -p chezmoi git --command "chezmoi init --apply carterworks"` for older systems
 3. When you want to make changes, do so with `chezmoi edit $FILE_PATH`
 
-## Includes
+## Helpful commands
 
-- fish shell
-- helix
-- git
-- nix-darwin
-- tmux
-- starship prompt
+These are ripped straight from the [chezmoi documentation](https://chezmoi.oi/user-guide/daily-operations)
+
+### Pull the latest changes from your repo and see what would change, without actually applying the changes
+
+```bash
+chezmoi git pull -- --autostash --rebase && chezmoi diff
+```
+
+and then apply them if they look good with
+
+```bash
+chezmoi apply
+```
