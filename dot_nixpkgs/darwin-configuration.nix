@@ -21,6 +21,7 @@
       pkgs.rnix-lsp
       pkgs.nodePackages.typescript
       pkgs.nodePackages.typescript-language-server
+      pkgs.spicetify
       pkgs.starship
       pkgs.taplo
       pkgs.nodePackages.vscode-langservers-extracted
