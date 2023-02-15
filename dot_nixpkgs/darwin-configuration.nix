@@ -17,6 +17,7 @@
       pkgs.jq
       pkgs.lsd
       pkgs.neofetch
+      pkgs.nnn
       pkgs.ripgrep
       pkgs.rnix-lsp
       pkgs.nodePackages.typescript
