@@ -9,6 +9,7 @@
       pkgs.bat
       pkgs.chezmoi
       pkgs.delta
+      pkgs.direnv
       pkgs.fd
       pkgs.ffmpeg
       pkgs.fzf
