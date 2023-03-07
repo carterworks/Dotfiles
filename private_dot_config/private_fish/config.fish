@@ -12,3 +12,6 @@ end
 if command -qs hx
     set -gx EDITOR hx
 end
+if command -qs direnv
+    direnv hook fish | source
+end
