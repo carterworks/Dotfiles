@@ -594,8 +594,24 @@ plugins:
 # Choose the theme that is specified in the themes section.
 # For some examples, see: https://github.com/zellij-org/zellij/tree/main/example/themes
 # Default: default
-#theme: default
-
+theme "one-half-dark"
+themes {
+      one-half-dark {
+            fg 220 223 228
+              bg 40 44 52
+              black 27 29 35
+              red 227 63 76
+              green 152 195 121
+              yellow 229 192 123
+              blue 97 175 239
+              magenta 198 120 221
+              cyan 86 182 194
+              white 233 225 254
+              orange 216 133 76
+          }
+    }
+  }
+}
 # Choose the mode that zellij uses when starting up.
 # Default: normal
 #default_mode: locked
