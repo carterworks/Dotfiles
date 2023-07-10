@@ -18,17 +18,16 @@
       pkgs.jq
       pkgs.lsd
       pkgs.neofetch
-      pkgs.nnn
       pkgs.ripgrep
       pkgs.rnix-lsp
       pkgs.nodePackages.typescript
       pkgs.nodePackages.typescript-language-server
-      pkgs.spicetify-cli
       pkgs.starship
       pkgs.taplo
       pkgs.nodePackages.vscode-langservers-extracted
       pkgs.nodePackages.yaml-language-server
       pkgs.zoxide
+      pkgs.zellij
     ];
 
   # Use a custom configuration.nix location.
