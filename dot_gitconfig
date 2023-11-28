@@ -19,7 +19,7 @@
 
 [delta]
 	line-numbers = true
-	theme = Solarized (light)
+	syntax-theme = Solarized (light)
 	hyperlinks = true
 	hyperlinks-file-link-format = "vscode://file/{path}:{line}"
 
