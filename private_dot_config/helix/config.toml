@@ -1,9 +1,9 @@
-theme = "bogster"
+theme = "solarized_light"
 
 [editor.whitespace.render]
 space = "all"
 tab = "all"
 
 # For versions >22.05
-# [editor.indent-guides]
-# render = true
+[editor.indent-guides]
+render = true
