@@ -8,8 +8,10 @@
       pkgs.any-nix-shell
       pkgs.bat
       pkgs.chezmoi
+      pkgs.colima
       pkgs.delta
       pkgs.direnv
+      pkgs.docker
       pkgs.fd
       pkgs.ffmpeg
       pkgs.fzf
