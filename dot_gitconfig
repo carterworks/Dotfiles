@@ -12,7 +12,7 @@
 	pager = delta 
 	excludesfile = $HOME/.gitignore_global
 [interactive]
-	diffFilter = delta --color-only
+	diffFilter = delta --color-only --features=interactive
 [delta]
 	line-numbers = true
 	theme = Solarized (light)
