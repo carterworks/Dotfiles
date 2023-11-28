@@ -239,6 +239,19 @@ plugins {
 // }
 
 themes {
+    solarized-light {
+        fg 101 123 131
+        bg 253 246 227
+        black 7 54 66
+        red 220 50 47
+        green 133 153 0
+        yellow 181 137 0
+        blue 38 139 210
+        magenta 211 54 130
+        cyan 42 161 152
+        white 238 232 213
+        orange 203 75 22
+    }
     one-half-dark {
         fg 220 223 228
         bg 40 44 52
@@ -258,7 +271,7 @@ themes {
 // Default: default
 //
 // theme "default"
-theme "one-half-dark"
+theme "solarized-light"
 
 // The name of the default layout to load on startup
 // Default: "default"
