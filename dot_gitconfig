@@ -1,24 +1,33 @@
 [format]
 	pretty = "%H %ci %ce %ae %d %s"
+
 [push]
 	default = current
+
 [fetch]
 	prune = true
+
 [diff]
 	colorMoved = default
+
 [core]
 	pager = delta 
 	excludesfile = $HOME/.gitignore_global
+
 [interactive]
 	diffFilter = delta --color-only --features=interactive
+
 [delta]
 	line-numbers = true
 	theme = Solarized (light)
 	hyperlinks = true
 	hyperlinks-file-link-format = "vscode://file/{path}:{line}"
+
 [init]
 	defaultBranch = main
+
 [user]
 	name = Carter McBride
+
 [include]
 	path = ~/.gitaliases
