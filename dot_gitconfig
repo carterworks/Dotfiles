@@ -15,6 +15,7 @@
 	diffFilter = delta --color-only
 [delta]
 	line-numbers = true
+	theme = Solarized (light)
 [init]
 	defaultBranch = main
 [user]
