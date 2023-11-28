@@ -1,7 +1,5 @@
 [format]
 	pretty = "%H %ci %ce %ae %d %s"
-[include]
-	path = ~/.gitaliases
 [push]
 	default = current
 [fetch]
@@ -22,3 +20,5 @@
 	defaultBranch = main
 [user]
 	name = Carter McBride
+[include]
+	path = ~/.gitaliases
