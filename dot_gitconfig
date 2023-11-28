@@ -11,8 +11,8 @@
 	colorMoved = default
 
 [core]
-	pager = delta 
-	excludesfile = $HOME/.gitignore_global
+	pager = delta
+	excludesfile = $HOME/.gitignore
 
 [interactive]
 	diffFilter = delta --color-only --features=interactive
