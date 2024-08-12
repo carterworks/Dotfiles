@@ -9,6 +9,3 @@ end
 if command -qs zoxide
     zoxide init fish | source
 end
-if command -qs hx
-    set -gx EDITOR hx
-end

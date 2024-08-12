@@ -5,9 +5,6 @@
         force: true
 - link:
     ~/.gitconfig: gitconfig
-    ~/.tmux.conf: tmux.conf
-    ~/.vimrc: vimrc
-    ~/.config/nvim/init.vim: neovim-init.vim
     ~/.gitaliases: gitaliases
     ~/.config/micro/settings.json: micro.json
     ~/.config/fish/fish_plugins: fish/fish_plugins
@@ -18,4 +15,3 @@
     ~/.config/starship.toml: starship.toml
     ~/.config/alacritty/alacritty.yml: alacritty.yml
     ~/.nixpkgs/darwin-configuration.nix: darwin-configuration.nix
-    ~/.config/helix/config.toml: helix-config.toml

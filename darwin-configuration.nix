@@ -12,20 +12,12 @@
       pkgs.ffmpeg
       pkgs.fzf
       pkgs.git
-      pkgs.helix
       pkgs.jq
       pkgs.lsd
       pkgs.micro
       pkgs.neofetch
-      pkgs.neovim
       pkgs.ripgrep
-      pkgs.rnix-lsp
-      pkgs.nodePackages.typescript
-      pkgs.nodePackages.typescript-language-server
       pkgs.starship
-      pkgs.taplo
-      pkgs.nodePackages.vscode-langservers-extracted
-      pkgs.nodePackages.yaml-language-server
       pkgs.zoxide
     ];
 
@@ -45,12 +37,6 @@
   programs.fish = {
     enable = true;
     promptInit = "";
-  };
-  programs.tmux = {
-    enable = true;
-    enableFzf = true;
-    enableMouse = true;
-    enableSensible = true;
   };
 
   # Used for backwards compatibility, please read the changelog before changing.
@@ -84,7 +70,7 @@
       SHOWFULLNAME = true;
     };
     NSGlobalDomain = {
-      AppleInterfaceStyle = "Dark";
+      AppleInterfaceStyle = null;
       AppleShowAllExtensions = true;
       AppleShowAllFiles = true;
       AppleShowScrollBars = "Always";

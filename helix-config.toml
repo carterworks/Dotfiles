@@ -1,9 +1,0 @@
-theme = "bogster"
-
-[editor.whitespace.render]
-space = "all"
-tab = "all"
-
-# For versions >22.05
-# [editor.indent-guides]
-# render = true
