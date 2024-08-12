@@ -13,15 +13,14 @@ local fg = color_scheme.foreground
 -- font
 config.font = wezterm.font_with_fallback(
 	{
-		family = 'Iosevka Nerd Font',
+		family = 'Iosevka',
 		harfbuzz_features = { 'liga=1', 'calt=1', 'ss15=1' }
 	},
-	"NotoEmoji Nerd Font"
 )
 config.font_size = 16
 
 -- window background
-config.window_background_opacity = 0.9
+config.window_background_opacity = 0.95
 config.macos_window_background_blur = 30
 config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE'
 
