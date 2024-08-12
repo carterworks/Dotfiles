@@ -11,12 +11,10 @@ local color_scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
 local bg = color_scheme.background
 local fg = color_scheme.foreground
 -- font
-config.font = wezterm.font_with_fallback(
-	{
-		family = 'Iosevka',
-		harfbuzz_features = { 'liga=1', 'calt=1', 'ss15=1' }
-	},
-)
+config.font = wezterm.font({
+	family = 'Iosevka',
+	harfbuzz_features = { 'liga=1', 'calt=1', 'ss15=1' }
+})
 config.font_size = 16
 
 -- window background
@@ -48,10 +46,8 @@ config.window_frame = {
 	font = wezterm.font({ family = 'Iosevka Aile' }),
 	font_size = 13,
 }
-config.hide_tab_bar_if_only_one_tab = true
 
-
-
+-- hotkeys
 config.keys = {
 	-- Sends ESC + b and ESC + f sequence, which is
 	-- used to tell the shell to jump back/forwards.
