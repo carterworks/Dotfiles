@@ -1,4 +1,3 @@
-set pure_color_mute grey
 # Initalize spaceship prompt
 if command -qs starship
     starship init fish | source
