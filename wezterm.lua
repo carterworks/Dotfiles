@@ -43,8 +43,8 @@ wezterm.on('update-status', function(window)
 	}))
 end)
 config.window_frame = {
-	font = wezterm.font({ family = 'Iosevka Aile' }),
-	font_size = 13,
+	font = wezterm.font({ family = 'Iosevka' }),
+	font_size = 14,
 }
 
 -- hotkeys

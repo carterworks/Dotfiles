@@ -8,6 +8,8 @@
       pkgs.any-nix-shell
       pkgs.bat
       pkgs.bottom
+      pkgs.bun
+      pkgs.colima
       pkgs.delta
       pkgs.fd
       pkgs.ffmpeg
@@ -16,6 +18,7 @@
       pkgs.jq
       pkgs.lsd
       pkgs.micro
+      pkgs.nodejs
       pkgs.neofetch
       pkgs.ripgrep
       pkgs.starship
@@ -51,7 +54,7 @@
 
   # Extra configs–https://daiderd.com/nix-darwin/manual/index.html#sec-options
   environment.shells = [ pkgs.fish ];
-  fonts.packages = [ pkgs.nerdfonts ];
+  fonts.packages = [ pkgs.nerdfonts pkgs.iosevka ];
   system.defaults = {
     dock = {
       autohide = true;
