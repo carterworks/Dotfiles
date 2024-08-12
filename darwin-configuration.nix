@@ -11,6 +11,7 @@
       pkgs.bun
       pkgs.colima
       pkgs.delta
+      pkgs.docker
       pkgs.fd
       pkgs.ffmpeg
       pkgs.fzf
