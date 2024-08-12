@@ -49,7 +49,7 @@
 
   # Extra configs–https://daiderd.com/nix-darwin/manual/index.html#sec-options
   environment.shells = [ pkgs.fish ];
-  fonts.fonts = [ pkgs.nerdfonts ];
+  fonts.packages = [ pkgs.nerdfonts ];
   system.defaults = {
     dock = {
       autohide = true;
