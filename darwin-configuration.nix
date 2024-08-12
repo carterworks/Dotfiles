@@ -4,9 +4,10 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages =
-    [ 
+    [
       pkgs.any-nix-shell
       pkgs.bat
+      pkgs.bottom
       pkgs.delta
       pkgs.fd
       pkgs.ffmpeg
@@ -18,6 +19,7 @@
       pkgs.neofetch
       pkgs.ripgrep
       pkgs.starship
+      pkgs.yazi
       pkgs.zoxide
     ];
 
