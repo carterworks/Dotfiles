@@ -58,13 +58,13 @@
   fonts.packages = [ pkgs.nerdfonts pkgs.iosevka ];
   system.defaults = {
     dock = {
-      autohide = true;
+      autohide = false;
       mineffect = "scale";
       minimize-to-application = true;
       orientation = "left";
       show-recents = true;
       show-process-indicators = true;
-      tilesize = 50;
+      tilesize = 30;
     };
     finder = {
       AppleShowAllExtensions = false;
