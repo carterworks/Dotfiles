@@ -64,7 +64,7 @@
       orientation = "left";
       show-recents = true;
       show-process-indicators = true;
-      tilesize = 30;
+      tilesize = 40;
     };
     finder = {
       AppleShowAllExtensions = false;
