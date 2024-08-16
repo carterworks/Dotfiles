@@ -14,6 +14,5 @@
         glob: true
         path: fish/functions/*
     ~/.config/starship.toml: starship.toml
-    ~/.config/alacritty/alacritty.yml: alacritty.yml
     ~/.nixpkgs/darwin-configuration.nix: darwin-configuration.nix
     ~/.config/wezterm/wezterm.lua: wezterm.lua
