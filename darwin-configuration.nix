@@ -1,31 +1,36 @@
 { config, pkgs, ... }:
 
-{
+let 
+  lsps = [
+    pkgs.lua-language-server
+  ];
+in {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
-  environment.systemPackages =
+  environment.systemPackages = with pkgs;
     [
-      pkgs.any-nix-shell
-      pkgs.bat
-      pkgs.bottom
-      pkgs.bun
-      pkgs.colima
-      pkgs.delta
-      pkgs.docker
-      pkgs.fd
-      pkgs.ffmpeg
-      pkgs.fzf
-      pkgs.git
-      pkgs.jq
-      pkgs.lsd
-      pkgs.micro
-      pkgs.nodejs
-      pkgs.neofetch
-      pkgs.ripgrep
-      pkgs.starship
-      pkgs.yazi
-      pkgs.zoxide
-    ];
+      any-nix-shell
+      bat
+      bottom
+      bun
+      colima
+      delta
+      docker
+      fd
+      ffmpeg
+      fzf
+      git
+      jq
+      lsd
+      micro
+      neovim
+      nodejs
+      neofetch
+      ripgrep
+      starship
+      yazi
+      zoxide
+    ] ++ lsps;
 
   # Use a custom configuration.nix location.
   # $ darwin-rebuild switch -I darwin-config=$HOME/.config/nixpkgs/darwin/configuration.nix
