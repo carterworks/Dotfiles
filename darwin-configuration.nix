@@ -2,7 +2,11 @@
 
 let 
   lsps = [
-    pkgs.lua-language-server
+    pkgs.markdown-oxide
+    pkgs.nil
+    pkgs.nodePackages_latest.vscode-json-languageserver
+    pkgs.taplo
+    pkgs.yaml-language-server
   ];
 in {
   # List packages installed in system profile. To search by name, run:
@@ -20,6 +24,7 @@ in {
       ffmpeg
       fzf
       git
+      helix
       jq
       lsd
       nodejs

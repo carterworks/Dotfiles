@@ -1,0 +1,8 @@
+theme = "solarized_light"
+[editor.whitespace]
+render = "all"
+[editor.indent-guides]
+render = true
+[keys.normal]
+C-s = ":w"
+C-x = ":q"
