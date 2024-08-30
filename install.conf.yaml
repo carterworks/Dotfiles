@@ -13,7 +13,6 @@
     ~/.config/fish/functions/:
         glob: true
         path: fish/functions/*
-    ~/.config/nvim: nvim/
     ~/.config/starship.toml: starship.toml
     ~/.nixpkgs/darwin-configuration.nix: darwin-configuration.nix
     ~/.config/wezterm/wezterm.lua: wezterm.lua

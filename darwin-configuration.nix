@@ -22,8 +22,6 @@ in {
       git
       jq
       lsd
-      micro
-      neovim
       nodejs
       neofetch
       ripgrep
