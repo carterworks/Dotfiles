@@ -11,3 +11,8 @@ end
 if command -qs hx
     set -gx EDITOR hx
 end
+if command -qs eza
+    set -gx EZA_ICONS_AUTO true
+    set -gx EZA_ICON_SPACING 2
+    alias ls="eza --classify=auto --hyperlink --group-directories-first"
+end

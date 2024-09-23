@@ -1,8 +1,4 @@
-# Defined in /Users/cmcbride/.config/fish/functions/ls.fish @ line 1
-function ls
-	if command -qs lsd
-		lsd -F --group-dirs=first $argv
-	else
-		/bin/ls $argv
-	end
+function ls --wraps='eza -F --group-directories-first' --description 'alias ls=eza -F --group-directories-first'
+  eza -F --group-directories-first $argv
+        
 end

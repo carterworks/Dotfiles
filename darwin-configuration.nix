@@ -20,13 +20,13 @@ in {
       colima
       delta
       docker
+      eza
       fd
       ffmpeg
       fzf
       git
       helix
       jq
-      lsd
       nodejs
       neofetch
       ripgrep
