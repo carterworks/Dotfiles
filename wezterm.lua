@@ -6,7 +6,7 @@ local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 -- color scheme
-config.color_scheme = 'Solarized Light (Gogh)'
+config.color_scheme = 'Selenized Light (Gogh)'
 local color_scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
 local bg = color_scheme.background
 local fg = color_scheme.foreground
