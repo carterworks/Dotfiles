@@ -16,9 +16,10 @@ config.font = wezterm.font({
 	harfbuzz_features = { 'liga=1', 'calt=1', 'ss15=1' }
 })
 config.font_size = 16
+config.freetype_load_flags = 'NO_HINTING'
 
 -- window background
-config.window_background_opacity = 0.95
+config.window_background_opacity = 0.90
 config.macos_window_background_blur = 30
 config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE'
 
@@ -31,17 +32,6 @@ config.command_palette_font_size = 16
 config.command_palette_rows = 8
 
 -- tab bar
-wezterm.on('update-status', function(window)
-	local SOLID_LEFT_ARROW = utf8.char(0xe0b2)
-	window:set_right_status(wezterm.format({
-		{ Background = { Color = 'none' } },
-		{ Foreground = { Color = bg } },
-		{ Text = SOLID_LEFT_ARROW },
-		{ Background = { Color = bg } },
-		{ Foreground = { Color = fg } },
-		{ Text = ' ' .. wezterm.hostname() .. ' ' },
-	}))
-end)
 config.window_frame = {
 	font = wezterm.font({ family = 'Iosevka' }),
 	font_size = 14,
