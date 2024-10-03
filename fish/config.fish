@@ -1,4 +1,3 @@
-# Initalize spaceship prompt
 if command -qs starship
     starship init fish | source
 end
@@ -16,3 +15,5 @@ if command -qs eza
     set -gx EZA_ICON_SPACING 2
     alias ls="eza --classify=auto --hyperlink --group-directories-first"
 end
+# Set the colorscheme
+sh ./theme.sh
