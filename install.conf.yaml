@@ -16,4 +16,4 @@
     ~/.nixpkgs/darwin-configuration.nix: darwin-configuration.nix
     ~/.config/wezterm/wezterm.lua: wezterm.lua
     ~/.config/helix/config.toml: helix-config.toml
-    ~/.config/helix/themes/solarized_light.toml: helix-solarized-light-theme.toml
+    ~/.config/helix/themes/theme.toml: helix-theme.toml

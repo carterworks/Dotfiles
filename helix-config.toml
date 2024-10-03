@@ -1,4 +1,4 @@
-theme = "solarized_light"
+theme = "theme"
 [editor.whitespace]
 render = "all"
 [editor.indent-guides]
