@@ -14,7 +14,6 @@
 [interactive]
 	diffFilter = delta --color-only
 [delta]
-	theme = OneHalfDark
 	line-numbers = true
 [init]
 	defaultBranch = main
