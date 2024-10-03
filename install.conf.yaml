@@ -9,7 +9,6 @@
     ~/.gitignore: gitignore
     ~/.config/fish/fish_plugins: fish/fish_plugins
     ~/.config/fish/config.fish: fish/config.fish
-    ~/.config/fish/theme.sh: fish/theme.sh
     ~/.config/fish/functions/:
         glob: true
         path: fish/functions/*
