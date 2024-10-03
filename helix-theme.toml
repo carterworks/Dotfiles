@@ -1,93 +1,56 @@
-# Scheme name: selenized-light
-# Scheme author: Jan Warchol (https://github.com/jan-warchol/selenized) / adapted to base16 by ali
-# Template author: Tinted Theming (https://github.com/tinted-theming)
+# base16 (terminal) theme - https://github.com/helix-editor/helix/blob/master/runtime/themes/base16_terminal.toml
+# Author: NNB <nnbnh@protonmail.com>
 
-"attributes" = "base09"
-"comment" = { fg = "base03", modifiers = ["italic"] }
-"constant" = "base09"
-"constant.character.escape" = "base0C"
-"constant.numeric" = "base09"
-"constructor" = "base0D"
-"debug" = "base03"
-"diagnostic" = { modifiers = ["underlined"] }
-"diff.delta" = "base09"
-"diff.minus" = "base08"
-"diff.plus" = "base0B"
-"error" = "base08"
-"function" = "base0D"
-"hint" = "base03"
-"info" = "base0D"
-"keyword" = "base0E"
-"label" = "base0E"
-"namespace" = "base0E"
-"operator" = "base05"
-"special" = "base0D"
-"string"  = "base0B"
-"type" = "base0A"
-"variable" = "base08"
-"variable.other.member" = "base0B"
-"warning" = "base09"
+"ui.menu" = { fg = "light-gray", bg = "gray" }
+"ui.menu.selected" = { modifiers = ["reversed"] }
+"ui.linenr" = { fg = "light-gray", bg = "black" }
+"ui.popup" = { bg = "black" }
+"ui.window" = { bg = "black" }
+"ui.linenr.selected" = { fg = "white", bg = "black", modifiers = ["bold"] }
+"ui.selection" = { fg = "gray", modifiers = ["reversed"] }
+"comment" = { fg = "light-gray", modifiers = ["italic"] }
+"ui.statusline" = { fg = "white", bg = "black" }
+"ui.statusline.inactive" = { fg = "gray", bg = "black" }
+"ui.help" = { fg = "white", bg = "black" }
+"ui.cursor" = { fg = "light-gray", modifiers = ["reversed"] }
+"ui.cursor.primary" = { fg = "light-gray", modifiers = ["reversed"] }
+"ui.virtual.whitespace" = "light-gray"
+"ui.virtual.jump-label" = { fg = "blue", modifiers = ["bold", "underlined"] }
+"ui.virtual.ruler" = { bg = "black" }
+"variable" = "light-red"
+"constant.numeric" = "yellow"
+"constant" = "yellow"
+"attribute" = "yellow"
+"type" = "light-yellow"
+"ui.cursor.match" = { fg = "light-yellow", modifiers = ["underlined"] }
+"string"  = "light-green"
+"variable.other.member" = "light-green"
+"constant.character.escape" = "light-cyan"
+"function" = "light-blue"
+"constructor" = "light-blue"
+"special" = "light-blue"
+"keyword" = "light-magenta"
+"label" = "light-magenta"
+"namespace" = "light-magenta"
 
-"markup.bold" = { fg = "base0A", modifiers = ["bold"] }
-"markup.heading" = "base0D"
-"markup.italic" = { fg = "base0E", modifiers = ["italic"] }
-"markup.link.text" = "base08"
-"markup.link.url" = { fg = "base09", modifiers = ["underlined"] }
-"markup.list" = "base08"
-"markup.quote" = "base0C"
-"markup.raw" = "base0B"
+"markup.heading" = "light-blue"
+"markup.list" = "light-red"
+"markup.bold" = { fg = "light-yellow", modifiers = ["bold"] }
+"markup.italic" = { fg = "light-magenta", modifiers = ["italic"] }
 "markup.strikethrough" = { modifiers = ["crossed_out"] }
+"markup.link.url" = { fg = "yellow", modifiers = ["underlined"] }
+"markup.link.text" = "light-red"
+"markup.quote" = "light-cyan"
+"markup.raw" = "light-green"
 
-"diagnostic.hint" = { underline = { style = "curl" } }
-"diagnostic.info" = { underline = { style = "curl" } }
-"diagnostic.warning" = { underline = { style = "curl" } }
-"diagnostic.error" = { underline = { style = "curl" } }
+"diff.plus" = "light-green"
+"diff.delta" = "yellow"
+"diff.minus" = "light-red"
 
-"ui.background" = { bg = "base00" }
-"ui.bufferline.active" = { fg = "base00", bg = "base03", modifiers = ["bold"] }
-"ui.bufferline" = { fg = "base04", bg = "base00" }
-"ui.cursor" = { fg = "base0A", modifiers = ["reversed"] }
-"ui.cursor.insert" = { fg = "base0A", modifiers = ["reversed"] }
-"ui.cursorline.primary" = { fg = "base05", bg = "base01" }
-"ui.cursor.match" = { fg = "base0A", modifiers = ["reversed"] }
-"ui.cursor.select" = { fg = "base0A", modifiers = ["reversed"] }
-"ui.gutter" = { bg = "base00" }
-"ui.help" = { fg = "base06", bg = "base01" }
-"ui.linenr" = { fg = "base03", bg = "base00" }
-"ui.linenr.selected" = { fg = "base04", bg = "base01", modifiers = ["bold"] }
-"ui.menu" = { fg = "base05", bg = "base01" }
-"ui.menu.scroll" = { fg = "base03", bg = "base01" }
-"ui.menu.selected" = { fg = "base01", bg = "base04" }
-"ui.popup" = { bg = "base01" }
-"ui.selection" = { bg = "base02" }
-"ui.selection.primary" = { bg = "base02" }
-"ui.statusline" = { fg = "base04", bg = "base01" }
-"ui.statusline.inactive" = { bg = "base01", fg = "base03" }
-"ui.statusline.insert" = { fg = "base00", bg = "base0B" }
-"ui.statusline.normal" = { fg = "base00", bg = "base03" }
-"ui.statusline.select" = { fg = "base00", bg = "base0F" }
-"ui.text" = "base05"
-"ui.text.focus" = "base05"
-"ui.virtual.indent-guide" = { fg = "base03" }
-"ui.virtual.inlay-hint" = { fg = "base03" }
-"ui.virtual.ruler" = { bg = "base01" }
-"ui.virtual.jump-label" = { fg = "base0A", modifiers = ["bold"] }
-"ui.window" = { bg = "base01" }
-
-[palette]
-base00 = "#fbf3db" # Default Background
-base01 = "#ece3cc" # Lighter Background (Used for status bars, line number and folding marks)
-base02 = "#d5cdb6" # Selection Background
-base03 = "#909995" # Comments, Invisibles, Line Highlighting
-base04 = "#909995" # Dark Foreground (Used for status bars)
-base05 = "#53676d" # Default Foreground, Caret, Delimiters, Operators
-base06 = "#3a4d53" # Light Foreground (Not often used)
-base07 = "#3a4d53" # Light Background (Not often used)
-base08 = "#cc1729" # Variables, XML Tags, Markup Link Text, Markup Lists, Diff Deleted
-base09 = "#bc5819" # Integers, Boolean, Constants, XML Attributes, Markup Link Url
-base0A = "#a78300" # Classes, Markup Bold, Search Text Background
-base0B = "#428b00" # Strings, Inherited Class, Markup Code, Diff Inserted
-base0C = "#00978a" # Support, Regular Expressions, Escape Characters, Markup Quotes
-base0D = "#006dce" # Functions, Methods, Attribute IDs, Headings
-base0E = "#825dc0" # Keywords, Storage, Selector, Markup Italic, Diff Changed
-base0F = "#c44392" # Deprecated, Opening/Closing Embedded Language Tags, e.g. <?php ?>
+"diagnostic" = { modifiers = ["underlined"] }
+"ui.gutter" = { bg = "black" }
+"info" = "light-blue"
+"hint" = "gray"
+"debug" = "gray"
+"warning" = "yellow"
+"error" = "light-red"
