@@ -16,4 +16,4 @@ if command -qs eza
     alias ls="eza --classify=auto --hyperlink --group-directories-first"
 end
 # Set the colorscheme
-sh ./theme.sh
+sh "$__fish_config_dir/theme.sh"
