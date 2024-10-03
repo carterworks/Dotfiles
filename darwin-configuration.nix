@@ -28,7 +28,6 @@ in {
       helix
       jq
       nodejs
-      neofetch
       ripgrep
       starship
       yazi
