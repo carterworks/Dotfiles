@@ -37,6 +37,28 @@ config.window_frame = {
 	font_size = 14,
 }
 
+-- launch menu - https://wezfurlong.org/wezterm/config/launch.html#the-launcher-menu
+local launch_menu = {}
+if wezterm.target_triple == "x86_64-pc-windows-msvc" then
+	table.insert(launch_menu, {
+    label = "Command Prompt",
+    args = { '%SystemRoot%\\System32\\cmd.exe' }
+  })
+	table.insert(launch_menu, {
+    label = "PowerShell (System)",
+    args = { '%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe' }
+  })
+	table.insert(launch_menu,  {
+    label = 'Powershell',
+    args = { 'C:\\Users\\carte\\AppData\\Local\\Microsoft\\WindowsApps\\Microsoft.PowerShell_8wekyb3d8bbwe\\pwsh.exe', '-NoLogo' },
+  })
+	table.insert(launch_menu,   {
+    label = 'Ubuntu 20.04',
+    args = { 'wsl', '-d', 'Ubuntu-20.04' },
+  })
+end
+config.launch_menu = launch_menu
+
 -- hotkeys
 config.keys = {
 	-- Sends ESC + b and ESC + f sequence, which is
