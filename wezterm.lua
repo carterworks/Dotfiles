@@ -36,6 +36,18 @@ config.window_frame = {
 	font = wezterm.font({ family = 'Iosevka' }),
 	font_size = 14,
 }
+-- Function to format the time
+local function format_time(time)
+  return time:format("%H:%M")
+end
+
+-- Custom tab bar with time display on the right
+wezterm.on("update-right-status", function(window, pane)
+  local time = wezterm.strftime(" %H:%M ")
+  window:set_right_status(wezterm.format({
+    {Text=time},
+  }))
+end)
 
 -- launch menu - https://wezfurlong.org/wezterm/config/launch.html#the-launcher-menu
 local launch_menu = {}
