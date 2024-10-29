@@ -92,7 +92,7 @@ in {
     };
     trackpad = {
       Clicking = true;
-      TrackpadRightClick = false;
+      TrackpadRightClick = true;
     };
   };
   system.keyboard = {
