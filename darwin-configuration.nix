@@ -27,7 +27,7 @@ in {
       git
       helix
       jq
-      nodejs
+      nodejs_22
       ripgrep
       starship
       yazi
@@ -40,7 +40,7 @@ in {
 
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
-  nix.package = pkgs.nixFlakes;
+  nix.package = pkgs.nixVersions.stable;
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
@@ -62,7 +62,10 @@ in {
 
   # Extra configs–https://daiderd.com/nix-darwin/manual/index.html#sec-options
   environment.shells = [ pkgs.fish ];
-  fonts.packages = [ pkgs.nerdfonts pkgs.iosevka ];
+  fonts.packages = [
+    pkgs.nerd-fonts.noto
+    pkgs.iosevka
+  ];
   system.defaults = {
     dock = {
       autohide = false;
