@@ -23,11 +23,11 @@ in {
       eza
       fd
       ffmpeg
+      fnm
       fzf
       git
       helix
       jq
-      nodejs_22
       ripgrep
       starship
       yazi
