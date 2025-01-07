@@ -26,3 +26,6 @@ set -gx base16_fish_theme selenized-light
 if test -n "$base16_fish_theme" && status --is-interactive
     base16-$base16_fish_theme
 end
+if command -qs fnm
+    fnm env --use-on-cd --shell fish | source
+end
