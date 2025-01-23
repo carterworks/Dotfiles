@@ -1170,3 +1170,4 @@
 main-update = pull --rebase --autostash origin main
 current-branch = rev-parse --abbrev-ref HEAD
 chekcout = checkout
+sw = switch
