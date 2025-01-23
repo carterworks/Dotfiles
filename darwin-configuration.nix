@@ -28,9 +28,11 @@ in {
       git
       helix
       jq
+      (python3.withPackages (p: [ p.llm p.llm-ollama p.llm-cmd ]))
       ripgrep
       starship
       yazi
+      uv
       zoxide
     ] ++ lsps;
 
