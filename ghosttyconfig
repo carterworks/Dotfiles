@@ -1,4 +1,3 @@
 font-family = "Iosevka"
 font-size = 14
 theme = "Builtin Solarized Light"
-keybind = global:super+grave_accent=toggle_quick_terminal
