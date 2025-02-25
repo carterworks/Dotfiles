@@ -29,3 +29,6 @@ end
 if command -qs fnm
     fnm env --use-on-cd --shell fish | source
 end
+
+# homebrew
+eval "$(/opt/homebrew/bin/brew shellenv)"

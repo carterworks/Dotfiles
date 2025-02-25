@@ -242,6 +242,7 @@
 
   incoming = !git remote update --prune; git log ..@{upstream}
   outgoing = log @{upstream}..
+  out = outgoing
 
   # Push to all remotes
   push-to-all-remotes = !git remote | xargs -I% -n1 git push %
