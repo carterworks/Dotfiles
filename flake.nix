@@ -15,9 +15,7 @@
         bat
         bottom
         bun
-        colima
         delta
-        docker
         eza
         fd
         ffmpeg
