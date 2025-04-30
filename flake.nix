@@ -25,6 +25,8 @@
         helix
         jq
         (python3.withPackages (p: [ p.llm p.llm-ollama p.llm-cmd ]))
+        rclone
+        rsync
         ripgrep
         starship
         yazi
@@ -41,7 +43,9 @@
       homebrew = {
         enable = true;
 
-        brews = [ "dependency-check" ];
+        brews = [
+          "dependency-check"
+        ];
       };
 
       # Necessary for using flakes on this system.
