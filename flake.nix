@@ -22,6 +22,7 @@
         fnm
         fzf
         git
+        gh
         helix
         jq
         (python3.withPackages (p: [ p.llm p.llm-ollama p.llm-cmd ]))
