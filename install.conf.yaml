@@ -19,3 +19,4 @@
     ~/.config/helix/themes/theme.toml: helix-theme.toml
     ~/.config/home-manager/home.nix: wsl-home.nix
     ~/.config/ghostty/config: ghosttyconfig
+    ~/.aerospace.toml: aerospace.toml

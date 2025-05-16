@@ -47,6 +47,10 @@
         brews = [
           "dependency-check"
         ];
+
+        casks = [
+          "nikitabobko/tap/aerospace"
+        ];
       };
 
       # Necessary for using flakes on this system.
