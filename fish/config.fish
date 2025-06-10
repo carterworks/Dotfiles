@@ -12,7 +12,7 @@ if command -qs any-nix-shell
     any-nix-shell fish --info-right | source
 end
 if command -qs zoxide
-    zoxide init fish | source
+    zoxide init fish --cmd cd | source
 end
 if command -qs hx
     set -gx EDITOR hx
