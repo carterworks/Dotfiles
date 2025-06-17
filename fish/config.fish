@@ -29,13 +29,17 @@ end
 if command -qs fnm
     fnm env --use-on-cd --shell fish | source
 end
+if command -qs bat
+    alias cat="bat"
+    alias less="bat"
+end
 
 # homebrew
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # pnpm
 if command -qs pnpm
-    set -gx PNPM_HOME "/Users/cmcbride/Library/pnpm"
+    set -gx PNPM_HOME /Users/cmcbride/Library/pnpm
     if not string match -q -- $PNPM_HOME $PATH
         set -gx PATH "$PNPM_HOME" $PATH
     end
