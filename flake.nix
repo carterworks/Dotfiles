@@ -25,6 +25,7 @@
         gh
         helix
         jq
+        pnpm
         (python3.withPackages (p: [ p.llm p.llm-ollama p.llm-cmd ]))
         rclone
         rsync
