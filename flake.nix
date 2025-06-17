@@ -79,6 +79,7 @@
       nix.gc.options = "--max-freed $((25 * 1024**3 - 1024 * $(df -P -k /nix/store | tail -n 1 | awk '{ print $4 }')))";
 
       # MacOS settings
+      system.primaryUser = "cmcbride";
       # sudo with touch id
       security.pam.services.sudo_local.touchIdAuth = true;
       system.defaults = {
