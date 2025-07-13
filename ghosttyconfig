@@ -1,3 +1,4 @@
 font-family = "Iosevka"
 font-size = 14
 theme = "Builtin Solarized Light"
+command = fish
