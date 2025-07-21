@@ -73,7 +73,6 @@
       programs.zsh.enable = true;
       # Use Fish as the default
       programs.fish.enable = true;
-      environment.shells = [ pkgs.fish ];
 
       # Automatically clean the cache
       nix.gc.automatic = true;
