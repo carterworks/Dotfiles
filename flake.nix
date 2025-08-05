@@ -13,7 +13,7 @@
       environment.systemPackages = with pkgs; [
         any-nix-shell
         bat
-        bottom
+        btop
         bun
         delta
         eza
@@ -25,8 +25,8 @@
         gh
         helix
         jq
+        opencode
         pnpm
-        (python3.withPackages (p: [ p.llm p.llm-ollama p.llm-cmd ]))
         rclone
         rsync
         ripgrep
@@ -41,18 +41,6 @@
         taplo
         yaml-language-server
       ];
-
-      homebrew = {
-        enable = true;
-
-        brews = [
-          "dependency-check"
-        ];
-
-        casks = [
-          "nikitabobko/tap/aerospace"
-        ];
-      };
 
       # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
@@ -84,7 +72,7 @@
       security.pam.services.sudo_local.touchIdAuth = true;
       system.defaults = {
         dock = {
-          autohide = false;
+          autohide = true;
           mineffect = "scale";
           minimize-to-application = true;
           orientation = "left";
