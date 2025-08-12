@@ -37,6 +37,7 @@
         ripgrep
         starship
         tinty
+        tree-sitter
         yazi
         uv
         wget
