@@ -25,14 +25,18 @@
         gh
         helix
         jq
+        lazygit
+        neovim
         opencode
         pnpm
         rclone
         rsync
         ripgrep
         starship
+        tinty
         yazi
         uv
+        wget
         zoxide
         # lsps
         markdown-oxide

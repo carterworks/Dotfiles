@@ -7,6 +7,7 @@
     ~/.gitconfig: gitconfig
     ~/.gitaliases: gitaliases
     ~/.gitignore: gitignore
+    ~/.config/nvim: nvim/
     ~/.config/fish/fish_plugins: fish/fish_plugins
     ~/.config/fish/config.fish: fish/config.fish
     ~/.config/fish/functions/:
