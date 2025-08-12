@@ -1,2 +1,4 @@
 scan_timeout = 10
 
+[aws]
+disabled = true
