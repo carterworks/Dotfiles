@@ -10,11 +10,14 @@
     configuration = { pkgs, ... }: {
       # List packages installed in system profile. To search by name, run:
       # $ nix-env -qaP | grep wget
+      nixpkgs.config.allowUnfree = true;
       environment.systemPackages = with pkgs; [
         any-nix-shell
         bat
         btop
         bun
+        claude-code
+        curl
         delta
         eza
         fd
