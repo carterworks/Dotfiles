@@ -43,7 +43,7 @@ end
 if command -qs pnpm
     set -gx PNPM_HOME /Users/cmcbride/Library/pnpm
     if not string match -q -- $PNPM_HOME $PATH
-        set -gx PATH "$PNPM_HOME" $PATH
+        fish_add_path "$PNPM_HOME"
     end
     # completions
     if status --is-interactive
@@ -54,3 +54,17 @@ if command -qs pnpm
     end
 end
 # pnpm end
+
+# Added by LM Studio CLI (lms)
+if test -e ~/.lmstudio/bin
+    fish_add_path ~/.lmstudio/bin
+end
+# End of LM Studio CLI section
+fish_add_path ~/.local/bin
+if test -f ~/.config/fish/secrets.local.fish
+    source ~/.config/fish/secrets.local.fish
+end
+
+if command -qs tinty
+    tinty generate-completion fish | source
+end
