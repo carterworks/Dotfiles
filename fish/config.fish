@@ -76,3 +76,6 @@ end
 if command -qs tinty
     tinty generate-completion fish | source
 end
+if command -qs mise
+    mise activate fish | source
+end
