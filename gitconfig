@@ -82,3 +82,8 @@
 [credential "https://git.corp.adobe.com"]
 	helper = 
 	helper = !/run/current-system/sw/bin/gh auth git-credential
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
