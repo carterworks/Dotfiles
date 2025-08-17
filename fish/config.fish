@@ -14,8 +14,20 @@ end
 if command -qs zoxide
     zoxide init fish --cmd cd | source
 end
-if command -qs nvim
+if command -qs hx
+    set -gx EDITOR hx
+else if command -qs helix
+    set -gx EDITOR helix
+else if command -qs nvim
     set -gx EDITOR nvim
+else if command -qs vim
+    set -gx EDITOR vim
+else if command -qs vi
+    set -gx EDITOR vi
+else if command -qs micro
+    set -gx EDITOR micro
+else if command -qs nano
+    set -gx EDITOR nano
 end
 if command -qs eza
     set -gx EZA_ICONS_AUTO true
