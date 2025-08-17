@@ -23,6 +23,15 @@
           }
         }
       }
+    },
+    "openrouter": {
+      "models": {
+        "gpt-5": {
+          "options": {
+            "reasoningEffort": "high"
+          }
+        }
+      }
     }
   },
   "agent": {
