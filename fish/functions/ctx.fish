@@ -23,7 +23,22 @@ function ctx -d "Print a file or stdin, wrapped in xml tags."
     printf "%s\n" $output
 
     if test -z "$_flag_no_copy"
-        set --local copy_cmd (which pbcopy || which wl-copy || which xsel || which clip.exe)
+        if command -q pbcopy
+            set copy_cmd pbcopy
+        else if command -q wl-copy
+            set copy_cmd wl-copy
+        else if command -q xclip
+            set copy_cmd xclip -selection clipboard
+        else if command -q xsel
+            set copy_cmd xsel --clipboard --input
+        else if command -q clip.exe
+            set copy_cmd clip.exe
+        end
+
+        if test (count $copy_cmd) -eq 0
+            echo "ctx: no copy command found" >&2
+            return 1
+        end
         if test -z "$copy_cmd"
             echo "ctx: no copy command found" >&2
             return 1
