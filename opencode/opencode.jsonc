@@ -12,17 +12,6 @@
       }
     }
   },
-  "agent": {
-    "code-reviewer": {
-      "description": "Reviews code for best practices and potential issues",
-      "mode": "subagent",
-      "prompt": "You are a code reviewer. Focus on security, performance, and maintainability.",
-      "tools": {
-        "write": false,
-        "edit": false
-      }
-    }
-  },
   "mcp": {
     "playwright": {
       "type": "local",
