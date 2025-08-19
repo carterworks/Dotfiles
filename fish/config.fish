@@ -18,6 +18,7 @@ if command -qs hx
     set -gx EDITOR hx
 else if command -qs helix
     set -gx EDITOR helix
+    alias hx="helix"
 else if command -qs nvim
     set -gx EDITOR nvim
 else if command -qs vim
