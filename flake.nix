@@ -30,7 +30,6 @@
         jq
         lazygit
         neovim
-        opencode
         pnpm
         rclone
         rsync

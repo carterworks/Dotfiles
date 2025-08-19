@@ -80,3 +80,6 @@ end
 if command -qs mise
     mise activate fish | source
 end
+if test -e ~/.opencode
+    fish_add_path ~/.opencode/bin
+end
