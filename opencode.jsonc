@@ -44,5 +44,16 @@
         "edit": false
       }
     }
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": [
+        "bun",
+        "x",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true
+    }
   }
 }
