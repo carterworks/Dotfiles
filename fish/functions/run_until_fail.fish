@@ -1,4 +1,4 @@
-function repeat_until_fail
+function run_until_fail
     set -l count 0
     set -l start_time (date +%s)
 
