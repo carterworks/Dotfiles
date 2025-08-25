@@ -5,7 +5,12 @@ function run_until_fail
     while eval $argv
         set count (math $count + 1)
         # Print success message to stderr with styling
-        set_color -o green >&2
+        set_color -ob brgreen >&2
+        set_color FFF >&2
+        printf " SUCCESS "
+        set_color -db normal >&2
+        set_color brgreen >&2
+        printf " "
         printf "Run %s completed successfully\n" $count >&2
         set_color normal >&2
     end
@@ -14,7 +19,12 @@ function run_until_fail
     set -l duration (math $end_time - $start_time)
 
     # Print failure message to stderr with styling
-    set_color -o red >&2
+    set_color -ob brred >&2
+    set_color FFF >&2
+    printf " FAILURE "
+    set_color -db normal >&2
+    set_color brred >&2
+    printf " "
     printf "Command failed on run %s after %s seconds\n" $count $duration >&2
     set_color normal >&2
     return $count
