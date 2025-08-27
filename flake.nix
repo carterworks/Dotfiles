@@ -49,12 +49,6 @@
         yaml-language-server
       ];
 
-      homebrew = {
-        enable = true;
-        casks = [
-          "nikitabobko/tap/aerospace"
-        ];
-      };
       # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
 
