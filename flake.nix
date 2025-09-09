@@ -37,7 +37,6 @@
         starship
         tinty
         yazi
-        uv
         wget
         zoxide
         # lsps
