@@ -1,7 +1,7 @@
 function killp --description "Select processes to kill using fzf"
     set -l fzf_args \
         --multi \
-        --preview 'ps -p {2} -o pid,ppid,user,comm,args,pcpu,pmem,etime,stat' \
+        --preview 'ps -p {1} -o pid,ppid,user,comm,args,pcpu,pmem,etime,stat' \
         --preview-label='alt-p: toggle preview, alt-j/k: scroll, tab: multi-select, enter: kill selected' \
         --preview-label-pos='bottom' \
         --preview-window 'down:65%:wrap' \
@@ -11,9 +11,10 @@ function killp --description "Select processes to kill using fzf"
         --color 'pointer:red,marker:red' \
         --header 'Select processes to kill (WARNING: This will terminate selected processes)'
 
-    # Get process list with PID as second column for easy extraction
-    set -l selected_processes (ps -eo pid,comm,user,pcpu,pmem,etime,args --sort=-pcpu | \
+    # Get process list sorted by CPU usage, PID as first column
+    set -l selected_processes (ps -eo pid,comm,user,pcpu,pmem,etime,args | \
         tail -n +2 | \
+        sort -k4 -nr | \
         fzf $fzf_args | \
         awk '{print $1}')
 
