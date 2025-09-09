@@ -2,3 +2,6 @@ scan_timeout = 10
 
 [aws]
 disabled = true
+
+[rlang]
+disabled = true
