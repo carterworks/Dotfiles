@@ -4,7 +4,7 @@ function killp --description "Select processes to kill using fzf"
         --preview 'ps -p {1} -o pid,ppid,user,comm,args,pcpu,pmem,etime,stat' \
         --preview-label='alt-p: toggle preview, alt-j/k: scroll, tab: multi-select, enter: kill selected' \
         --preview-label-pos='bottom' \
-        --preview-window 'down:65%:wrap' \
+        --preview-window 'down:20%:wrap' \
         --bind 'alt-p:toggle-preview' \
         --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up' \
         --bind 'alt-k:preview-up,alt-j:preview-down' \
