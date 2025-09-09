@@ -12,13 +12,10 @@ function killp --description "Select processes to kill using fzf"
         --header 'Select processes to kill (WARNING: This will terminate selected processes)'
 
     # Get process list sorted by CPU usage, PID as first column
-    set -l selected_processes (ps -eo pid,comm,user,pcpu,pmem,etime,args | \
-        awk 'NR==1 {printf "%-8s %-20s %-12s %5s %5s %10s %s\n", "PID", "COMMAND", "USER", "%CPU", "%MEM", "TIME", "ARGS"} 
-             NR>1 {printf "%-8s %-20s %-12s %5s %5s %10s %s\n", $1, $2, $3, $4, $5, $6, substr($0, index($0, $7))}' | \
-        tail -n +2 | \
-        sort -k4 -nr | \
-        fzf $fzf_args | \
-        awk '{print $1}')
+    set -l selected_processes (begin
+        echo "PID      COMMAND              USER          %CPU  %MEM       TIME ARGS"
+        ps -eo pid,comm,user,pcpu,pmem,etime,args | tail -n +2 | sort -k4 -nr
+    end | fzf $fzf_args | awk '{print $1}')
 
     if test -n "$selected_processes"
         echo "Selected PIDs to kill: $selected_processes"
