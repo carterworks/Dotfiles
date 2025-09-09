@@ -14,29 +14,28 @@
       environment.systemPackages = with pkgs; [
         any-nix-shell
         bat
-        btop
-        bun
+        bottom
         claude-code
         curl
         delta
+        dust
         eza
         fd
         ffmpeg
-        fnm
         fzf
         git
         gh
         helix
         jq
-        lazygit
+        jujutsu
+        mise
+        ouch
         neovim
-        pnpm
         rclone
         rsync
         ripgrep
         starship
         tinty
-        tree-sitter
         yazi
         uv
         wget
@@ -117,7 +116,7 @@
       # fonts
       fonts.packages = [
         pkgs.nerd-fonts.noto
-        pkgs.iosevka
+        pkgs.nerd-fonts.iosevka
       ];
 };
   in

@@ -1,4 +1,5 @@
 font-family = "Iosevka"
+font-family = "Iosevka Nerd Font Mono"
 font-size = 14
 theme = "Builtin Solarized Light"
 command = sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec "$SHELL"'
