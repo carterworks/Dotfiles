@@ -14,8 +14,7 @@
       environment.systemPackages = with pkgs; [
         any-nix-shell
         bat
-        bottom
-        claude-code
+        btop
         curl
         delta
         dust
