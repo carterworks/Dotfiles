@@ -83,6 +83,8 @@
           show-recents = true;
           show-process-indicators = true;
           tilesize = 40;
+          magnification = true;
+          largesize = 44;
         };
         finder = {
           AppleShowAllExtensions = false;
