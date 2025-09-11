@@ -1,3 +1,4 @@
+#!/usr/bin/env fish
 function ctx -d "Print a file or stdin, wrapped in xml tags."
     argparse n/no_copy m/no_markdown 't/tag=' -- $argv
     or return
@@ -46,3 +47,5 @@ function ctx -d "Print a file or stdin, wrapped in xml tags."
         printf "%s\n" $output | $copy_cmd
     end
 end
+
+ctx $argv

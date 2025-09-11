@@ -10,9 +10,6 @@
     ~/.config/nvim: nvim/
     ~/.config/fish/fish_plugins: fish/fish_plugins
     ~/.config/fish/config.fish: fish/config.fish
-    ~/.config/fish/functions/:
-        glob: true
-        path: fish/functions/*
     ~/.config/opencode: opencode/
     ~/.config/starship.toml: starship.toml
     ~/.config/wezterm/wezterm.lua: wezterm.lua
@@ -20,3 +17,6 @@
     ~/.config/helix/themes/theme.toml: helix-theme.toml
     ~/.config/ghostty/config: ghosttyconfig
     ~/.config/mise/config.toml: ./mise.global.toml
+    ~/.local/bin/:
+        glob: true
+        path: bin/*
