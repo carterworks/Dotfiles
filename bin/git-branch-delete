@@ -1,0 +1,15 @@
+#!/bin/zsh
+
+num_commits="10"
+fzf_args=(
+  --multi
+  --preview="git log --oneline -${num_commits} {}"
+  --preview-label='tab: multi-select'
+  --color='pointer:red,marker:red'
+  --preview-label-pos='bottom'
+  --preview-window="down:${num_commits}:wrap"
+  --layout='reverse'
+  --height='30'
+)
+
+git branch -D $(git branch --list --format='%(refname:short)' | fzf "${fzf_args[@]}")
