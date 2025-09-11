@@ -15,6 +15,7 @@
         any-nix-shell
         bat
         btop
+        codex
         curl
         delta
         dust
