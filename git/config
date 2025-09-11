@@ -1,7 +1,7 @@
 [format]
 	pretty = "%H %ci %ce %ae %d %s"
 [include]
-	path = ~/.gitaliases
+	path = aliases
 [push]
 	default = current
 [fetch]
@@ -56,8 +56,6 @@
 [rerere]
 	enabled = true
 	autoupdate = true
-[core]
-	excludesfile = ~/.gitignore
 [rebase]
 	autoSquash = true
 	autoStash = true
