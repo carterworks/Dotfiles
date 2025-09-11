@@ -1,3 +1,4 @@
+#!/usr/bin/env fish
 function run_until_fail
     set -l count 0
     set -l start_time (date +%s)
@@ -29,3 +30,5 @@ function run_until_fail
     set_color normal >&2
     return $count
 end
+
+run_until_fail $argv

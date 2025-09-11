@@ -1,3 +1,4 @@
+#!/usr/bin/env fish
 function killp --description "Select processes to kill using fzf"
     set -l fzf_args \
         --multi \
@@ -33,3 +34,4 @@ function killp --description "Select processes to kill using fzf"
         end
     end
 end
+killp $argv
