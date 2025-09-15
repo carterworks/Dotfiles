@@ -116,7 +116,7 @@
       # fonts
       fonts.packages = [
         pkgs.nerd-fonts.noto
-        pkgs.nerd-fonts.iosevka
+        pkgs.iosevka-bin
       ];
 };
   in
