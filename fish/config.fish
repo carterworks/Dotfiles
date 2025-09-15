@@ -83,3 +83,6 @@ end
 if test -e ~/.opencode
     fish_add_path ~/.opencode/bin
 end
+if command -qs codex
+    codex completion fish | source
+end
