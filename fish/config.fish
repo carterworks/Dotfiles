@@ -33,6 +33,12 @@ if status is-interactive
         set -gx EZA_ICON_SPACING 2
         alias ls="eza --classify=auto --group-directories-first"
     end
+    if command -qs atuin
+        atuin init fish | source
+        if command -qs fzf_configure_bindings
+            fzf_configure_bindings --history=
+        end
+    end
 end
 # homebrew
 if test -e /opt/homebrew/bin/brew
