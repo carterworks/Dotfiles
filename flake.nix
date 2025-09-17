@@ -12,7 +12,6 @@
       # $ nix-env -qaP | grep wget
       nixpkgs.config.allowUnfree = true;
       environment.systemPackages = with pkgs; [
-        any-nix-shell
         bat
         btop
         curl
