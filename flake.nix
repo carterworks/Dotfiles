@@ -24,6 +24,7 @@
         git
         gh
         helix
+        hyperfine
         jq
         jujutsu
         mise
