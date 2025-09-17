@@ -5,32 +5,34 @@ end
 if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
 end
-if command -qs starship
-    starship init fish | source
-end
-if command -qs zoxide
-    zoxide init fish --cmd cd | source
-end
-if command -qs hx
-    set -gx EDITOR hx
-else if command -qs helix
-    set -gx EDITOR helix
-    alias hx="helix"
-else if command -qs nvim
-    set -gx EDITOR nvim
-else if command -qs vim
-    set -gx EDITOR vim
-else if command -qs vi
-    set -gx EDITOR vi
-else if command -qs micro
-    set -gx EDITOR micro
-else if command -qs nano
-    set -gx EDITOR nano
-end
-if command -qs eza
-    set -gx EZA_ICONS_AUTO true
-    set -gx EZA_ICON_SPACING 2
-    alias ls="eza --classify=auto --group-directories-first"
+if status is-interactive
+    if command -qs starship
+        starship init fish | source
+    end
+    if command -qs zoxide
+        zoxide init fish --cmd cd | source
+    end
+    if command -qs hx
+        set -gx EDITOR hx
+    else if command -qs helix
+        set -gx EDITOR helix
+        alias hx="helix"
+    else if command -qs nvim
+        set -gx EDITOR nvim
+    else if command -qs vim
+        set -gx EDITOR vim
+    else if command -qs vi
+        set -gx EDITOR vi
+    else if command -qs micro
+        set -gx EDITOR micro
+    else if command -qs nano
+        set -gx EDITOR nano
+    end
+    if command -qs eza
+        set -gx EZA_ICONS_AUTO true
+        set -gx EZA_ICON_SPACING 2
+        alias ls="eza --classify=auto --group-directories-first"
+    end
 end
 # homebrew
 if test -e /opt/homebrew/bin/brew
