@@ -35,34 +35,10 @@ if command -qs eza
     set -gx EZA_ICON_SPACING 2
     alias ls="eza --classify=auto --group-directories-first"
 end
-if command -qs fnm
-    fnm env --use-on-cd --shell fish | source
-end
-if command -qs bat
-    alias cat="bat"
-    alias less="bat"
-end
-
 # homebrew
 if test -e /opt/homebrew/bin/brew
     eval "$(/opt/homebrew/bin/brew shellenv)"
 end
-
-# pnpm
-if command -qs pnpm
-    set -gx PNPM_HOME /Users/cmcbride/Library/pnpm
-    if not string match -q -- $PNPM_HOME $PATH
-        fish_add_path "$PNPM_HOME"
-    end
-    # completions
-    if status --is-interactive
-        # Only source the definitions once per session.
-        if not functions -q _pnpm_completion
-            pnpm completion fish | source
-        end
-    end
-end
-# pnpm end
 
 # Added by LM Studio CLI (lms)
 if test -e ~/.lmstudio/bin
@@ -74,12 +50,6 @@ if test -f ~/.config/fish/secrets.local.fish
     source ~/.config/fish/secrets.local.fish
 end
 
-if command -qs tinty
-    tinty generate-completion fish | source
-end
 if command -qs mise
     mise activate fish | source
-end
-if command -qs codex
-    codex completion fish | source
 end
