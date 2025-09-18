@@ -28,6 +28,7 @@
         hyperfine
         jq
         jujutsu
+        mkcert
         mise
         ouch
         neovim
