@@ -1,10 +1,6 @@
 [tools]
-bun = "latest"
-node = "latest"
 opencode = "latest"
-pnpm = "latest"
 "ubi:openai/codex" = "latest"
-uv = "latest"
 [settings]
 python.uv_venv_auto = true
 idiomatic_version_file_enable_tools = ["node"]
