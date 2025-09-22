@@ -1,4 +1,5 @@
 [tools]
+gum = "latest"
 opencode = "latest"
 "ubi:openai/codex" = "latest"
 [settings]

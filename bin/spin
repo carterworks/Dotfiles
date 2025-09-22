@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+if ! command -v gum >/dev/null 2>&1; then
+  printf 'Error: gum is not installed or not in PATH\n' >&2
+  exit 127
+fi
+
+if [ "$#" -eq 0 ]; then
+  printf 'Usage: %s <command> [args...]\n' "${0##*/}" >&2
+  exit 64
+fi
+
+spinners=(
+  line
+  dot
+  minidot
+  jump
+  pulse
+  points
+  globe
+  moon
+  monkey
+  meter
+  hamburger
+)
+
+# Pre-generated gerund titles for spinner display.
+titles=(
+  "Calibrating"
+  "Computing Data"
+  "Beep-Booping"
+  "Rejiggering"
+  "Iterating"
+  "Syncing Logs"
+  "Buffering"
+  "Compiling"
+  "Refactoring"
+  "Bootstrapping"
+)
+
+spinner_index=$(( RANDOM % ${#spinners[@]} ))
+spinner=${spinners[spinner_index]}
+
+title_index=$(( RANDOM % ${#titles[@]} ))
+title=${titles[title_index]}
+
+gum spin --spinner "$spinner" --title "$title" -- "$@"
