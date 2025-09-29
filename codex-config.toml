@@ -1,0 +1,9 @@
+model = "gpt-5-codex"
+model_reasoning_effort = "medium"
+
+[tui]
+notifications = true
+
+[tools]
+web_search = true
+

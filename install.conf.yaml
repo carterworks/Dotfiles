@@ -19,7 +19,8 @@
     ~/.config/helix/config.toml: helix-config.toml
     ~/.config/helix/themes/theme.toml: helix-theme.toml
     ~/.config/ghostty/config: ghosttyconfig
-    ~/.config/mise/config.toml: ./mise.global.toml
+    ~/.config/mise/config.toml: mise.global.toml
     ~/.local/bin/:
         glob: true
         path: bin/*
+    ~/.config/codex/config.toml: codex-config.toml
