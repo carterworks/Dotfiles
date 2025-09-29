@@ -58,3 +58,6 @@ end
 if command -qs mise
     mise activate fish | source
 end
+if command -qs codex
+    set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
+end
