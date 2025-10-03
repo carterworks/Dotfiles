@@ -7,3 +7,6 @@ notifications = true
 [tools]
 web_search = true
 
+[mcp_servers.chrome-dev-tools]
+command = "pnpm"
+args = ["dlx", "chrome-devtools-mcp@latest"]
