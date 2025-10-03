@@ -24,6 +24,7 @@
         fzf
         git
         gh
+        gnupg
         helix
         hyperfine
         jq
