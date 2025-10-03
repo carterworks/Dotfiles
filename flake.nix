@@ -30,7 +30,6 @@
         jq
         jujutsu
         mkcert
-        mise
         ouch
         neovim
         rclone
