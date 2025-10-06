@@ -1,28 +1,105 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "small_model": "openrouter/openai/gpt-5-nano",
   "provider": {
     "openrouter": {
       "models": {
         "gpt-5": {
           "options": {
-            "reasoningEffort": "high"
-          }
-        }
-      }
-    }
+            "reasoningEffort": "high",
+          },
+        },
+      },
+    },
+    "openai": {
+      "options": {
+        "reasoningEffort": "medium",
+        "reasoningSummary": "auto",
+        "textVerbosity": "medium",
+        "include": ["reasoning.encrypted_content"],
+      },
+      "models": {
+        "GPT 5 Codex Low (ChatGPT Subscription)": {
+          "id": "gpt-5-codex",
+          "options": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "textVerbosity": "medium",
+          },
+        },
+        "GPT 5 Codex Medium (ChatGPT Subscription)": {
+          "id": "gpt-5-codex",
+          "options": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "textVerbosity": "medium",
+          },
+        },
+        "GPT 5 Codex High (ChatGPT Subscription)": {
+          "id": "gpt-5-codex",
+          "options": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "detailed",
+            "textVerbosity": "medium",
+          },
+        },
+        "GPT 5 Minimal (ChatGPT Subscription)": {
+          "id": "gpt-5",
+          "options": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "textVerbosity": "low",
+          },
+        },
+        "GPT 5 Low (ChatGPT Subscription)": {
+          "id": "gpt-5",
+          "options": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "textVerbosity": "low",
+          },
+        },
+        "GPT 5 Medium (ChatGPT Subscription)": {
+          "id": "gpt-5",
+          "options": {
+            "reasoningEffort": "medium",
+            "reasoningSummary": "auto",
+            "textVerbosity": "medium",
+          },
+        },
+        "GPT 5 High (ChatGPT Subscription)": {
+          "id": "gpt-5",
+          "options": {
+            "reasoningEffort": "high",
+            "reasoningSummary": "detailed",
+            "textVerbosity": "high",
+          },
+        },
+        "gpt-5-mini": {
+          "options": {
+            "reasoningEffort": "low",
+            "reasoningSummary": "auto",
+            "textVerbosity": "low",
+          },
+        },
+        "gpt-5-nano": {
+          "options": {
+            "reasoningEffort": "minimal",
+            "reasoningSummary": "auto",
+            "textVerbosity": "low",
+          },
+        },
+      },
+    },
   },
   "mcp": {
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
       "headers": {
-        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}",
       },
-      "enabled": true
-    }
+      "enabled": true,
+    },
   },
-  "plugin": [
-    "opencode-openai-codex-auth"
-  ]
+  "plugin": ["opencode-openai-codex-auth@2.1.1"],
 }
