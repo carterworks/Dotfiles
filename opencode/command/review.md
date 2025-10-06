@@ -60,9 +60,9 @@ Ignore non-blocking issues such as style, formatting, typos, documentation, and 
 FORMATTING GUIDELINES:
 The finding description should be one paragraph.
 
-CURRENT GIT STATUS:
+CURRENT GIT STATUS (`git status --porcelain --branch --renames`):
 !`git status --porcelain --branch --renames`
 
-RECENT GIT COMMITS:
+RECENT GIT COMMITS (`git log --oneline -10`):
 !`git log --oneline -10`
 
