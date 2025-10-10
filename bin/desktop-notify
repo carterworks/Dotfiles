@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+
+"""
+desktop-notify: small cross-platform notification helper.
+
+This utility is meant to be dropped into dotfiles or automation repos so tools
+can emit native desktop alerts without caring about the host OS. It accepts a
+JSON payload either via stdin (useful for shell pipes) or as a raw command-line
+argument (the format Codex CLI's `notify` integration uses), while still
+allowing basic overrides when callers cannot easily craft JSON.
+
+Why the implementation looks like it does:
+- We intentionally avoid third-party libraries so the script works anywhere
+  Python 3 ships.
+- Apple notifications prefer going through `System Events` to bypass the older
+  `display notification` limitations around quoting and app identity.
+- Linux support sticks to `notify-send` because it is broadly available across
+  desktops that expose the Freedesktop notification spec.
+If neither backend succeeds we still surface the message on stderr so logs
+capture what would have been shown to the user.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import platform
+import subprocess
+import sys
+
+
+def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Send a cross-platform desktop notification. "
+            "Accepts JSON payloads via CLI argument or stdin plus optional overrides."
+        ),
+        allow_abbrev=False,
+    )
+    parser.add_argument(
+        "-t",
+        "--title",
+        dest="title",
+        help="Explicit notification title.",
+    )
+    parser.add_argument(
+        "-m",
+        "--message",
+        dest="message",
+        help="Explicit notification message/body.",
+    )
+    parser.add_argument(
+        "--type",
+        dest="event_type",
+        help="Force a specific notification type when payload is missing or ambiguous.",
+    )
+    args, extras = parser.parse_known_args(argv[1:])
+    return args, extras
+
+
+def read_payload(json_arg: str | None) -> dict:
+    """Prefer payloads provided as CLI JSON (Codex notify) but fall back to stdin."""
+    if json_arg:
+        try:
+            return json.loads(json_arg)
+        except json.JSONDecodeError:
+            # Fall back to stdin if CLI argument was not valid JSON.
+            pass
+
+    if sys.stdin.isatty():
+        return {}
+
+    data = sys.stdin.read().strip()
+    if not data:
+        return {}
+
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        return {}
+
+
+def coerce_text(value) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    return str(value)
+
+
+def build_message(
+    notification_type: str,
+    payload: dict,
+    *,
+    cli_title: str | None,
+    cli_message: str | None,
+) -> tuple[str, str]:
+    """Resolve the final title/message while favouring caller overrides for predictability."""
+    def pick(*values: object) -> str | None:
+        for candidate in values:
+            text = coerce_text(candidate)
+            if text:
+                return text
+        return None
+
+    normalized_type = notification_type.lower()
+
+    title = pick(cli_title, payload.get("title"))
+    message = pick(
+        cli_message,
+        payload.get("message"),
+        payload.get("body"),
+        payload.get("text"),
+        payload.get("last-assistant-message"),
+        " ".join(payload.get("input_messages", [])) if payload.get("input_messages") else None,
+    )
+
+    if message is None:
+        if normalized_type == "stop":
+            message = "All done! 🎉✨"
+        elif normalized_type == "notification":
+            message = "Notification"
+        else:
+            message = "Event received."
+
+    if title is None:
+        if normalized_type == "stop":
+            title = "Notification"
+        elif normalized_type == "notification":
+            title = "Notification"
+        else:
+            title = f"{notification_type.title()}"
+
+    return title, message
+
+
+def escape_applescript(text: str) -> str:
+    """Escape characters for use within an AppleScript string literal."""
+    return (
+        text.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+    )
+
+
+def notify_macos(title: str, message: str) -> bool:
+    # `System Events` consistently owns the banner even when scripts run from
+    # detached shells, which avoids the sporadic "identifier" AppleScript error.
+    script = (
+        'tell application "System Events" '
+        f'to display notification "{escape_applescript(message)}" '
+        f'with title "{escape_applescript(title)}"'
+    )
+    try:
+        subprocess.run(["osascript", "-e", script], check=True)
+        return True
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+def notify_linux(title: str, message: str) -> bool:
+    cmd = ["notify-send", title, message]
+    try:
+        subprocess.run(cmd, check=True)
+        return True
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
+def send_notification(title: str, message: str) -> bool:
+    system = platform.system()
+    if system == "Darwin":
+        return notify_macos(title, message)
+    if system == "Linux":
+        return notify_linux(title, message)
+    return False
+
+
+def main(argv: list[str]) -> int:
+    args, extras = parse_args(argv)
+
+    json_arg: str | None = None
+    positional: list[str] = []
+    for token in extras:
+        # Codex passes the notification payload as one big JSON argument, but we
+        # still want to let humans provide a simple positional event label, so we
+        # peel off the first JSON-looking token and treat the rest as metadata.
+        if json_arg is None and token.strip().startswith(("{", "[")):
+            json_arg = token
+        else:
+            positional.append(token)
+
+    payload = read_payload(json_arg)
+
+    notification_type = (
+        args.event_type
+        or payload.get("type")
+        or (positional[0] if positional else None)
+        or "notification"
+    )
+    notification_type = str(notification_type)
+
+    title, message = build_message(
+        notification_type,
+        payload,
+        cli_title=args.title,
+        cli_message=args.message,
+    )
+
+    if send_notification(title, message):
+        return 0
+
+    # Fallback: surface message in stderr so the user can still see it.
+    sys.stderr.write(f"[desktop-notify] {title}: {message}\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
