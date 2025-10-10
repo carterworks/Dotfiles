@@ -22,4 +22,6 @@
     ~/.local/bin/:
         glob: true
         path: bin/*
-    ~/.config/codex/config.toml: codex-config.toml
+    ~/.config/codex/:
+        glob: true
+        path: codex/*
