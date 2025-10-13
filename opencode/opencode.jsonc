@@ -15,7 +15,9 @@
         "reasoningEffort": "medium",
         "reasoningSummary": "auto",
         "textVerbosity": "medium",
-        "include": ["reasoning.encrypted_content"],
+        "include": [
+          "reasoning.encrypted_content"
+        ],
       },
       "models": {
         "gpt-5-codex-low-oauth": {
@@ -103,5 +105,7 @@
       "enabled": true,
     },
   },
-  "plugin": ["opencode-openai-codex-auth@2.1.1"],
+  "plugin": [
+    "opencode-openai-codex-auth@2.1.2"
+  ],
 }
