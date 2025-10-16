@@ -96,6 +96,13 @@
     },
   },
   "mcp": {
+    "chrome-dev-tools": {
+      "type": "local",
+      "command": [
+        "bunx",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
