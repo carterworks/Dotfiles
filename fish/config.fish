@@ -40,7 +40,7 @@ if status is-interactive
         end
     end
     if command -qs yazi
-        function y
+        function yy
             set tmp (mktemp -t "yazi-cwd.XXXXXX")
             yazi $argv --cwd-file="$tmp"
             if read -z cwd <"$tmp"; and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
