@@ -1,5 +1,6 @@
 [tools]
 "aqua:openai/codex" = "latest"
+bun = "latest"
 claude = "latest"
 gum = "latest"
 node = "latest"
