@@ -55,7 +55,10 @@
       "program": "fish"
     }
   },
-  "theme": "Base16 selenized-light",
+  "theme": {
+    "dark": "Base16 Everforest Dark Hard",
+    "light": "Base16 selenized-light"
+  },
   "title_bar": {
     "show_branch_icon": true,
     "show_menus": true
