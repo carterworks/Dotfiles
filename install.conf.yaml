@@ -25,3 +25,4 @@
     ~/.config/codex/:
         glob: true
         path: codex/*
+    ~/.config/zed/settings.json: zed-settings.json
