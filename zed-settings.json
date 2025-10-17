@@ -1,0 +1,64 @@
+// Zed settings
+
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run the `open default settings` command
+// from the command palette or from `Zed` application menu.
+{
+  "agent": {
+    "play_sound_when_agent_done": true,
+    "model_parameters": []
+  },
+  "autosave": "on_focus_change",
+  "auto_signature_help": true,
+  "buffer_font_features": {
+    "calt": true
+  },
+  "buffer_font_family": "Iosevka",
+  "buffer_font_fallbacks": ["Iosevka Nerd Font", ".ZedMono"],
+  "buffer_font_size": 16,
+
+  "show_edit_predictions": true,
+  "minimap": {
+    "show": "auto"
+  },
+  "tabs": {
+    "file_icons": true,
+    "git_status": true
+  },
+  "format_on_save": "on",
+  "indent_guides": {
+    "active_line_width": 6,
+    "coloring": "indent_aware",
+    "line_width": 3
+  },
+  "git": {
+    "inline_blame": {
+      "delay_ms": 300,
+      "min_column": 100
+    }
+  },
+  "icon_theme": {
+    "dark": "Colored Zed Icons Theme Dark",
+    "light": "Colored Zed Icons Theme Light"
+  },
+  "linked_edits": true,
+  "show_whitespaces": "all",
+  "tab_size": 2,
+  "terminal": {
+    "font_family": "Iosevka Term",
+    "font_size": 16,
+    "shell": {
+      "program": "fish"
+    }
+  },
+  "theme": "Base16 selenized-light",
+  "title_bar": {
+    "show_branch_icon": true,
+    "show_menus": true
+  },
+  "ui_font_family": ".SystemUIFont"
+}
