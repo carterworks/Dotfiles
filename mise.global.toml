@@ -6,6 +6,7 @@ claude = "latest"
 gum = "latest"
 node = "latest"
 opencode = "latest"
+uv = "latest"
 [settings]
 python.uv_venv_auto = true
 idiomatic_version_file_enable_tools = ["node"]
