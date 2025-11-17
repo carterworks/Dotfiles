@@ -8,6 +8,13 @@
 // custom settings, run the `open default settings` command
 // from the command palette or from `Zed` application menu.
 {
+  "agent_servers": {
+    "Opencode": {
+      "command": "mise",
+      "args": ["x", "--", "opencode", "acp"],
+      "env": {}
+    }
+  },
   "agent": {
     "play_sound_when_agent_done": true,
     "model_parameters": []
