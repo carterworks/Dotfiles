@@ -5,6 +5,7 @@ bun = "latest"
 claude = "latest"
 gum = "latest"
 node = "latest"
+"npm:osgrep" = "latest"
 opencode = "latest"
 uv = "latest"
 [settings]
