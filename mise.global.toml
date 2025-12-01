@@ -1,8 +1,8 @@
 [tools]
-"aqua:openai/codex" = "latest"
 bitwarden = "latest"
 bun = "latest"
 claude = "latest"
+"github:openai/codex" = "latest"
 gum = "latest"
 node = "latest"
 "npm:osgrep" = "latest"
