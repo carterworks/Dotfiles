@@ -3,3 +3,6 @@ config-file = ?"./theme"
 font-family = "Iosevka Term"
 font-size = 14
 command = sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec "$SHELL"'
+
+# Slowdown mouse scrolling
+mouse-scroll-multiplier = 0.95
