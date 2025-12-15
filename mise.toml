@@ -3,7 +3,7 @@ python = "latest"
 
 [tasks."install:files"]
 description = "Symlink all config files into place"
-file = "./install"
+run = "./install"
 
 [tasks."install:macos"]
 sources = ["flake.nix", "flake.lock"]
