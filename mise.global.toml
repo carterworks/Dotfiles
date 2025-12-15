@@ -1,13 +1,21 @@
 [tools]
+bat = "latest"
 bitwarden = "latest"
 bun = "latest"
 claude = "latest"
-"github:openai/codex" = "latest"
-"github:sst/opencode" = "latest"
 gum = "latest"
 node = "latest"
 "npm:osgrep" = "latest"
+starship = "latest"
 uv = "latest"
+ripgrep = "latest"
+eza = "latest"
+zoxide = "latest"
+fzf = "latest"
+delta = "latest"
+codex = "latest"
+opencode = "latest"
+helix = "latest"
 [settings]
 python.uv_venv_auto = true
 idiomatic_version_file_enable_tools = ["node"]

@@ -5,6 +5,9 @@ end
 if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
 end
+if command -qs mise
+    mise activate fish | source
+end
 if status is-interactive
     if command -qs starship
         starship init fish | source
@@ -65,9 +68,6 @@ if test -f ~/.config/fish/secrets.local.fish
     source ~/.config/fish/secrets.local.fish
 end
 
-if command -qs mise
-    mise activate fish | source
-end
 if command -qs codex
     set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
 end
