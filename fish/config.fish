@@ -9,11 +9,23 @@ if command -qs mise
     mise activate fish | source
 end
 if status is-interactive
+    # Cache shell tool inits (regenerate: rm ~/.cache/fish/*.fish)
+    set -l cache_dir ~/.cache/fish
+    mkdir -p $cache_dir
+
     if command -qs starship
-        starship init fish | source
+        set -l cache $cache_dir/starship_init.fish
+        if not test -f $cache
+            starship init fish --print-full-init > $cache
+        end
+        source $cache
     end
     if command -qs zoxide
-        zoxide init fish --cmd cd | source
+        set -l cache $cache_dir/zoxide_init.fish
+        if not test -f $cache
+            zoxide init fish --cmd cd > $cache
+        end
+        source $cache
     end
     if command -qs hx
         set -gx EDITOR hx
@@ -37,7 +49,11 @@ if status is-interactive
         alias ls="eza --classify=auto --group-directories-first"
     end
     if command -qs atuin
-        atuin init fish | source
+        set -l cache $cache_dir/atuin_init.fish
+        if not test -f $cache
+            atuin init fish > $cache
+        end
+        source $cache
         if command -qs fzf_configure_bindings
             fzf_configure_bindings --history=
         end
@@ -53,9 +69,14 @@ if status is-interactive
         end
     end
 end
-# homebrew
+# homebrew - cache shellenv output (regenerate: rm ~/.cache/fish/brew_shellenv.fish)
 if test -e /opt/homebrew/bin/brew
-    eval "$(/opt/homebrew/bin/brew shellenv)"
+    set -l brew_cache ~/.cache/fish/brew_shellenv.fish
+    if not test -s $brew_cache
+        mkdir -p ~/.cache/fish
+        /opt/homebrew/bin/brew shellenv fish > $brew_cache
+    end
+    source $brew_cache
 end
 
 # Added by LM Studio CLI (lms)
