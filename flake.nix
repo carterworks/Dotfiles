@@ -12,39 +12,18 @@
       # $ nix-env -qaP | grep wget
       nixpkgs.config.allowUnfree = true;
       environment.systemPackages = with pkgs; [
-        atuin
-        bat
         btop
         curl
-        delta
-        dust
-        eza
-        fd
-        ffmpeg
-        fzf
         git
-        gh
         gnupg
-        helix
-        hyperfine
-        jq
-        jujutsu
-        mkcert
         ouch
-        neovim
-        rclone
         rsync
-        ripgrep
-        starship
         tinty
-        yazi
         wget
-        zoxide
         # lsps
         markdown-oxide
         nil
         nodePackages_latest.vscode-json-languageserver
-        taplo
         yaml-language-server
       ];
 
