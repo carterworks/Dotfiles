@@ -1,0 +1,18 @@
+[[language]]
+name = "toon"
+scope = "text.toon"
+file-types = ["toon"]
+grammar = "yaml"
+soft-wrap.enable = true
+
+[[language]]
+name = "text"
+scope = "text.plain"
+file-types = ["txt"]
+soft-wrap.enable = true
+
+[[language]]
+name = "markdown"
+scope = "source.md"
+file-types = ["md", "markdown"]
+soft-wrap.enable = true
