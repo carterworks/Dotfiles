@@ -1,8 +1,10 @@
 config-file = ?"~/.local/share/omarchy/config/ghostty/config"
 config-file = ?"./theme"
 font-family = "Iosevka Term"
-font-size = 14
+font-size = 11
 command = sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec "$SHELL"'
+shell-integration-features = ssh-terminfo
 
 # Slowdown mouse scrolling
 mouse-scroll-multiplier = 0.95
+keybind = shift+enter=text:\x1b\r
