@@ -15,15 +15,17 @@ if status is-interactive
 
     if command -qs starship
         set -l cache $cache_dir/starship_init.fish
-        if not test -f $cache
-            starship init fish --print-full-init > $cache
+        set -l starship_bin (command -s starship)
+        # Regenerate cache if missing or starship binary moved
+        if not test -f $cache; or not grep -q $starship_bin $cache
+            starship init fish --print-full-init >$cache
         end
         source $cache
     end
     if command -qs zoxide
         set -l cache $cache_dir/zoxide_init.fish
         if not test -f $cache
-            zoxide init fish --cmd cd > $cache
+            zoxide init fish --cmd cd >$cache
         end
         source $cache
     end
@@ -51,7 +53,7 @@ if status is-interactive
     if command -qs atuin
         set -l cache $cache_dir/atuin_init.fish
         if not test -f $cache
-            atuin init fish > $cache
+            atuin init fish >$cache
         end
         source $cache
         if command -qs fzf_configure_bindings
@@ -74,7 +76,7 @@ if test -e /opt/homebrew/bin/brew
     set -l brew_cache ~/.cache/fish/brew_shellenv.fish
     if not test -s $brew_cache
         mkdir -p ~/.cache/fish
-        /opt/homebrew/bin/brew shellenv fish > $brew_cache
+        /opt/homebrew/bin/brew shellenv fish >$brew_cache
     end
     source $brew_cache
 end
