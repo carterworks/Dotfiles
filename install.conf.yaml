@@ -15,9 +15,9 @@
         path: fish/completions/*
     ~/.config/opencode: opencode/
     ~/.config/starship.toml: starship.toml
-    ~/.config/helix/config.toml: helix-config.toml
-    ~/.config/helix/themes/theme.toml: helix-theme.toml
-    ~/.config/helix/languages.toml: helix-languages.toml
+    ~/.config/helix:
+        glob: true
+        path: helix/**/*
     ~/.config/ghostty/config: ghosttyconfig
     ~/.config/mise/config.toml: mise.global.toml
     ~/.local/bin/:
