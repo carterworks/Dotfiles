@@ -1,1 +1,1 @@
-../codex/AGENTS.md
+- Be concise; sacrifice grammar for the sake of concision.
