@@ -1,1 +1,0 @@
-- Be concise; sacrifice grammar for the sake of concision.

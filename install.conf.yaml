@@ -23,7 +23,4 @@
     ~/.local/bin/:
         glob: true
         path: bin/*
-    ~/.config/codex/:
-        glob: true
-        path: codex/*
     ~/.config/zed/settings.json: zed-settings.json
