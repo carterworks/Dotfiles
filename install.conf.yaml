@@ -13,7 +13,9 @@
     ~/.config/fish/completions:
         glob: true
         path: fish/completions/*
-    ~/.config/opencode: opencode/
+    ~/.config/opencode:
+        glob: true
+        path: opencode/**/*
     ~/.config/starship.toml: starship.toml
     ~/.config/helix:
         glob: true
