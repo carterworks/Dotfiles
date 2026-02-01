@@ -7,6 +7,10 @@
     ~/.config/git/:
         glob: true
         path: git/*
+    ~/.config/hypr:
+        glob: true
+        path: hypr/*
+    ~/.config/ashell/config.toml: ashell-config.toml
     ~/.config/nvim: nvim/
     ~/.config/fish/fish_plugins: fish/fish_plugins
     ~/.config/fish/config.fish: fish/config.fish
