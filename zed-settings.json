@@ -10,6 +10,7 @@
 {
   "agent_servers": {
     "Opencode": {
+      "type": "custom",
       "command": "mise",
       "args": ["x", "--", "opencode", "acp"],
       "env": {}
@@ -63,7 +64,8 @@
     }
   },
   "theme": {
-    "dark": "Base16 Everforest Dark Hard",
+    "mode": "light",
+    "dark": "Everforest Dark Hard (regular)",
     "light": "Base16 selenized-light"
   },
   "title_bar": {
