@@ -1,27 +1,12 @@
 [appearance]
 font_name = "Inter"
-
+background_color = "#fbf3db"
+primary_color = "#0072d4"
+secondary_color = "#3a4d53"
 success_color = "#489100"
+danger_color = "#d2212d"
 text_color = "#53676d"
-
 workspace_colors = [ "#0072d4", "#ca4898", "#c25d1e" ]
-
-[appearance.primary_color]
-base = "#0072d4"
-text = "#fbf3db"
-
-[appearance.danger_color]
-base = "#d2212d"
-weak = "#ad8900"
-
-[appearance.background_color]
-base = "#fbf3db"
-weak = "#ece3cc"
-strong = "#d5cdb6"
-
-[appearance.secondary_color]
-base = "#3a4d53"
-strong = "#53676d"
 
 [modules]
 left = [ [ "Workspaces" , "WindowTitle" ] ]
