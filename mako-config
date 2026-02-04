@@ -1,0 +1,50 @@
+# Mako notification daemon configuration
+# Themed with selenized-light colors and Inter font
+
+# Font
+font=Inter 10
+
+# Colors (selenized-light)
+background-color=#fbf3db
+text-color=#53676d
+border-color=#d5cdb6
+
+# Border and appearance
+border-size=2
+border-radius=10
+padding=12
+margin=10
+outer-margin=10
+
+# Size
+width=300
+height=100
+
+# Position
+anchor=top-right
+
+# Icons
+icons=1
+icon-path=/usr/share/icons/hicolor
+max-icon-size=32
+
+# Behavior
+default-timeout=5000
+ignore-timeout=0
+
+# History
+history=1
+
+# Layer
+layer=overlay
+
+# Urgency-based colors
+[urgency=low]
+border-color=#909995
+
+[urgency=normal]
+border-color=#0072d4
+
+[urgency=critical]
+border-color=#d2212d
+background-color=#ece3cc
