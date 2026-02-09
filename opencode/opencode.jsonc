@@ -22,6 +22,11 @@
       },
       "enabled": true
     },
+    "exa-search": {
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp?exaApiKey={env:EXA_API_KEY}",
+      "enabled": true
+    },
     "playwright": {
       "type": "local",
       "command": [
