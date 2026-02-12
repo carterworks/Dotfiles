@@ -47,24 +47,58 @@
       ...
     }:
     let
+      darwinPackages =
+        pkgs: with pkgs; [
+          atuin
+          bat
+          btop
+          pkgs."bitwarden-cli"
+          bun
+          curl
+          delta
+          dust
+          eza
+          fd
+          fzf
+          gh
+          git
+          gnupg
+          gum
+          helix
+          hyperfine
+          jq
+          jujutsu
+          markdown-oxide
+          neovim
+          nil
+          nodePackages_latest.vscode-json-languageserver
+          nodejs
+          opencode
+          ouch
+          python3
+          rclone
+          ripgrep
+          rsync
+          starship
+          taplo
+          tinty
+          uv
+          wget
+          yaml-language-server
+          yazi
+          zoxide
+        ];
+
       darwinConfiguration =
         { pkgs, ... }:
         {
           nixpkgs.config.allowUnfree = true;
-          environment.systemPackages = with pkgs; [
-            btop
-            curl
-            git
-            gnupg
-            ouch
-            rsync
-            tinty
-            wget
-            markdown-oxide
-            nil
-            nodePackages_latest.vscode-json-languageserver
-            yaml-language-server
-          ];
+          environment.systemPackages = darwinPackages pkgs;
+
+          environment.variables = {
+            UV_PYTHON = "${pkgs.python3}/bin/python3";
+            UV_PYTHON_DOWNLOADS = "never";
+          };
 
           nix.settings.experimental-features = "nix-command flakes";
           system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -124,6 +158,18 @@
             pkgs.iosevka-bin
           ];
         };
+
+      darwinPkgs = nixpkgs.legacyPackages.aarch64-darwin;
+
+      mkDarwinApp =
+        name: text:
+        let
+          app = darwinPkgs.writeShellScriptBin name text;
+        in
+        {
+          type = "app";
+          program = "${app}/bin/${name}";
+        };
     in
     {
       nixosConfigurations.scylla = nixpkgs.lib.nixosSystem {
@@ -150,6 +196,32 @@
 
       darwinConfigurations."Carters-MacBook-Pro" = nix-darwin.lib.darwinSystem {
         modules = [ darwinConfiguration ];
+      };
+
+      apps.aarch64-darwin = {
+        install-files = mkDarwinApp "install-files" ''
+          set -euo pipefail
+          if [ ! -x ./install ]; then
+            echo "Run from the dotfiles repo root (missing ./install)." >&2
+            exit 1
+          fi
+          ./install
+        '';
+
+        install-macos = mkDarwinApp "install-macos" ''
+          set -euo pipefail
+          sudo darwin-rebuild switch --flake ".#Carters-MacBook-Pro"
+        '';
+
+        update-macos = mkDarwinApp "update-macos" ''
+          set -euo pipefail
+          nix flake update --flake .
+        '';
+
+        update-dotbot = mkDarwinApp "update-dotbot" ''
+          set -euo pipefail
+          git submodule update --remote dotbot
+        '';
       };
 
       formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt-tree;

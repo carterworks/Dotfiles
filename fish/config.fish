@@ -5,9 +5,6 @@ end
 if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
 end
-if command -qs mise
-    mise activate fish | source
-end
 if status is-interactive
     # Cache shell tool inits (regenerate: rm ~/.cache/fish/*.fish)
     set -l cache_dir ~/.cache/fish
@@ -94,3 +91,6 @@ end
 if command -qs codex
     set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
 end
+
+# peon-ping quick controls
+function peon; bash /Users/cmcbride/.claude/hooks/peon-ping/peon.sh $argv; end
