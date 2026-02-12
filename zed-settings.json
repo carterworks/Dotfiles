@@ -11,8 +11,8 @@
   "agent_servers": {
     "Opencode": {
       "type": "custom",
-      "command": "mise",
-      "args": ["x", "--", "opencode", "acp"],
+      "command": "/run/current-system/sw/bin/opencode",
+      "args": ["acp"],
       "env": {}
     }
   },

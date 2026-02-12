@@ -25,7 +25,6 @@
         glob: true
         path: helix/**/*
     ~/.config/ghostty/config: ghosttyconfig
-    ~/.config/mise/config.toml: mise.global.toml
     ~/.local/bin/:
         glob: true
         path: bin/*
