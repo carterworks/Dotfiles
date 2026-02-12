@@ -1,15 +1,44 @@
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nix-darwin.url = "github:LnL7/nix-darwin/master";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+  nixConfig = {
+    substituters = [
+      "https://cache.nixos.org"
+      "https://hyprland.cachix.org"
+      "https://walker.cachix.org"
+      "https://walker-git.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
+      "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
+    ];
   };
 
-  outputs = inputs@{ self, nix-darwin, nixpkgs }:
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    disko = {
+      url = "github:nix-community/disko/latest";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    elephant.url = "github:abenz1267/elephant";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hyprland.url = "github:hyprwm/Hyprland";
+    walker = {
+      url = "github:abenz1267/walker";
+      inputs.elephant.follows = "elephant";
+    };
+  };
+
+  outputs = inputs@{ self, nix-darwin, nixpkgs, home-manager, disko, walker, ... }:
   let
-    configuration = { pkgs, ... }: {
-      # List packages installed in system profile. To search by name, run:
-      # $ nix-env -qaP | grep wget
+    darwinConfiguration = { pkgs, ... }: {
       nixpkgs.config.allowUnfree = true;
       environment.systemPackages = with pkgs; [
         btop
@@ -20,40 +49,25 @@
         rsync
         tinty
         wget
-        # lsps
         markdown-oxide
         nil
         nodePackages_latest.vscode-json-languageserver
         yaml-language-server
       ];
 
-      # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
-
-      # Set Git commit hash for darwin-version.
       system.configurationRevision = self.rev or self.dirtyRev or null;
-
-      # Used for backwards compatibility, please read the changelog before changing.
-      # $ darwin-rebuild changelog
       system.stateVersion = 6;
       ids.gids.nixbld = 30000;
-
-      # The platform the configuration will be used on.
       nixpkgs.hostPlatform = "aarch64-darwin";
 
-      # Enable alternative shell support in nix-darwin.
-      # Use NixOS zsh
       programs.zsh.enable = true;
-      # Use Fish as the default
       programs.fish.enable = true;
 
-      # Automatically clean the cache
       nix.gc.automatic = true;
       nix.gc.options = "--max-freed $((25 * 1024**3 - 1024 * $(df -P -k /nix/store | tail -n 1 | awk '{ print $4 }')))";
 
-      # MacOS settings
       system.primaryUser = "cmcbride";
-      # sudo with touch id
       security.pam.services.sudo_local.touchIdAuth = true;
       system.defaults = {
         dock = {
@@ -94,18 +108,40 @@
         remapCapsLockToEscape = true;
       };
 
-      # fonts
       fonts.packages = [
         pkgs.nerd-fonts.noto
         pkgs.iosevka-bin
       ];
-};
+    };
   in
   {
-    # Build darwin flake using:
-    # $ darwin-rebuild build --flake .#simple
-    darwinConfigurations."Carters-MacBook-Pro" = nix-darwin.lib.darwinSystem {
-      modules = [ configuration ];
+    nixosConfigurations.scylla = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+
+      modules = [
+        ./nixos/configuration.nix
+        ./nixos/hardware-configuration.nix
+        disko.nixosModules.disko
+        ./nixos/disk-configuration.nix
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.carter = ./nixos/home-carter-scylla.nix;
+        }
+        walker.nixosModules.default
+        {
+          programs.walker.enable = true;
+        }
+      ];
     };
+
+    darwinConfigurations."Carters-MacBook-Pro" = nix-darwin.lib.darwinSystem {
+      modules = [ darwinConfiguration ];
+    };
+
+    formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt-tree;
+    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-tree;
   };
 }
