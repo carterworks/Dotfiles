@@ -73,6 +73,7 @@
           nil
           nodePackages_latest.vscode-json-languageserver
           nodejs
+          pnpm
           opencode
           ouch
           python3
@@ -81,9 +82,12 @@
           rsync
           starship
           taplo
+          terminal-notifier
+          typescript-language-server
           tinty
           uv
           wget
+          vscode-css-languageserver
           yaml-language-server
           yazi
           zoxide
@@ -94,6 +98,11 @@
         {
           nixpkgs.config.allowUnfree = true;
           environment.systemPackages = darwinPackages pkgs;
+          homebrew.enable = true;
+          homebrew.taps = [ "PeonPing/tap" ];
+          homebrew.brews = [
+            "peon-ping"
+          ];
 
           environment.variables = {
             UV_PYTHON = "${pkgs.python3}/bin/python3";
