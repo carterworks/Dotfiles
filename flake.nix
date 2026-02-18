@@ -190,12 +190,12 @@
           ./nixos/hardware-configuration.nix
           disko.nixosModules.disko
           ./nixos/disk-configuration.nix
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.carter = ./nixos/home-carter-scylla.nix;
-          }
+#          home-manager.nixosModules.home-manager
+#          {
+#            home-manager.useGlobalPkgs = true;
+#            home-manager.useUserPackages = true;
+#            home-manager.users.carter = ./nixos/home-carter-scylla.nix;
+#          }
           walker.nixosModules.default
           {
             programs.walker.enable = true;
