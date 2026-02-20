@@ -1172,3 +1172,5 @@ main-update = pull --rebase --autostash origin main
 current-branch = rev-parse --abbrev-ref HEAD
 chekcout = checkout
 sw = switch
+# remove merged branches (local and remote) - https://news.ycombinator.com/item?id=47089509
+    cleanup = "!git branch -vv | grep ': gone]' | awk '{print $1}' | fzf --multi --sync --bind start:select-all | xargs git branch -D; git remote prune origin;"
