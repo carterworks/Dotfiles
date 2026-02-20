@@ -149,6 +149,17 @@
     UV_PYTHON = "${pkgs.python3}/bin/python3";
     UV_PYTHON_DOWNLOADS = "never";
   };
+  systemd.user.services.opencode = {
+    description = "Headless opencode server, for all clients";
+    wantedBy = [ "default.target" ];
+    after = [ "network-online.target" ];
+    serviceConfig = {
+      Type = "simple";
+      ExecStart = "${pkgs.opencode}/bin/opencode serve";
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
+  };
   programs.steam = {
     enable = true;
   };
