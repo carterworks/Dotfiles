@@ -100,6 +100,7 @@
       iosevka-bin
       inter
       papirus-icon-theme
+      playerctl
       nerd-fonts.iosevka
       opencode
       jq
