@@ -74,7 +74,6 @@
           nodePackages_latest.vscode-json-languageserver
           nodejs
           pnpm
-          opencode
           ouch
           python3
           rclone
