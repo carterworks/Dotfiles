@@ -112,6 +112,7 @@
       uv
       wallust
       yazi
+      xan
       zed-editor
       zoxide
       # hyprland/desktop env stuff
