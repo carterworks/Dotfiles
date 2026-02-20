@@ -10,6 +10,66 @@
   ...
 }:
 
+let
+  carterPkgs = with pkgs; [
+    atuin
+    bat
+    btop
+    delta
+    dust
+    eza
+    fastfetch
+    fd
+    fish
+    fzf
+    gh
+    git
+    gum
+    hyperfine
+    iosevka-bin
+    inter
+    papirus-icon-theme
+    playerctl
+    nerd-fonts.iosevka
+    opencode
+    jq
+    jujutsu
+    sshpass
+    rclone
+    ripgrep
+    rsync
+    starship
+    uv
+    wallust
+    yazi
+    xan
+    zed-editor
+    zoxide
+    # hyprland/desktop env stuff
+    ashell
+    ghostty
+    bibata-cursors
+    mako
+    nautilus
+    hyprpaper
+    hyprpolkitagent
+    hyprpicker
+    hyprshutdown
+    wl-clipboard
+    wlogout
+    grim
+    slurp
+    # GUI apps
+    discord
+    gearlever
+    google-chrome
+    obsidian
+    spotify
+    telegram-desktop
+    heroic
+    trayscale
+  ];
+in
 {
   # Disable the nixpkgs elephant module since walker provides its own
   disabledModules = [ "services/misc/elephant.nix" ];
@@ -76,70 +136,14 @@
   # };
   nixpkgs.config.allowUnfree = true;
   users.groups.games = { };
+
   users.users.carter = {
     isNormalUser = true;
     extraGroups = [
       "wheel"
       "games"
     ];
-    packages = with pkgs; [
-      atuin
-      bat
-      btop
-      delta
-      dust
-      eza
-      fastfetch
-      fd
-      fish
-      fzf
-      gh
-      git
-      gum
-      hyperfine
-      iosevka-bin
-      inter
-      papirus-icon-theme
-      playerctl
-      nerd-fonts.iosevka
-      opencode
-      jq
-      jujutsu
-      sshpass
-      rclone
-      ripgrep
-      rsync
-      starship
-      uv
-      wallust
-      yazi
-      xan
-      zed-editor
-      zoxide
-      # hyprland/desktop env stuff
-      ashell
-      ghostty
-      bibata-cursors
-      mako
-      nautilus
-      hyprpaper
-      hyprpolkitagent
-      hyprpicker
-      hyprshutdown
-      wl-clipboard
-      wlogout
-      grim
-      slurp
-      # GUI apps
-      discord
-      gearlever
-      google-chrome
-      obsidian
-      spotify
-      telegram-desktop
-      heroic
-      trayscale
-    ];
+    packages = carterPkgs;
   };
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
@@ -153,8 +157,10 @@
     description = "Headless opencode server, for all clients";
     wantedBy = [ "default.target" ];
     after = [ "network-online.target" ];
+    path = carterPkgs;
     serviceConfig = {
       Type = "simple";
+      WorkingDirectory = "%h";
       ExecStart = "${pkgs.opencode}/bin/opencode serve";
       Restart = "on-failure";
       RestartSec = "5s";
