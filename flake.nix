@@ -25,10 +25,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     elephant.url = "github:abenz1267/elephant";
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     hyprland.url = "github:hyprwm/Hyprland";
     walker = {
       url = "github:abenz1267/walker";
@@ -41,7 +37,6 @@
       self,
       nix-darwin,
       nixpkgs,
-      home-manager,
       disko,
       walker,
       ...
@@ -198,32 +193,6 @@
 
       darwinConfigurations."Carters-MacBook-Pro" = nix-darwin.lib.darwinSystem {
         modules = [ darwinConfiguration ];
-      };
-
-      apps.aarch64-darwin = {
-        install-files = mkDarwinApp "install-files" ''
-          set -euo pipefail
-          if [ ! -x ./install ]; then
-            echo "Run from the dotfiles repo root (missing ./install)." >&2
-            exit 1
-          fi
-          ./install
-        '';
-
-        install-macos = mkDarwinApp "install-macos" ''
-          set -euo pipefail
-          sudo darwin-rebuild switch --flake ".#Carters-MacBook-Pro"
-        '';
-
-        update-macos = mkDarwinApp "update-macos" ''
-          set -euo pipefail
-          nix flake update --flake .
-        '';
-
-        update-dotbot = mkDarwinApp "update-dotbot" ''
-          set -euo pipefail
-          git submodule update --remote dotbot
-        '';
       };
 
       formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt-tree;
