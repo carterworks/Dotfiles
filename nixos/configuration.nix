@@ -61,8 +61,8 @@ let
     slurp
     # GUI apps
     discord
-    gearlever
     google-chrome
+    helium-browser
     obsidian
     spotify
     telegram-desktop
