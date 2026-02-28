@@ -12,7 +12,7 @@ let
   architectures = {
     "x86_64-linux" = {
       arch = "x86_64";
-      hash = "sha256-1s4yhbzcmh9wwg5mnk19m72r48px7259vy0z4yfqpb2fxid1v61p";
+      hash = "sha256-N5gdWuxOrIudJx/4nYo4/SKSxakpTFvL4zzByv6Cnug=";
     };
   };
   src =
