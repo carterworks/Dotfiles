@@ -9,8 +9,6 @@
     trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
-      "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
     ];
   };
 
@@ -24,12 +22,8 @@
       url = "github:nix-community/disko/latest";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    elephant.url = "github:abenz1267/elephant";
     hyprland.url = "github:hyprwm/Hyprland";
-    walker = {
-      url = "github:abenz1267/walker";
-      inputs.elephant.follows = "elephant";
-    };
+    vicinae.url = "github:vicinaehq/vicinae";
   };
 
   outputs =
@@ -38,7 +32,7 @@
       nix-darwin,
       nixpkgs,
       disko,
-      walker,
+      vicinae,
       ...
     }:
     let
@@ -184,10 +178,6 @@
           ./nixos/hardware-configuration.nix
           disko.nixosModules.disko
           ./nixos/disk-configuration.nix
-          walker.nixosModules.default
-          {
-            programs.walker.enable = true;
-          }
         ];
       };
 

@@ -49,6 +49,7 @@ let
     ashell
     ghostty
     bibata-cursors
+    inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default
     mako
     nautilus
     hyprpaper
@@ -62,7 +63,6 @@ let
     # GUI apps
     discord
     google-chrome
-    helium-browser
     obsidian
     spotify
     telegram-desktop
@@ -71,9 +71,6 @@ let
   ];
 in
 {
-  # Disable the nixpkgs elephant module since walker provides its own
-  disabledModules = [ "services/misc/elephant.nix" ];
-
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -268,14 +265,10 @@ in
     substituters = [
       "https://cache.nixos.org"
       "https://hyprland.cachix.org"
-      "https://walker.cachix.org"
-      "https://walker-git.cachix.org"
     ];
     trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      "walker.cachix.org-1:fG8q+uAaMqhsMxWjwvk0IMb4mFPFLqHjuvfwQxE4oJM="
-      "walker-git.cachix.org-1:vmC0ocfPWh0S/vRAQGtChuiZBTAe4wiKDeyyXM0/7pM="
     ];
   };
 
