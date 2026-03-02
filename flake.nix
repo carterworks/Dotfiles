@@ -188,13 +188,6 @@
           {
             programs.walker.enable = true;
           }
-          {
-            nixpkgs.overlays = [
-              (final: prev: {
-                helium-browser = final.callPackage ./nixos/pkgs/helium-browser.nix { };
-              })
-            ];
-          }
         ];
       };
 
