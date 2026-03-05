@@ -20,6 +20,7 @@ description: Use when writing Javascript.
 
 - NEVER format code yourself. Run automated tools (`npm format`) instead. Use [`oxfmt`](https://oxc.rs/docs/guide/usage/formatter.md).
 - NEVER worry about small style inconsistencies. Run automated tools (`npm lint`) instead. Use [`oxlint`](https://oxc.rs/docs/guide/usage/linter.md)
+- MUST remove subjectivity in stylistic concerns by using a linter.
 - MUST use [`zod` v4](https://zod.dev/llms.txt) to validate data at boundaries (network, environment).
 - MUST use [`vitest`](https://vitest.dev/llms.txt) to write tests (unit, integration, and end-to-end.)
 - MUST use [`vite`](https://vite.dev/llms.txt) as a build tool when necessary

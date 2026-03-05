@@ -57,6 +57,7 @@ let
   ];
 
   darwinPackages = with pkgs; [
+    codex
     gnupg
     terminal-notifier
     tinty
