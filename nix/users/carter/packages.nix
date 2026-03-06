@@ -16,6 +16,8 @@ let
     delta
     dust
     eza
+    fastfetch
+    ffmpeg-full
     fd
     fish
     fzf
@@ -60,7 +62,6 @@ let
       ashell
       bibata-cursors
       discord
-      fastfetch
       ghostty
       google-chrome
       grim
