@@ -37,7 +37,7 @@ let
     nodejs
     ouch
     neovim
-    nil
+    nixd
     pnpm
     python3
     rclone
