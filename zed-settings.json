@@ -74,4 +74,9 @@
     "show_menus": true,
   },
   "ui_font_family": ".SystemUIFont",
+  "languages": {
+    "Nix": {
+      "language_servers": [ "nixd", "!nil" ]
+    }
+  }
 }
