@@ -7,19 +7,23 @@
 
 let
   commonPackages = with pkgs; [
+    astro-language-server
     atuin
+    bash-language-server
     bitwarden-cli
     bat
     btop
     bun
     curl
     delta
+    docker-language-server
     dust
     eza
     fastfetch
-    ffmpeg-full
     fd
+    ffmpeg-full
     fish
+    fish-lsp
     fzf
     gh
     git
@@ -36,11 +40,13 @@ let
     nil
     pnpm
     python3
-    taplo
     rclone
     ripgrep
     rsync
+    ruff
     starship
+    superhtml
+    taplo
     typescript-language-server
     vscode-css-languageserver
     uv
@@ -70,6 +76,7 @@ let
       hyprpicker
       hyprpolkitagent
       hyprshutdown
+      hyprls
       mako
       nautilus
       obsidian
@@ -79,6 +86,7 @@ let
       spotify
       sshpass
       slurp
+      systemd-lsp
       telegram-desktop
       trayscale
       wallust
