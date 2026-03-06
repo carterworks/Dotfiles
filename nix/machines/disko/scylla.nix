@@ -32,7 +32,6 @@
       zroot = {
         type = "zpool";
         options = {
-          # Workaround: cannot import 'zroot': I/O error in disko tests
           cachefile = "none";
           ashift = "12";
         };
