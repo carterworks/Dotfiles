@@ -57,7 +57,7 @@ let
   ];
 
   darwinPackages = with pkgs; [
-    claude
+    claude-code
     codex
     gnupg
     terminal-notifier
