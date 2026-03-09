@@ -1,32 +1,15 @@
 # Dotfiles
 
-Personal machine config. Nix handles system state. Dotbot handles symlinks.
+Personal NixOS and nix-darwin machine config.
 
 ## Install
 
 Clone with submodules, then run the installer.
 
 ```bash
-git clone --recurse-submodules <repo> ~/.dotfiles
-cd ~/.dotfiles
+git clone --recurse-submodules <repo> ~/.config/dotfiles
+cd ~/.config/dotfiles
 ./install
-```
-
-If you also want the Darwin system config, install the [Nix package manager](https://nixos.org/nix/) and use the flake entrypoints from this repo.
-
-## Layout
-
-- `install.conf.yaml` says what Dotbot links where.
-- `flake.nix` holds nix-darwin config, shared packages, and machine entrypoints.
-- `opencode/` holds shared agent config reused by other tools.
-
-## Common Commands
-
-```bash
-nix run .#install-files
-nix run .#install-macos
-nix run .#update-macos
-nix run .#update-dotbot
 ```
 
 ## Update Dotbot
