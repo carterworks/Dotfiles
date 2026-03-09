@@ -4,23 +4,22 @@ Personal NixOS and nix-darwin machine config.
 
 ## Install
 
-Clone with submodules, then run the installer.
+Install Nix first, then clone the repo and run the installer.
 
 ```bash
-git clone --recurse-submodules <repo> ~/.config/dotfiles
+git clone <repo> ~/.config/dotfiles
 cd ~/.config/dotfiles
 ./install
 ```
 
-## Update Dotbot
+If `nix` is not installed, `./install` exits early and points to the official installer:
 
-Pull the latest upstream Dotbot, then commit the submodule bump.
+`https://nixos.org/download/`
+
+## Dotbot
+
+`./install` runs Dotbot from the pinned `nixpkgs` input in `flake.lock`, so Dotbot updates now come from your normal flake input updates instead of a submodule bump.
 
 ```bash
-git submodule update --remote dotbot
-git submodule update --init --recursive dotbot
-git add dotbot
-git commit -m "[dotbot] update submodule"
+nix flake update
 ```
-
-`./install` pins Dotbot to the committed submodule revision, so commit the bump before relying on it elsewhere.
