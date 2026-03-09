@@ -84,6 +84,7 @@ let
       nautilus
       obsidian
       opencode
+      opencode-desktop
       papirus-icon-theme
       playerctl
       spotify
