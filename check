@@ -5,8 +5,90 @@ set -euo pipefail
 CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+has_gum() {
+  command -v gum >/dev/null 2>&1
+}
+
+log_message() {
+  local level="$1"
+  shift
+
+  if has_gum; then
+    gum log --level "${level}" "$*"
+  else
+    case "${level}" in
+      error|warn)
+        printf '%s\n' "$*" >&2
+        ;;
+      *)
+        printf '%s\n' "$*"
+        ;;
+    esac
+  fi
+}
+
+section() {
+  local title="$1"
+
+  if has_gum; then
+    gum style --bold --foreground 255 --background 62 --padding "0 1" --margin "1 0" "${title}"
+  else
+    printf '\n== %s ==\n' "${title}"
+  fi
+}
+
+show_log() {
+  local logfile="$1"
+
+  if [[ -s "${logfile}" ]]; then
+    printf '\n' >&2
+    cat "${logfile}" >&2
+  fi
+}
+
+run_quiet_step() {
+  local title="$1"
+  shift
+
+  local logfile
+  local pid
+  local status=0
+
+  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-check.XXXXXX")"
+  "$@" >"${logfile}" 2>&1 &
+  pid=$!
+
+  if has_gum; then
+    gum spin --spinner dot --title "${title}" -- bash -c 'pid="$1"; while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done' _ "${pid}"
+  else
+    log_message info "${title}"
+  fi
+
+  if ! wait "${pid}"; then
+    status=$?
+  fi
+
+  if (( status == 0 )); then
+    rm -f "${logfile}"
+    log_message info "${title} complete"
+    return 0
+  fi
+
+  log_message error "${title} failed"
+  show_log "${logfile}"
+  rm -f "${logfile}"
+  return "${status}"
+}
+
+warn_if_git_dirty() {
+  if command -v git >/dev/null 2>&1 && [[ -n "$(git -C "${BASEDIR}" status --short 2>/dev/null)" ]]; then
+    log_message warn "Git tree is dirty; Nix may warn during evaluation"
+  fi
+}
+
 if ! command -v nix >/dev/null 2>&1; then
-  printf 'nix is required to run this checker.\nInstall it from: https://github.com/DeterminateSystems/nix-installer\n' >&2
+  log_message error "nix is required to run this checker"
+  log_message info "Install it from: https://github.com/DeterminateSystems/nix-installer"
   exit 1
 fi
 
@@ -89,5 +171,15 @@ run_system_check() {
 }
 
 cd "${BASEDIR}"
-run_dotbot_check "$@"
-run_system_check
+section "Dotfiles check"
+log_message info "Machine: $(current_machine_name)"
+log_message info "System: $(uname -s)"
+warn_if_git_dirty
+
+section "Check dotfiles"
+run_quiet_step "Running dotbot dry-run" run_dotbot_check "$@"
+
+section "Validate system"
+run_quiet_step "Validating system build" run_system_check
+
+log_message info "Checks passed"
