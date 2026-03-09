@@ -6,12 +6,12 @@ CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if ! command -v nix >/dev/null 2>&1; then
-  printf 'nix is required to run this installer.\nInstall it from: https://github.com/DeterminateSystems/nix-installer\n' >&2
+  printf 'nix is required to run this checker.\nInstall it from: https://github.com/DeterminateSystems/nix-installer\n' >&2
   exit 1
 fi
 
-run_dotbot() {
-  nix run ".#dotbot" -- --verbose --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
+run_dotbot_check() {
+  nix run ".#dotbot" -- --verbose --exit-on-failure --dry-run --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
 }
 
 current_machine_name() {
@@ -46,21 +46,32 @@ current_machine_name() {
   printf '%s\n' "${name}"
 }
 
-run_rebuild() {
-  local rebuild
+verify_darwin_build() {
   local machine_name
+  local output
 
   machine_name="$(current_machine_name)"
+  output="$(nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
 
+  [[ -d "${output}/sw" ]]
+  [[ -x "${output}/sw/bin/darwin-rebuild" ]]
+  [[ -x "${output}/sw/bin/nix" ]]
+}
+
+verify_nixos_build() {
+  local machine_name
+  local output
+
+  machine_name="$(current_machine_name)"
+  output="$(nix build --print-out-paths --no-link "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
+
+  [[ -x "${output}/bin/switch-to-configuration" ]]
+}
+
+run_system_check() {
   case "$(uname -s)" in
     Darwin)
-      rebuild="$(command -v darwin-rebuild || true)"
-      if [[ -z "${rebuild}" ]]; then
-        printf 'darwin-rebuild is required on nix-darwin systems.\n' >&2
-        exit 1
-      fi
-
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}"
+      verify_darwin_build
       ;;
     Linux)
       if [[ ! -e /etc/NIXOS && ! -e /run/current-system/nixos-version ]]; then
@@ -68,13 +79,7 @@ run_rebuild() {
         exit 1
       fi
 
-      rebuild="$(command -v nixos-rebuild || true)"
-      if [[ -z "${rebuild}" ]]; then
-        printf 'nixos-rebuild is required on NixOS systems.\n' >&2
-        exit 1
-      fi
-
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}"
+      verify_nixos_build
       ;;
     *)
       printf 'Unsupported system: %s\n' "$(uname -s)" >&2
@@ -84,5 +89,5 @@ run_rebuild() {
 }
 
 cd "${BASEDIR}"
-run_dotbot "$@"
-run_rebuild
+run_dotbot_check "$@"
+run_system_check
