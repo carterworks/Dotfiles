@@ -34,6 +34,16 @@
       };
     in
     {
+      packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          dotbot = pkgs.dotbot;
+        }
+      );
+
       nixosConfigurations.scylla = mkSystem "scylla" {
         system = "x86_64-linux";
         user = "carter";
