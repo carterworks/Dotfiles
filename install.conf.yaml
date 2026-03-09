@@ -1,4 +1,9 @@
-- clean: ['~']
+- clean:
+    ~/: {}
+    ~/.claude/skills:
+        recursive: true
+    ~/.agents/skills:
+        recursive: true
 - defaults:
     link:
         create: true
@@ -20,6 +25,20 @@
     ~/.config/opencode:
         glob: true
         path: opencode/**/*
+    ~/.claude/CLAUDE.md: opencode/AGENTS.md
+    ~/.claude/commands/:
+        glob: true
+        path: opencode/command/*
+    ~/.claude/skills/:
+        glob: true
+        path: opencode/skills/*
+    ~/.codex/AGENTS.md: opencode/AGENTS.md
+    ~/.codex/prompts/:
+        glob: true
+        path: opencode/command/*
+    ~/.agents/skills/:
+        glob: true
+        path: opencode/skills/*
     ~/.config/starship.toml: starship.toml
     ~/.config/helix:
         glob: true
