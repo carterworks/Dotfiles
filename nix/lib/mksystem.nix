@@ -7,14 +7,21 @@
 name:
 {
   system,
-  user,
+  profile,
+  systemUsername ? profile,
   darwin ? false,
   extraModules ? [ ],
 }:
 
 let
   systemFunc = if darwin then inputs.nix-darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;
-  userConfig = ../users/${user}/${if darwin then "darwin" else "nixos"}.nix;
+  homeManagerModule =
+    if darwin then
+      inputs.home-manager.darwinModules.home-manager
+    else
+      inputs.home-manager.nixosModules.home-manager;
+  userConfig = ../users/${profile}/${if darwin then "darwin" else "nixos"}.nix;
+  homeConfig = ../users/${profile}/home-manager.nix;
 in
 systemFunc {
   inherit system;
@@ -22,15 +29,39 @@ systemFunc {
   modules = [
     {
       _module.args = {
-        inherit inputs self user;
+        inherit
+          inputs
+          self
+          profile
+          systemUsername
+          ;
         currentSystem = system;
         currentSystemName = name;
       };
     }
     ../modules/nix.nix
     ../modules/fonts.nix
+    homeManagerModule
+    {
+      home-manager = {
+        useGlobalPkgs = true;
+        useUserPackages = false;
+        backupFileExtension = "hm-backup";
+        extraSpecialArgs = {
+          inherit
+            inputs
+            self
+            profile
+            systemUsername
+            ;
+          currentSystem = system;
+          currentSystemName = name;
+        };
+        users.${systemUsername} = homeConfig;
+      };
+    }
     ../machines/${name}.nix
-    ../users/${user}/packages.nix
+    ../users/${profile}/packages.nix
     userConfig
   ]
   ++ extraModules;

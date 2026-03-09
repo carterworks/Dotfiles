@@ -14,6 +14,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-darwin = {
       url = "github:LnL7/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -46,13 +50,14 @@
 
       nixosConfigurations.scylla = mkSystem "scylla" {
         system = "x86_64-linux";
-        user = "carter";
+        profile = "carter";
         extraModules = [ inputs.disko.nixosModules.disko ];
       };
 
       darwinConfigurations."Carters-MacBook-Pro" = mkSystem "carters-macbook-pro" {
         system = "aarch64-darwin";
-        user = "carter";
+        profile = "carter";
+        systemUsername = "cmcbride";
         darwin = true;
       };
 

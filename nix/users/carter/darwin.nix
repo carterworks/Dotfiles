@@ -1,6 +1,11 @@
-{ self, ... }:
+{ self, systemUsername, ... }:
 
 {
+  users.users.${systemUsername} = {
+    name = systemUsername;
+    home = "/Users/${systemUsername}";
+  };
+
   homebrew = {
     enable = true;
     taps = [ "PeonPing/tap" ];
@@ -11,7 +16,7 @@
   programs.fish.enable = true;
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
-  system.primaryUser = "cmcbride";
+  system.primaryUser = systemUsername;
 
   security.pam.services.sudo_local.touchIdAuth = true;
 
