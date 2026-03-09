@@ -67,6 +67,7 @@ let
     with pkgs;
     [
       ashell
+      brave
       bibata-cursors
       discord
       ghostty
