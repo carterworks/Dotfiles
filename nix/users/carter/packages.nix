@@ -67,6 +67,7 @@ let
     with pkgs;
     [
       ashell
+      bambu-studio
       brave
       bibata-cursors
       discord
