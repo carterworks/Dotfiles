@@ -11,4 +11,4 @@ if ! command -v nix >/dev/null 2>&1; then
 fi
 
 cd "${BASEDIR}"
-exec nix run ".#dotbot" -- -d "${BASEDIR}" -c "${CONFIG}" "$@"
+exec nix run ".#dotbot" -- -v -d "${BASEDIR}" -c "${CONFIG}" "$@"
