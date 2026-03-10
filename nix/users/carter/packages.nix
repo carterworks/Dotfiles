@@ -73,7 +73,7 @@ let
       brave
       bibata-cursors
       discord
-      ghostty
+
       google-chrome
       grim
       heroic

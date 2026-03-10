@@ -41,7 +41,7 @@
     ~/.config/helix:
         glob: true
         path: helix/**/*
-    ~/.config/ghostty/config: ghosttyconfig
+
     ~/.local/bin/:
         glob: true
         path: bin/*

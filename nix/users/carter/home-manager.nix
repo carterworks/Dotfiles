@@ -10,6 +10,22 @@
 
   xdg.configFile."git/aliases".source = ../../git/aliases;
 
+  programs.ghostty = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    enableFishIntegration = true;
+    settings = {
+      config-file = [
+        "?~/.local/share/omarchy/config/ghostty/config"
+        "?./theme"
+      ];
+      window-theme = "auto";
+      font-family = "Iosevka Term";
+      font-size = 13;
+      command = "sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec \"$SHELL\"'";
+      shell-integration-features = "ssh-terminfo";
+    };
+  };
+
   programs.starship = {
     enable = true;
     enableFishIntegration = true;
