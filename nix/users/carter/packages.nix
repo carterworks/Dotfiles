@@ -6,6 +6,8 @@
 }:
 
 let
+  bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
+
   commonPackages = with pkgs; [
     astro-language-server
     atuin
@@ -68,7 +70,7 @@ let
     with pkgs;
     [
       ashell
-      bambu-studio
+      bambu-studio-appimage
       brave
       bibata-cursors
       discord
