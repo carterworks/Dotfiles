@@ -26,7 +26,7 @@ let
 
     hyperfine
     jq
-    jujutsu
+
     markdown-oxide
     nodejs
     ouch

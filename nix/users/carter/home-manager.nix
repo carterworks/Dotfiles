@@ -101,6 +101,20 @@
     shellWrapperName = "yy";
   };
 
+  programs.jujutsu = {
+    enable = true;
+    settings = {
+      user = {
+        email = "18412686+carterworks@users.noreply.github.com";
+        name = "Carter McBride";
+      };
+      ui = {
+        paginate = "never";
+        editor = "cat";
+      };
+    };
+  };
+
   services.hyprpaper = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     settings = {
