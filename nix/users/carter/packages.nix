@@ -97,12 +97,14 @@ let
       telegram-desktop
       trayscale
       wallust
-      wl-clipboard
       wlogout
+      wtype
       xan
+      xdotool
       zed-editor
     ]
-    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ]
+    ++ [ inputs.handy.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 in
 {
   environment.systemPackages =

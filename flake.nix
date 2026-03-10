@@ -28,6 +28,7 @@
     };
     hyprland.url = "github:hyprwm/Hyprland";
     vicinae.url = "github:vicinaehq/vicinae";
+    handy.url = "github:cjpais/Handy";
   };
 
   outputs =
