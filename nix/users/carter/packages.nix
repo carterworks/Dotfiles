@@ -44,7 +44,7 @@ let
     ripgrep
     rsync
     ruff
-    starship
+
     superhtml
     taplo
     typescript-language-server

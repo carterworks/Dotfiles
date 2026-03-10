@@ -37,7 +37,7 @@
     ~/.agents/skills/:
         glob: true
         path: opencode/skills/*
-    ~/.config/starship.toml: starship.toml
+
     ~/.config/helix:
         glob: true
         path: helix/**/*
