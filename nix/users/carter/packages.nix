@@ -16,7 +16,7 @@ let
     btop
     bun
     curl
-    delta
+
     docker-language-server
     dust
     eza
@@ -27,7 +27,7 @@ let
     fish-lsp
     fzf
     gh
-    git
+
     gum
     helix
     hyperfine

@@ -9,9 +9,7 @@
         create: true
         force: true
 - link:
-    ~/.config/git/:
-        glob: true
-        path: git/*
+
     ~/.config/hypr:
         glob: true
         path: hypr/*
