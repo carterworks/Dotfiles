@@ -29,7 +29,7 @@ let
     gh
 
     gum
-    helix
+
     hyperfine
     jq
     jujutsu

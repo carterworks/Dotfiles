@@ -38,9 +38,7 @@
         glob: true
         path: opencode/skills/*
 
-    ~/.config/helix:
-        glob: true
-        path: helix/**/*
+
 
     ~/.local/bin/:
         glob: true
