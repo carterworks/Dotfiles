@@ -100,7 +100,7 @@ let
       wtype
       xan
       xdotool
-      zed-editor
+
     ]
     ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 in
