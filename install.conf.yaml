@@ -9,11 +9,8 @@
         create: true
         force: true
 - link:
-
-
     ~/.config/ashell/config.toml: ashell-config.toml
     ~/.config/nvim: nvim/
-
     ~/.config/opencode:
         glob: true
         path: opencode/**/*
@@ -31,12 +28,7 @@
     ~/.agents/skills/:
         glob: true
         path: opencode/skills/*
-
-
-
     ~/.local/bin/:
         glob: true
         path: bin/*
-
-
     ~/.config/vicinae/settings.json: vicinae-config.jsonc

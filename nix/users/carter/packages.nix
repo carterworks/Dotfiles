@@ -20,7 +20,6 @@ let
     fd
     ffmpeg-full
     fish-lsp
-    gh
 
     gum
 
