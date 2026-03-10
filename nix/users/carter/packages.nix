@@ -12,7 +12,6 @@ let
     astro-language-server
     atuin
     bash-language-server
-    bitwarden-cli
     bat
     btop
     bun
@@ -35,7 +34,6 @@ let
     jq
     jujutsu
     markdown-oxide
-    nodePackages_latest.vscode-json-languageserver
     nodejs
     ouch
     neovim
@@ -51,6 +49,7 @@ let
     taplo
     typescript-language-server
     vscode-css-languageserver
+    vscode-json-languageserver
     uv
     wget
     yazi
@@ -59,7 +58,7 @@ let
   ];
 
   darwinPackages = with pkgs; [
-    claude-code
+    claude-code-bin
     codex
     gnupg
     terminal-notifier
