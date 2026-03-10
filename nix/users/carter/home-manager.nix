@@ -8,11 +8,11 @@
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;
 
-  xdg.configFile."git/aliases".source = ../../git/aliases;
-  xdg.configFile."fish/fish_plugins".source = ../../fish/fish_plugins;
-  xdg.configFile."fish/completions/codex.fish".source = ../../fish/completions/codex.fish;
-  xdg.configFile."fish/completions/pnpm.fish".source = ../../fish/completions/pnpm.fish;
-  xdg.configFile."fish/completions/tinty.fish".source = ../../fish/completions/tinty.fish;
+  xdg.configFile."git/aliases".source = ../../../git/aliases;
+  xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
+  xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
+  xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
+  xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
 
   programs.fish = {
     enable = true;
@@ -142,7 +142,7 @@
     package = null;
     portalPackage = null;
     systemd.variables = [ "--all" ];
-    extraConfig = builtins.readFile ../../hypr/hyprland.conf;
+    extraConfig = builtins.readFile ../../../hypr/hyprland.conf;
   };
 
   programs.zed-editor = lib.mkIf pkgs.stdenv.isLinux {
@@ -494,17 +494,16 @@
     };
   };
 
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+    options = {
+      line-numbers = true;
+    };
+  };
+
   programs.git = {
     enable = true;
-    userName = "Carter McBride";
-    userEmail = "18412686+carterworks@users.noreply.github.com";
-
-    delta = {
-      enable = true;
-      options = {
-        line-numbers = true;
-      };
-    };
 
     lfs.enable = true;
 
@@ -522,7 +521,11 @@
       { path = "aliases"; }
     ];
 
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Carter McBride";
+        email = "18412686+carterworks@users.noreply.github.com";
+      };
       format.pretty = "%H %ci %ce %ae %d %s";
       push = {
         default = "simple";
