@@ -44,5 +44,5 @@
         glob: true
         path: bin/*
     ~/.config/zed/settings.json: zed-settings.json
-    ~/.config/mako/config: mako-config
+
     ~/.config/vicinae/settings.json: vicinae-config.jsonc

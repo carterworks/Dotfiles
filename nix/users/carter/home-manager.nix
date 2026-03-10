@@ -10,6 +10,41 @@
 
   xdg.configFile."git/aliases".source = ../../git/aliases;
 
+  services.mako = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    settings = {
+      font = "Inter 10";
+      background-color = "#fbf3db";
+      text-color = "#53676d";
+      border-color = "#d5cdb6";
+      border-size = 2;
+      border-radius = 10;
+      padding = "12";
+      margin = "10";
+      outer-margin = "10";
+      width = 300;
+      height = 100;
+      anchor = "top-right";
+      icons = true;
+      icon-path = "/usr/share/icons/hicolor";
+      max-icon-size = 32;
+      default-timeout = 5000;
+      ignore-timeout = false;
+      history = true;
+      layer = "overlay";
+      "urgency=low" = {
+        border-color = "#909995";
+      };
+      "urgency=normal" = {
+        border-color = "#0072d4";
+      };
+      "urgency=critical" = {
+        border-color = "#d2212d";
+        background-color = "#ece3cc";
+      };
+    };
+  };
+
   programs.helix = {
     enable = true;
     settings = {

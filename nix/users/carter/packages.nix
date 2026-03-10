@@ -82,7 +82,7 @@ let
       hyprpolkitagent
       hyprshutdown
       hyprls
-      mako
+
       nautilus
       obsidian
       opencode
