@@ -10,22 +10,16 @@ let
 
   commonPackages = with pkgs; [
     astro-language-server
-    atuin
     bash-language-server
-    bat
     btop
     bun
     curl
-
     docker-language-server
     dust
-    eza
     fastfetch
     fd
     ffmpeg-full
-    fish
     fish-lsp
-    fzf
     gh
 
     gum
@@ -44,7 +38,6 @@ let
     ripgrep
     rsync
     ruff
-
     superhtml
     taplo
     typescript-language-server
@@ -52,9 +45,7 @@ let
     vscode-json-languageserver
     uv
     wget
-    yazi
     yaml-language-server
-    zoxide
   ];
 
   darwinPackages = with pkgs; [

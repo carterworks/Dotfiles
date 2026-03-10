@@ -9,6 +9,97 @@
   programs.home-manager.enable = true;
 
   xdg.configFile."git/aliases".source = ../../git/aliases;
+  xdg.configFile."fish/fish_plugins".source = ../../fish/fish_plugins;
+  xdg.configFile."fish/completions/codex.fish".source = ../../fish/completions/codex.fish;
+  xdg.configFile."fish/completions/pnpm.fish".source = ../../fish/completions/pnpm.fish;
+  xdg.configFile."fish/completions/tinty.fish".source = ../../fish/completions/tinty.fish;
+
+  programs.fish = {
+    enable = true;
+    shellInit = ''
+      if test -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" && command -qs babelfish
+          cat "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" | babelfish | source
+      end
+      if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+      end
+      if test -e /opt/homebrew/bin/brew
+          /opt/homebrew/bin/brew shellenv fish | source
+      end
+      if test -e ~/.lmstudio/bin
+          fish_add_path ~/.lmstudio/bin
+      end
+      fish_add_path ~/.local/bin
+      if test -f ~/.config/fish/secrets.local.fish
+          source ~/.config/fish/secrets.local.fish
+      end
+      if command -qs codex
+          set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
+      end
+    '';
+    interactiveShellInit = ''
+      if command -qs hx
+          set -gx EDITOR hx
+      else if command -qs helix
+          set -gx EDITOR helix
+          alias hx="helix"
+      else if command -qs nvim
+          set -gx EDITOR nvim
+      else if command -qs vim
+          set -gx EDITOR vim
+      else if command -qs vi
+          set -gx EDITOR vi
+      else if command -qs micro
+          set -gx EDITOR micro
+      else if command -qs nano
+          set -gx EDITOR nano
+      end
+      if command -qs fzf_configure_bindings
+          fzf_configure_bindings --history=
+      end
+      function peon; bash /Users/cmcbride/.claude/hooks/peon-ping/peon.sh $argv; end
+    '';
+  };
+
+  programs.atuin = {
+    enable = true;
+    enableFishIntegration = true;
+  };
+
+  programs.bat.enable = true;
+
+  programs.eza = {
+    enable = true;
+    icons = "auto";
+    extraOptions = [
+      "--classify=auto"
+      "--group-directories-first"
+    ];
+  };
+
+  home.sessionVariables = {
+    EZA_ICON_SPACING = "2";
+  };
+
+  programs.fzf = {
+    enable = true;
+    enableFishIntegration = true;
+  };
+
+  programs.zoxide = {
+    enable = true;
+    enableFishIntegration = true;
+    options = [
+      "--cmd"
+      "cd"
+    ];
+  };
+
+  programs.yazi = {
+    enable = true;
+    enableFishIntegration = true;
+    shellWrapperName = "yy";
+  };
 
   services.hyprpaper = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
