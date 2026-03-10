@@ -77,7 +77,7 @@ let
       google-chrome
       grim
       heroic
-      hyprpaper
+
       hyprpicker
       hyprpolkitagent
       hyprshutdown

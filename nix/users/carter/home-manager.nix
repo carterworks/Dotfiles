@@ -10,6 +10,16 @@
 
   xdg.configFile."git/aliases".source = ../../git/aliases;
 
+  services.hyprpaper = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    settings = {
+      splash = false;
+      wallpaper = [
+        ",~/Pictures/Backgrounds/01-miasma.jpg"
+      ];
+    };
+  };
+
   wayland.windowManager.hyprland = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     package = null;
