@@ -10,6 +10,14 @@
 
   xdg.configFile."git/aliases".source = ../../git/aliases;
 
+  wayland.windowManager.hyprland = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    package = null;
+    portalPackage = null;
+    systemd.variables = [ "--all" ];
+    extraConfig = builtins.readFile ../../hypr/hyprland.conf;
+  };
+
   programs.zed-editor = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     userSettings = {
