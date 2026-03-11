@@ -68,7 +68,6 @@
       if command -qs fzf_configure_bindings
           fzf_configure_bindings --history=
       end
-      function peon; bash /Users/cmcbride/.claude/hooks/peon-ping/peon.sh $argv; end
     '';
   };
 

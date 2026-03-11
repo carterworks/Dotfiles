@@ -8,8 +8,6 @@
 
   homebrew = {
     enable = true;
-    taps = [ "PeonPing/tap" ];
-    brews = [ "peon-ping" ];
   };
 
   programs.zsh.enable = true;
