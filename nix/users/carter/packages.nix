@@ -10,32 +10,23 @@ let
 
   commonPackages = with pkgs; [
     astro-language-server
-    atuin
     bash-language-server
-    bitwarden-cli
-    bat
     btop
     bun
     curl
-    delta
     docker-language-server
     dust
-    eza
     fastfetch
     fd
     ffmpeg-full
-    fish
     fish-lsp
-    fzf
-    gh
-    git
+
     gum
-    helix
+
     hyperfine
     jq
-    jujutsu
+
     markdown-oxide
-    nodePackages_latest.vscode-json-languageserver
     nodejs
     ouch
     neovim
@@ -46,20 +37,18 @@ let
     ripgrep
     rsync
     ruff
-    starship
     superhtml
     taplo
     typescript-language-server
     vscode-css-languageserver
+    vscode-json-languageserver
     uv
     wget
-    yazi
     yaml-language-server
-    zoxide
   ];
 
   darwinPackages = with pkgs; [
-    claude-code
+    claude-code-bin
     codex
     gnupg
     terminal-notifier
@@ -74,16 +63,16 @@ let
       brave
       bibata-cursors
       discord
-      ghostty
+
       google-chrome
       grim
       heroic
-      hyprpaper
+
       hyprpicker
       hyprpolkitagent
       hyprshutdown
       hyprls
-      mako
+
       nautilus
       obsidian
       opencode
@@ -101,7 +90,7 @@ let
       wtype
       xan
       xdotool
-      zed-editor
+
     ]
     ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 in
