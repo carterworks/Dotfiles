@@ -127,10 +127,6 @@
   programs.jujutsu = {
     enable = true;
     settings = {
-      user = {
-        email = "18412686+carterworks@users.noreply.github.com";
-        name = "Carter McBride";
-      };
       ui = {
         paginate = "never";
         editor = "cat";
@@ -431,7 +427,6 @@
     enableFishIntegration = true;
     settings = {
       config-file = [
-        "?~/.local/share/omarchy/config/ghostty/config"
         "?./theme"
       ];
       window-theme = "auto";
@@ -533,10 +528,6 @@
     ];
 
     settings = {
-      user = {
-        name = "Carter McBride";
-        email = "18412686+carterworks@users.noreply.github.com";
-      };
       format.pretty = "%H %ci %ce %ae %d %s";
       push = {
         default = "simple";
@@ -577,19 +568,19 @@
       };
       merge.conflictstyle = "zdiff3";
       credential = {
-        "https://github.com" = {
+        "ssh://github.com" = {
           helper = [
             ""
             "!${lib.getExe pkgs.gh} auth git-credential"
           ];
         };
-        "https://gist.github.com" = {
+        "ssh://gist.github.com" = {
           helper = [
             ""
             "!${lib.getExe pkgs.gh} auth git-credential"
           ];
         };
-        "https://git.corp.adobe.com" = {
+        "ssh://git.corp.adobe.com" = {
           helper = [
             ""
             "!${lib.getExe pkgs.gh} auth git-credential"
