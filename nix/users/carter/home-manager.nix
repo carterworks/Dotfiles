@@ -524,6 +524,7 @@
 
     includes = [
       { path = "aliases"; }
+      { path = "identity"; }
     ];
 
     settings = {
