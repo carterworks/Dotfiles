@@ -9,16 +9,6 @@
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;
 
-  # Force overwrite old dotbot symlinks during HM activation
-  # (backupFileExtension doesn't work for symlinks due to ! -L check)
-  # starship uses home.file directly, not xdg.configFile
-  home.file."${config.xdg.configHome}/starship.toml".force = true;
-  xdg.configFile."helix/config.toml".force = true;
-  xdg.configFile."helix/languages.toml".force = true;
-  xdg.configFile."helix/themes/theme.toml".force = true;
-  xdg.configFile."fish/config.fish".force = true;
-  xdg.configFile."git/config".force = true;
-
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
@@ -421,7 +411,7 @@
     };
   };
 
-  programs.ghostty = lib.mkIf pkgs.stdenv.isLinux {
+  programs.ghostty = {
     enable = true;
     enableFishIntegration = true;
     settings = {
