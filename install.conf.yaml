@@ -9,19 +9,8 @@
         create: true
         force: true
 - link:
-    ~/.config/git/:
-        glob: true
-        path: git/*
-    ~/.config/hypr:
-        glob: true
-        path: hypr/*
     ~/.config/ashell/config.toml: ashell-config.toml
     ~/.config/nvim: nvim/
-    ~/.config/fish/fish_plugins: fish/fish_plugins
-    ~/.config/fish/config.fish: fish/config.fish
-    ~/.config/fish/completions:
-        glob: true
-        path: fish/completions/*
     ~/.config/opencode:
         glob: true
         path: opencode/**/*
@@ -39,14 +28,7 @@
     ~/.agents/skills/:
         glob: true
         path: opencode/skills/*
-    ~/.config/starship.toml: starship.toml
-    ~/.config/helix:
-        glob: true
-        path: helix/**/*
-    ~/.config/ghostty/config: ghosttyconfig
     ~/.local/bin/:
         glob: true
         path: bin/*
-    ~/.config/zed/settings.json: zed-settings.json
-    ~/.config/mako/config: mako-config
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
