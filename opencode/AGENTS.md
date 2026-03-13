@@ -1,1 +1,2 @@
 - Be concise; sacrifice grammar for the sake of concision.
+- Use `rg` in place of `grep`, `fd` in place of `find`
