@@ -141,7 +141,8 @@
     extraConfig = builtins.readFile ../../../hypr/hyprland.conf;
   };
 
-  programs.zed-editor = lib.mkIf pkgs.stdenv.isLinux {
+  programs.zed-editor = {
+    package = if pkgs.stdenv.isDarwin then null else pkgs.zed-editor;
     enable = true;
     userSettings = {
       agent_servers = {
@@ -413,6 +414,7 @@
 
   programs.ghostty = {
     enable = true;
+    package = if pkgs.stdenv.isDarwin then null else pkgs.ghostty;
     enableFishIntegration = true;
     settings = {
       config-file = [
