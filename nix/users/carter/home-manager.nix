@@ -2,10 +2,15 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 
 {
+  imports = [
+    inputs.matugen.nixosModules.default
+  ];
+
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;
 
@@ -122,6 +127,15 @@
       };
     };
   };
+
+  # programs.matugen = {
+  #   enable = true;
+  #   package = pkgs.matugen;
+  #   source_color = "#5f875f";
+  #   variant = "dark";
+  #   type = "scheme-tonal-spot";
+  #   jsonFormat = "hex";
+  # };
 
   services.hyprpaper = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
