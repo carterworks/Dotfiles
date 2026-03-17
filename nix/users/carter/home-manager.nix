@@ -152,6 +152,9 @@
         opencode = {
           type = "registry";
         };
+        claude-acp = {
+          type = "registry";
+        };
       };
       agent = {
         play_sound_when_agent_done = true;
