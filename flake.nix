@@ -27,6 +27,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland.url = "github:hyprwm/Hyprland";
+    matugen.url =  "github:InioX/Matugen";
     vicinae.url = "github:vicinaehq/vicinae";
   };
 
