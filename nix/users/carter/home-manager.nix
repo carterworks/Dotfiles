@@ -3,13 +3,37 @@
   pkgs,
   lib,
   inputs,
+  self,
   ...
 }:
 
 {
   imports = [
-    inputs.matugen.nixosModules.default
+    inputs.stylix.homeModules.stylix
   ];
+
+  stylix = {
+    enable = true;
+    image = "${self}/assets/wallpapers/01-miasma.jpg";
+    polarity = "dark";
+    fonts = {
+      monospace = {
+        package = pkgs.iosevka-bin;
+        name = "Iosevka";
+      };
+      sansSerif = {
+        package = pkgs.inter;
+        name = "Inter";
+      };
+      sizes = {
+        terminal = 13;
+        applications = 12;
+      };
+    };
+    targets.wpaperd.enable = true;
+  };
+
+  services.wpaperd.enable = true;
 
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;
@@ -128,25 +152,6 @@
     };
   };
 
-  # programs.matugen = {
-  #   enable = true;
-  #   package = pkgs.matugen;
-  #   source_color = "#5f875f";
-  #   variant = "dark";
-  #   type = "scheme-tonal-spot";
-  #   jsonFormat = "hex";
-  # };
-
-  services.hyprpaper = lib.mkIf pkgs.stdenv.isLinux {
-    enable = true;
-    settings = {
-      splash = false;
-      wallpaper = [
-        ",~/Pictures/Backgrounds/01-miasma.jpg"
-      ];
-    };
-  };
-
   wayland.windowManager.hyprland = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     package = null;
@@ -179,12 +184,6 @@
       buffer_font_features = {
         calt = true;
       };
-      buffer_font_family = "Iosevka";
-      buffer_font_fallbacks = [
-        "Iosevka Nerd Font"
-        ".ZedMono"
-      ];
-      buffer_font_size = 16;
       show_edit_predictions = true;
       minimap = {
         show = "auto";
@@ -213,22 +212,14 @@
       show_whitespaces = "all";
       tab_size = 2;
       terminal = {
-        font_family = "Iosevka Term";
-        font_size = 16;
         shell = {
           program = "fish";
         };
-      };
-      theme = {
-        mode = "light";
-        dark = "Everforest Dark Hard (regular)";
-        light = "Base16 selenized-light";
       };
       title_bar = {
         show_branch_icon = true;
         show_menus = true;
       };
-      ui_font_family = ".SystemUIFont";
       languages = {
         Nix = {
           language_servers = [
@@ -243,10 +234,6 @@
   services.mako = lib.mkIf pkgs.stdenv.isLinux {
     enable = true;
     settings = {
-      font = "Inter 10";
-      background-color = "#fbf3db";
-      text-color = "#53676d";
-      border-color = "#d5cdb6";
       border-size = 2;
       border-radius = 10;
       padding = "12";
@@ -262,23 +249,12 @@
       ignore-timeout = false;
       history = true;
       layer = "overlay";
-      "urgency=low" = {
-        border-color = "#909995";
-      };
-      "urgency=normal" = {
-        border-color = "#0072d4";
-      };
-      "urgency=critical" = {
-        border-color = "#d2212d";
-        background-color = "#ece3cc";
-      };
     };
   };
 
   programs.helix = {
     enable = true;
     settings = {
-      theme = "theme";
       editor.whitespace.render = "all";
       editor.indent-guides.render = true;
       keys.normal = {
@@ -312,121 +288,6 @@
         }
       ];
     };
-    themes.theme = {
-      "ui.menu" = {
-        fg = "light-gray";
-        bg = "gray";
-      };
-      "ui.menu.selected" = {
-        modifiers = [ "reversed" ];
-      };
-      "ui.linenr" = {
-        fg = "light-gray";
-        bg = "black";
-      };
-      "ui.popup" = {
-        bg = "black";
-      };
-      "ui.window" = {
-        bg = "black";
-      };
-      "ui.linenr.selected" = {
-        fg = "white";
-        bg = "black";
-        modifiers = [ "bold" ];
-      };
-      "ui.selection" = {
-        fg = "gray";
-        modifiers = [ "reversed" ];
-      };
-      comment = {
-        fg = "light-gray";
-        modifiers = [ "italic" ];
-      };
-      "ui.statusline" = {
-        fg = "white";
-        bg = "black";
-      };
-      "ui.statusline.inactive" = {
-        fg = "gray";
-        bg = "black";
-      };
-      "ui.help" = {
-        fg = "white";
-        bg = "black";
-      };
-      "ui.cursor" = {
-        fg = "light-gray";
-        modifiers = [ "reversed" ];
-      };
-      "ui.cursor.primary" = {
-        fg = "light-gray";
-        modifiers = [ "reversed" ];
-      };
-      "ui.virtual.whitespace" = "light-gray";
-      "ui.virtual.jump-label" = {
-        fg = "blue";
-        modifiers = [
-          "bold"
-          "underlined"
-        ];
-      };
-      "ui.virtual.ruler" = {
-        bg = "black";
-      };
-      variable = "light-red";
-      "constant.numeric" = "yellow";
-      constant = "yellow";
-      attribute = "yellow";
-      type = "light-yellow";
-      "ui.cursor.match" = {
-        fg = "light-yellow";
-        modifiers = [ "underlined" ];
-      };
-      string = "light-green";
-      "variable.other.member" = "light-green";
-      "constant.character.escape" = "light-cyan";
-      function = "light-blue";
-      constructor = "light-blue";
-      special = "light-blue";
-      keyword = "light-magenta";
-      label = "light-magenta";
-      namespace = "light-magenta";
-      "markup.heading" = "light-blue";
-      "markup.list" = "light-red";
-      "markup.bold" = {
-        fg = "light-yellow";
-        modifiers = [ "bold" ];
-      };
-      "markup.italic" = {
-        fg = "light-magenta";
-        modifiers = [ "italic" ];
-      };
-      "markup.strikethrough" = {
-        modifiers = [ "crossed_out" ];
-      };
-      "markup.link.url" = {
-        fg = "yellow";
-        modifiers = [ "underlined" ];
-      };
-      "markup.link.text" = "light-red";
-      "markup.quote" = "light-cyan";
-      "markup.raw" = "light-green";
-      "diff.plus" = "light-green";
-      "diff.delta" = "yellow";
-      "diff.minus" = "light-red";
-      diagnostic = {
-        modifiers = [ "underlined" ];
-      };
-      "ui.gutter" = {
-        bg = "black";
-      };
-      info = "light-blue";
-      hint = "gray";
-      debug = "gray";
-      warning = "yellow";
-      error = "light-red";
-    };
   };
 
   programs.ghostty = {
@@ -434,12 +295,7 @@
     package = if pkgs.stdenv.isDarwin then null else pkgs.ghostty;
     enableFishIntegration = true;
     settings = {
-      config-file = [
-        "?./theme"
-      ];
       window-theme = "auto";
-      font-family = "Iosevka Term";
-      font-size = 13;
       command = "sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec \"$SHELL\"'";
       shell-integration-features = "ssh-terminfo";
     };
