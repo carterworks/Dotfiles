@@ -29,6 +29,10 @@
     hyprland.url = "github:hyprwm/Hyprland";
     matugen.url =  "github:InioX/Matugen";
     vicinae.url = "github:vicinaehq/vicinae";
+    stylix = {
+      url = "github:nix-community/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

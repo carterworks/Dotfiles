@@ -20,6 +20,8 @@ let
       inputs.home-manager.darwinModules.home-manager
     else
       inputs.home-manager.nixosModules.home-manager;
+  stylixModule =
+    if darwin then inputs.stylix.darwinModules.stylix else inputs.stylix.nixosModules.stylix;
   userConfig = ../users/${profile}/${if darwin then "darwin" else "nixos"}.nix;
   homeConfig = ../users/${profile}/home-manager.nix;
 in
@@ -41,6 +43,10 @@ systemFunc {
     }
     ../modules/nix.nix
     ../modules/fonts.nix
+    stylixModule
+    {
+      stylix.homeManagerIntegration.followSystem = false;
+    }
     homeManagerModule
     {
       home-manager = {
