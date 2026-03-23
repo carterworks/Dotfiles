@@ -8,10 +8,6 @@
 }:
 
 {
-  imports = [
-    inputs.stylix.homeModules.stylix
-  ];
-
   stylix = {
     enable = true;
     image = "${self}/assets/wallpapers/01-miasma.jpg";
@@ -30,10 +26,10 @@
         applications = 12;
       };
     };
-    targets.wpaperd.enable = true;
+    targets.wpaperd.enable = pkgs.stdenv.isLinux;
   };
 
-  services.wpaperd.enable = true;
+  services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
 
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;

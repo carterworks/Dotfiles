@@ -45,7 +45,7 @@ systemFunc {
     ../modules/fonts.nix
     stylixModule
     {
-      stylix.homeManagerIntegration.followSystem = false;
+      stylix.homeManagerIntegration.followSystem = true;
     }
     homeManagerModule
     {
