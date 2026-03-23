@@ -8,10 +8,13 @@
 }:
 
 {
+  imports = [ inputs.stylix.homeModules.stylix ];
+
   stylix = {
     enable = true;
-    image = "${self}/assets/wallpapers/01-miasma.jpg";
-    polarity = "dark";
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/selenized-light.yaml";
+#     image = "${self}/assets/wallpapers/01-miasma.jpg";
+    polarity = "light";
     fonts = {
       monospace = {
         package = pkgs.iosevka-bin;
@@ -160,6 +163,7 @@
     package = if pkgs.stdenv.isDarwin then null else pkgs.zed-editor;
     enable = true;
     userSettings = {
+      ui_font_family = lib.mkForce ".SystemUIFont";
       agent_servers = {
         cursor = {
           type = "registry";
