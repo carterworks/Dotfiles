@@ -8,6 +8,9 @@
 
   homebrew = {
     enable = true;
+    taps = [];
+    brews = [];
+    casks = [ "t3-code" ];
   };
 
   programs.zsh.enable = true;
