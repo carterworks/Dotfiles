@@ -1,2 +1,3 @@
 - Be concise; sacrifice grammar for the sake of concision.
-- Use `rg` in place of `grep`, `fd` in place of `find`
+- For any file search or grep in the current git indexed directory use `fff` tools, if available. Otherwise, use `rg` in place of `grep`, `fd` in place of `find`
+- When working on large tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
