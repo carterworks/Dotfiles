@@ -60,11 +60,11 @@
 	// When editing the current theme through the vicinae GUI, it will modify the value that maps to the current system appearance.
 	"theme": {
 		"light": {
-			"name": "vicinae-light",
+			"name": "stylix",
 			"icon_theme": "auto"
 		},
 		"dark": {
-			"name": "vicinae-dark",
+			"name": "stylix",
 			"icon_theme": "auto"
 		}
 	},

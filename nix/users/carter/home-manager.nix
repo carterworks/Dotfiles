@@ -8,7 +8,10 @@
 }:
 
 {
-  imports = [ inputs.stylix.homeModules.stylix ];
+  imports = [
+    inputs.stylix.homeModules.stylix
+    ../../modules/vicinae-theme.nix
+  ];
 
   stylix = {
     enable = true;
