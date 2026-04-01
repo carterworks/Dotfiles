@@ -39,6 +39,7 @@
 
   home.stateVersion = "25.11";
   programs.home-manager.enable = true;
+  gtk.gtk4.theme = config.gtk.theme;
 
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
