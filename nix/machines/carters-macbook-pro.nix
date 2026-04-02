@@ -1,5 +1,6 @@
 {
   nixpkgs.hostPlatform = "aarch64-darwin";
+  nixpkgs.config.allowUnfree = true;
 
   system.stateVersion = 6;
 
