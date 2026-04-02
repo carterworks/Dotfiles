@@ -16,7 +16,7 @@
   stylix = {
     enable = true;
     base16Scheme = "${pkgs.base16-schemes}/share/themes/selenized-light.yaml";
-#     image = "${self}/assets/wallpapers/01-miasma.jpg";
+    image = "${self}/assets/wallpapers/01-miasma.jpg";
     polarity = "light";
     fonts = {
       monospace = {
