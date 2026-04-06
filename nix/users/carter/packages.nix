@@ -37,6 +37,7 @@ let
     ripgrep
     rsync
     ruff
+    sshpass
     superhtml
     taplo
     typescript-language-server
@@ -48,7 +49,6 @@ let
   ];
 
   darwinPackages = with pkgs; [
-    claude-code-bin
     codex
     gnupg
     terminal-notifier
