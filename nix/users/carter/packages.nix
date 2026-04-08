@@ -73,6 +73,7 @@ let
       hyprshutdown
       hyprls
 
+      libreoffice-fresh
       nautilus
       obsidian
       opencode
