@@ -31,6 +31,7 @@ let
     ouch
     neovim
     nixd
+    pi-coding-agent
     pnpm
     python3
     rclone
