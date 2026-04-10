@@ -31,4 +31,7 @@
     ~/.local/bin/:
         glob: true
         path: bin/*
+    ~/.config/pi/agent/extensions/:
+        glob: true
+        path: pi/extensions/*
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
