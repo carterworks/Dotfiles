@@ -63,6 +63,11 @@
           fish_add_path ~/.lmstudio/bin
       end
       fish_add_path ~/.local/bin
+      if set -q XDG_CONFIG_HOME
+          set -gx PI_CODING_AGENT_DIR "$XDG_CONFIG_HOME/pi/agent"
+      else
+          set -gx PI_CODING_AGENT_DIR "$HOME/.config/pi/agent"
+      end
       if test -f ~/.config/fish/secrets.local.fish
           source ~/.config/fish/secrets.local.fish
       end

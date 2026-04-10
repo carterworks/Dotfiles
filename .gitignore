@@ -1,3 +1,4 @@
 .DS_Store
 result/
 .osgrep
+node_modules/
