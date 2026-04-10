@@ -74,12 +74,6 @@
       if command -qs codex
           set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
       end
-      if set -q $VITE_PLUS_HOME and test -d $VITE_PLUS_HOME
-        source $VITE_PLUS_HOME/env.fish
-      else if test -d ~/.vite-plus
-        set -gx VITE_PLUS_HOME ~/.vite-plus
-        source ~/.vite-plus/env.fish
-      end
     '';
     interactiveShellInit = ''
       if command -qs hx
