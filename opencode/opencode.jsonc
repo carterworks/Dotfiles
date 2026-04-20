@@ -16,23 +16,11 @@
     },
     "fff": {
       "type": "local",
-      "command": ["fff-mcp"],
+      "command": [
+        "fff-mcp"
+      ],
       "enabled": true,
     },
   },
-  "disabled_providers": [],
-  "provider": {
-    "bifrost": {
-      "name": "Personal BiFront",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "baseURL": "https://bifrost.dropbear-tortoise.ts.net/v1/chat/completions"
-      },
-      "models": {
-        "openrouter/kimi-k2.5": {
-          "name": "Kimi K2.5"
-        }
-      }
-    }
-  },
+  "disabled_providers": []
 }
