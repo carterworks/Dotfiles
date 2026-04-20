@@ -50,11 +50,28 @@
       inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
 
+  services.desktopManager.cosmic.enable = true;
+  services.system76-scheduler.enable = true;
+
+  environment.cosmic.excludePackages = with pkgs; [
+    cosmic-edit
+    cosmic-player
+    cosmic-reader
+    cosmic-screenshot
+    cosmic-store
+    cosmic-term
+    cosmic-wallpapers
+  ];
+
   xdg.portal = {
     enable = true;
     xdgOpenUsePortal = true;
     config = {
       common.default = [ "gtk" ];
+      cosmic.default = [
+        "cosmic"
+        "gtk"
+      ];
       hyprland.default = [
         "gtk"
         "hyprland"
