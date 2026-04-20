@@ -75,7 +75,6 @@ let
       hyprls
 
       libreoffice-fresh
-      nautilus
       obsidian
       opencode
       opencode-desktop
