@@ -10,7 +10,6 @@
         force: true
 - link:
     ~/.config/ashell/config.toml: ashell-config.toml
-    ~/.config/nvim: nvim/
     ~/.config/opencode:
         glob: true
         path: opencode/**/*
@@ -21,18 +20,8 @@
     ~/.claude/skills/:
         glob: true
         path: opencode/skills/*
-    ~/.codex/AGENTS.md: opencode/AGENTS.md
-    ~/.codex/prompts/:
-        glob: true
-        path: opencode/command/*
-    ~/.agents/skills/:
-        glob: true
-        path: opencode/skills/*
     ~/.local/bin/:
         glob: true
         path: bin/*
-    ~/.config/pi/agent/extensions/:
-        glob: true
-        path: pi/extensions/*
     ~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom: cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
