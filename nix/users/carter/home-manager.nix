@@ -10,6 +10,7 @@
 {
   imports = [
     inputs.stylix.homeModules.stylix
+    ../../modules/cosmic-theme.nix
     ../../modules/vicinae-theme.nix
   ];
 
@@ -32,7 +33,11 @@
         applications = 12;
       };
     };
-    targets.wpaperd.enable = pkgs.stdenv.isLinux;
+    targets = {
+      cosmic.enable = pkgs.stdenv.isLinux;
+      vicinae.enable = pkgs.stdenv.isLinux;
+      wpaperd.enable = pkgs.stdenv.isLinux;
+    };
   };
 
   services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
