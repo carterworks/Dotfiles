@@ -34,4 +34,5 @@
     ~/.config/pi/agent/extensions/:
         glob: true
         path: pi/extensions/*
+    ~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom: cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom
     ~/.config/vicinae/settings.json: vicinae-config.jsonc

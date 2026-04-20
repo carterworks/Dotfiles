@@ -41,11 +41,26 @@
   programs.home-manager.enable = true;
   gtk.gtk4.theme = config.gtk.theme;
 
+  xdg.configFile."gtk-3.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
+  xdg.configFile."gtk-4.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
+
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
+  xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Vicinae
+      Exec=vicinae server
+      Terminal=false
+      NoDisplay=true
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
 
   programs.fish = {
     enable = true;
