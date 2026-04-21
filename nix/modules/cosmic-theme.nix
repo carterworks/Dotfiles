@@ -10,22 +10,28 @@ let
   colors = config.lib.stylix.colors.withHashtag;
   polarity = if config.stylix.polarity == "either" then "light" else config.stylix.polarity;
 
-  hexToBytes = hex:
-    let h = lib.removePrefix "#" hex;
-    in {
+  hexToBytes =
+    hex:
+    let
+      h = lib.removePrefix "#" hex;
+    in
+    {
       red = lib.fromHexString (builtins.substring 0 2 h);
       green = lib.fromHexString (builtins.substring 2 2 h);
       blue = lib.fromHexString (builtins.substring 4 2 h);
     };
 
-  byteToUnit = byte:
+  byteToUnit =
+    byte:
     if byte == 0 then
       "0.0"
     else if byte == 255 then
       "1.0"
     else
-      let scaled = lib.div (byte * 1000000) 255;
-      in "0.${lib.fixedWidthNumber 6 scaled}";
+      let
+        scaled = lib.div (byte * 1000000) 255;
+      in
+      "0.${lib.fixedWidthNumber 6 scaled}";
 
   mkRgb = rgb: ''
     (
@@ -44,36 +50,42 @@ let
     )
   '';
 
-  mkTuple4 = a: b: c: d: ''(${a}, ${b}, ${c}, ${d})'';
+  mkTuple4 =
+    a: b: c: d:
+    "(${a}, ${b}, ${c}, ${d})";
 
-  mkOptionalRgb = hex: ''Some(${mkRgb (hexToBytes hex)})'';
-  mkOptionalRgba = hex: ''Some(${mkRgba (hexToBytes hex)})'';
+  mkOptionalRgb = hex: "Some(${mkRgb (hexToBytes hex)})";
+  mkOptionalRgba = hex: "Some(${mkRgba (hexToBytes hex)})";
 
-  neutralScale = if polarity == "dark" then [
-    colors.base00
-    colors.base01
-    colors.base01
-    colors.base02
-    colors.base02
-    colors.base03
-    colors.base04
-    colors.base05
-    colors.base05
-    colors.base06
-    colors.base07
-  ] else [
-    colors.base00
-    colors.base00
-    colors.base01
-    colors.base01
-    colors.base02
-    colors.base03
-    colors.base04
-    colors.base05
-    colors.base05
-    colors.base06
-    colors.base07
-  ];
+  neutralScale =
+    if polarity == "dark" then
+      [
+        colors.base00
+        colors.base01
+        colors.base01
+        colors.base02
+        colors.base02
+        colors.base03
+        colors.base04
+        colors.base05
+        colors.base05
+        colors.base06
+        colors.base07
+      ]
+    else
+      [
+        colors.base00
+        colors.base00
+        colors.base01
+        colors.base01
+        colors.base02
+        colors.base03
+        colors.base04
+        colors.base05
+        colors.base05
+        colors.base06
+        colors.base07
+      ];
 
   paletteVariant = if polarity == "dark" then "Dark" else "Light";
   paletteName = "stylix-${polarity}";
@@ -151,9 +163,9 @@ let
     )
   '';
 
-  fontWeight = ''Normal'';
-  fontStyle = ''Normal'';
-  fontStretch = ''Normal'';
+  fontWeight = "Normal";
+  fontStyle = "Normal";
+  fontStretch = "Normal";
   mkFontText = name: ''
     Some((
         family: "${name}",
@@ -183,12 +195,15 @@ let
   };
 
   themeName = if polarity == "dark" then "Dark" else "Light";
-  builderFiles = builtins.listToAttrs (map
-    (name: lib.nameValuePair "cosmic/com.system76.CosmicTheme.${themeName}.Builder/v1/${name}" {
-      force = true;
-      text = builderEntries.${name};
-    })
-    (builtins.attrNames builderEntries));
+  builderFiles = builtins.listToAttrs (
+    map (
+      name:
+      lib.nameValuePair "cosmic/com.system76.CosmicTheme.${themeName}.Builder/v1/${name}" {
+        force = true;
+        text = builderEntries.${name};
+      }
+    ) (builtins.attrNames builderEntries)
+  );
 in
 {
   options.stylix.targets.cosmic.enable = lib.mkEnableOption "COSMIC desktop theming";
