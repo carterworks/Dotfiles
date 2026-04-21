@@ -1,27 +1,27 @@
 - clean:
     ~/: {}
     ~/.claude/skills:
-        recursive: true
+      recursive: true
     ~/.agents/skills:
-        recursive: true
+      recursive: true
 - defaults:
     link:
-        create: true
-        force: true
+      create: true
+      force: true
 - link:
     ~/.config/ashell/config.toml: ashell-config.toml
     ~/.config/opencode:
-        glob: true
-        path: opencode/**/*
+      glob: true
+      path: opencode/**/*
     ~/.claude/CLAUDE.md: opencode/AGENTS.md
     ~/.claude/commands/:
-        glob: true
-        path: opencode/command/*
+      glob: true
+      path: opencode/command/*
     ~/.claude/skills/:
-        glob: true
-        path: opencode/skills/*
+      glob: true
+      path: opencode/skills/*
     ~/.local/bin/:
-        glob: true
-        path: bin/*
+      glob: true
+      path: bin/*
     ~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom: cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom
     ~/.config/vicinae/settings.json: vicinae-config.jsonc

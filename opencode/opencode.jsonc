@@ -16,11 +16,9 @@
     },
     "fff": {
       "type": "local",
-      "command": [
-        "fff-mcp"
-      ],
+      "command": ["fff-mcp"],
       "enabled": true,
     },
   },
-  "disabled_providers": []
+  "disabled_providers": [],
 }
