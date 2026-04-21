@@ -66,6 +66,17 @@
       X-GNOME-Autostart-enabled=true
     '';
   };
+  xdg.configFile."autostart/Handy.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Handy
+      Exec=handy --start-hidden
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
 
   programs.fish = {
     enable = true;

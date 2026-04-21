@@ -27,6 +27,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland.url = "github:hyprwm/Hyprland";
+    handy = {
+      url = "github:cjpais/Handy";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     matugen.url =  "github:InioX/Matugen";
     vicinae.url = "github:vicinaehq/vicinae";
     stylix = {
