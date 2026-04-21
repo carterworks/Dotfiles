@@ -1,5 +1,6 @@
 {
   inputs,
+  currentSystemName,
   lib,
   pkgs,
   ...
@@ -93,7 +94,10 @@ let
       xdotool
 
     ]
-    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ]
+    ++ lib.optionals (currentSystemName == "scylla") [
+      inputs.handy.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
 in
 {
   environment.systemPackages =
