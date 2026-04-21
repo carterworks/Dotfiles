@@ -8,8 +8,8 @@
 
   homebrew = {
     enable = true;
-    taps = [];
-    brews = [];
+    taps = [ ];
+    brews = [ ];
     casks = [ "t3-code" ];
   };
 
