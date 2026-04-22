@@ -87,6 +87,7 @@ let
       telegram-desktop
       trayscale
       wallust
+      wl-clipboard
       wlogout
       wtype
       xan
