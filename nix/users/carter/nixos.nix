@@ -1,3 +1,5 @@
+{ pkgs, ... }:
+
 {
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
@@ -7,6 +9,26 @@
   };
 
   programs.fish.enable = true;
+
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      zlib
+      zstd
+      stdenv.cc.cc
+      curl
+      openssl
+      attr
+      libssh
+      bzip2
+      libxml2
+      acl
+      libsodium
+      util-linux
+      xz
+      systemd
+    ];
+  };
 
   users.groups.games = { };
   users.users.carter = {

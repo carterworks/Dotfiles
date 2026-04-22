@@ -34,7 +34,6 @@ let
     nixd
     pi-coding-agent
     pnpm
-    python3
     rclone
     ripgrep
     rsync
@@ -100,13 +99,11 @@ let
     ];
 in
 {
+  environment.localBinInPath = true;
+
   environment.systemPackages =
     commonPackages
     ++ lib.optionals pkgs.stdenv.isDarwin darwinPackages
     ++ lib.optionals pkgs.stdenv.isLinux nixosPackages;
 
-  environment.variables = {
-    UV_PYTHON = "${pkgs.python3}/bin/python3";
-    UV_PYTHON_DOWNLOADS = "never";
-  };
 }
