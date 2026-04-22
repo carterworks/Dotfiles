@@ -62,7 +62,6 @@
     cosmic-edit
     cosmic-player
     cosmic-reader
-    cosmic-screenshot
     cosmic-store
     cosmic-term
     cosmic-wallpapers
