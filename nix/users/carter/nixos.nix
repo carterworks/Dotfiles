@@ -10,6 +10,11 @@
 
   programs.fish.enable = true;
 
+  services.sunshine = {
+    enable = true;
+    openFirewall = true;
+  };
+
   programs.nix-ld = {
     enable = true;
     libraries = with pkgs; [
