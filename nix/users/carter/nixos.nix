@@ -13,6 +13,22 @@
   services.sunshine = {
     enable = true;
     openFirewall = true;
+    capSysAdmin = true;
+    settings.capture = "kms";
+    applications = {
+      apps = [
+        {
+          name = "Desktop";
+          image-path = "desktop.png";
+          prep-cmd = [
+            {
+              do = "${pkgs.cosmic-randr}/bin/cosmic-randr mode DP-2 ${"$"}{SUNSHINE_CLIENT_WIDTH} ${"$"}{SUNSHINE_CLIENT_HEIGHT} --refresh ${"$"}{SUNSHINE_CLIENT_FPS}";
+              undo = "${pkgs.cosmic-randr}/bin/cosmic-randr mode DP-2 3440 1440 --refresh 99.982";
+            }
+          ];
+        }
+      ];
+    };
   };
 
   programs.nix-ld = {
