@@ -80,6 +80,7 @@ let
       opencode-desktop
       papirus-icon-theme
       playerctl
+      protonup-qt
       spotify
       sshpass
       slurp
