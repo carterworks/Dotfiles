@@ -38,6 +38,10 @@
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rtk-src = {
+      url = "github:rtk-ai/rtk";
+      flake = false;
+    };
   };
 
   outputs =
