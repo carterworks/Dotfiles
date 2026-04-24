@@ -15,6 +15,7 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.kernelModules = [ "ntsync" ];
 
   networking.hostId = "8425e349";
   networking.hostName = "scylla";
