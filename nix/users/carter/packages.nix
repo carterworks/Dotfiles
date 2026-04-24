@@ -106,8 +106,6 @@ let
     ];
 in
 {
-  environment.localBinInPath = true;
-
   environment.systemPackages =
     commonPackages
     ++ lib.optionals pkgs.stdenv.isDarwin darwinPackages
