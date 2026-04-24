@@ -3,9 +3,15 @@
 let
   sunshine-cosmic-randr = pkgs.writeShellApplication {
     name = "sunshine-cosmic-randr";
-    runtimeInputs = with pkgs; [ cosmic-randr gawk gnused ];
+    runtimeInputs = with pkgs; [ coreutils cosmic-randr gawk gnused util-linux ];
     text = builtins.readFile ./sunshine-cosmic-randr.sh;
   };
+  sunshinePrepCmd = [
+    {
+      do = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr push-client";
+      undo = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr pop";
+    }
+  ];
 in
 {
   environment.sessionVariables = {
@@ -31,10 +37,15 @@ in
         {
           name = "Desktop";
           image-path = "desktop.png";
-          prep-cmd = [
+          prep-cmd = sunshinePrepCmd;
+        }
+        {
+          name = "Steam Big Picture";
+          detached = [ "${pkgs.util-linux}/bin/setsid ${pkgs.steam}/bin/steam steam://open/bigpicture" ];
+          image-path = "steam.png";
+          prep-cmd = sunshinePrepCmd ++ [
             {
-              do = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr client DP-2";
-              undo = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr mode DP-2 3440 1440 99.982";
+              undo = "${pkgs.util-linux}/bin/setsid ${pkgs.steam}/bin/steam steam://close/bigpicture";
             }
           ];
         }
