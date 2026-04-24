@@ -10,6 +10,7 @@
 let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
   rtk = pkgs.callPackage ./rtk.nix { src = inputs.rtk-src; };
+  fff-mcp = pkgs.callPackage ./fff-mcp.nix { };
 
   commonPackages = with pkgs; [
     astro-language-server
@@ -22,6 +23,7 @@ let
     fastfetch
     fd
     ffmpeg-full
+    fff-mcp
     fish-lsp
 
     gum
