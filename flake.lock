@@ -148,6 +148,22 @@
         "type": "github"
       }
     },
+    "fff-nvim-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776954121,
+        "narHash": "sha256-tP2m/MQdDSyCDzwfoYKn8Aqk502rpBZE0hxJR4PvgYg=",
+        "owner": "dmtrKovalenko",
+        "repo": "fff.nvim",
+        "rev": "bca71efb32e208d0498369197303954b15e91b63",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dmtrKovalenko",
+        "repo": "fff.nvim",
+        "type": "github"
+      }
+    },
     "firefox-gnome-theme": {
       "flake": false,
       "locked": {
@@ -835,6 +851,7 @@
     "root": {
       "inputs": {
         "disko": "disko",
+        "fff-nvim-src": "fff-nvim-src",
         "handy": "handy",
         "home-manager": "home-manager",
         "hyprland": "hyprland",

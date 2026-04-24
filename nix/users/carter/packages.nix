@@ -10,7 +10,7 @@
 let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
   rtk = pkgs.callPackage ./rtk.nix { src = inputs.rtk-src; };
-  fff-mcp = pkgs.callPackage ./fff-mcp.nix { };
+  fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
 
   commonPackages = with pkgs; [
     astro-language-server
