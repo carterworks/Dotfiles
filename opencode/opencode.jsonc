@@ -20,5 +20,6 @@
       "enabled": true,
     },
   },
+  "plugin": ["opencode-rtk"],
   "disabled_providers": [],
 }
