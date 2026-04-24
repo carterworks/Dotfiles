@@ -1,5 +1,12 @@
 { pkgs, ... }:
 
+let
+  sunshine-cosmic-randr = pkgs.writeShellApplication {
+    name = "sunshine-cosmic-randr";
+    runtimeInputs = with pkgs; [ cosmic-randr gawk gnused ];
+    text = builtins.readFile ./sunshine-cosmic-randr.sh;
+  };
+in
 {
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
@@ -14,6 +21,10 @@
     enable = true;
     openFirewall = true;
     capSysAdmin = true;
+    package = pkgs.sunshine.override {
+      cudaSupport = true;
+      cudaPackages = pkgs.cudaPackages;
+    };
     settings.capture = "kms";
     applications = {
       apps = [
@@ -22,8 +33,8 @@
           image-path = "desktop.png";
           prep-cmd = [
             {
-              do = "${pkgs.cosmic-randr}/bin/cosmic-randr mode DP-2 ${"$"}{SUNSHINE_CLIENT_WIDTH} ${"$"}{SUNSHINE_CLIENT_HEIGHT} --refresh ${"$"}{SUNSHINE_CLIENT_FPS}";
-              undo = "${pkgs.cosmic-randr}/bin/cosmic-randr mode DP-2 3440 1440 --refresh 99.982";
+              do = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr client DP-2";
+              undo = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr mode DP-2 3440 1440 99.982";
             }
           ];
         }
