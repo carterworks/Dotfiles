@@ -4,6 +4,7 @@
   lib,
   pkgs,
   pkgsMaster,
+  self,
   ...
 }:
 
