@@ -9,6 +9,7 @@
 
 let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
+  rtk = pkgs.callPackage ./rtk.nix { src = inputs.rtk-src; };
 
   commonPackages = with pkgs; [
     astro-language-server
@@ -38,6 +39,7 @@ let
     rclone
     ripgrep
     rsync
+    rtk
     ruff
     sshpass
     superhtml
