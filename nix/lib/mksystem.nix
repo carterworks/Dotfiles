@@ -15,6 +15,7 @@ name:
 
 let
   systemFunc = if darwin then inputs.nix-darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;
+  pkgsMaster = inputs.nixpkgs-master.legacyPackages.${system};
   homeManagerModule =
     if darwin then
       inputs.home-manager.darwinModules.home-manager
@@ -31,6 +32,7 @@ systemFunc {
       _module.args = {
         inherit
           inputs
+          pkgsMaster
           self
           profile
           systemUsername
@@ -50,6 +52,7 @@ systemFunc {
         extraSpecialArgs = {
           inherit
             inputs
+            pkgsMaster
             self
             profile
             systemUsername
