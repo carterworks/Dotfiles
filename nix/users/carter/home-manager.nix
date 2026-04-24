@@ -77,6 +77,17 @@
       X-GNOME-Autostart-enabled=true
     '';
   };
+  xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Steam
+      Exec=steam -silent
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
 
   programs.fish = {
     enable = true;
