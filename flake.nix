@@ -38,6 +38,10 @@
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    fff-nvim-src = {
+      url = "github:dmtrKovalenko/fff.nvim";
+      flake = false;
+    };
     rtk-src = {
       url = "github:rtk-ai/rtk";
       flake = false;
@@ -50,6 +54,7 @@
       mkSystem = import ./nix/lib/mksystem.nix {
         inherit inputs nixpkgs self;
       };
+      mkFffMcp = import ./nix/lib/mkfffmcp.nix;
     in
     {
       packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
@@ -59,6 +64,11 @@
         in
         {
           dotbot = pkgs.dotbot;
+          fff-mcp = mkFffMcp {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+            src = inputs.fff-nvim-src;
+          };
         }
       );
 
