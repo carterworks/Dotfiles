@@ -720,6 +720,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-master": {
+      "locked": {
+        "lastModified": 1777053401,
+        "narHash": "sha256-VPLzoogEoQYam3FEhLpdm4Mw06B0tOcFk/Nt2s3Ze5w=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "def188bbbd51f63d3f11d9fc199b87896bba9422",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1771369470,
@@ -825,6 +841,7 @@
         "matugen": "matugen",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-master": "nixpkgs-master",
         "stylix": "stylix",
         "vicinae": "vicinae"
       }

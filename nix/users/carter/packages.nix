@@ -3,6 +3,7 @@
   currentSystemName,
   lib,
   pkgs,
+  pkgsMaster,
   ...
 }:
 
@@ -76,8 +77,8 @@ let
 
       libreoffice-fresh
       obsidian
-      opencode
-      opencode-desktop
+      pkgsMaster.opencode
+      pkgsMaster.opencode-desktop
       papirus-icon-theme
       playerctl
       protonplus
