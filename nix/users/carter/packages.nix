@@ -83,7 +83,6 @@ let
       libreoffice-fresh
       obsidian
       pkgsMaster.opencode
-      pkgsMaster.opencode-desktop
       papirus-icon-theme
       playerctl
       protonplus
