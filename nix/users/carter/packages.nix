@@ -10,7 +10,8 @@
 
 let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
-  rtk = pkgs.callPackage ./rtk.nix { src = inputs.rtk-src; };
+  opencode = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
+  rtk = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
 
   commonPackages = with pkgs; [
@@ -82,7 +83,6 @@ let
 
       libreoffice-fresh
       obsidian
-      pkgsMaster.opencode
       papirus-icon-theme
       playerctl
       protonplus
@@ -100,10 +100,8 @@ let
       xdotool
 
     ]
-    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ]
-    ++ lib.optionals (currentSystemName == "scylla") [
-      inputs.handy.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ];
+    ++ [ opencode ]
+    ++ [ inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 in
 {
   environment.systemPackages =
