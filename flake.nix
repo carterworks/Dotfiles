@@ -3,18 +3,19 @@
     extra-substituters = [
       "https://cache.nixos.org"
       "https://hyprland.cachix.org"
+      "https://cache.numtide.com"
       "https://vicinae.cachix.org"
     ];
     extra-trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
       "vicinae.cachix.org-1:1kDrfienkGHPYbkpNj1mWTr7Fm1+zcenzgTizIcI3oc="
     ];
   };
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-master.url = "github:NixOS/nixpkgs/master";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -28,24 +29,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     hyprland.url = "github:hyprwm/Hyprland";
-    handy = {
-      url = "github:cjpais/Handy";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    matugen.url = "github:InioX/Matugen";
     vicinae.url = "github:vicinaehq/vicinae";
     stylix = {
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    fff-nvim-src = {
-      url = "github:dmtrKovalenko/fff.nvim";
-      flake = false;
-    };
-    rtk-src = {
-      url = "github:rtk-ai/rtk";
-      flake = false;
-    };
+    numtime-llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
   outputs =
@@ -64,11 +53,7 @@
         in
         {
           dotbot = pkgs.dotbot;
-          fff-mcp = mkFffMcp {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-            src = inputs.fff-nvim-src;
-          };
+          fff-mcp = mkFffMcp { inherit pkgs; lib = nixpkgs.lib; };
         }
       );
 
