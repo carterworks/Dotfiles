@@ -13,6 +13,7 @@ let
   opencode = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   rtk = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
+  ffmpegPackage = if pkgs.stdenv.isDarwin then pkgs.ffmpeg else pkgs.ffmpeg-full;
 
   commonPackages = with pkgs; [
     astro-language-server

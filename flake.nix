@@ -35,6 +35,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     numtime-llm-agents.url = "github:numtide/llm-agents.nix";
+    fff-mcp-aarch64-darwin = {
+      url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin";
+      flake = false;
+    };
+    fff-mcp-x86_64-linux = {
+      url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-x86_64-unknown-linux-gnu";
+      flake = false;
+    };
   };
 
   outputs =
@@ -50,10 +58,14 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
+          fffMcpAssets = {
+            aarch64-darwin = inputs.fff-mcp-aarch64-darwin;
+            x86_64-linux = inputs.fff-mcp-x86_64-linux;
+          };
         in
         {
           dotbot = pkgs.dotbot;
-          fff-mcp = mkFffMcp { inherit pkgs; lib = nixpkgs.lib; };
+          fff-mcp = mkFffMcp { inherit pkgs fffMcpAssets; lib = nixpkgs.lib; };
         }
       );
 
