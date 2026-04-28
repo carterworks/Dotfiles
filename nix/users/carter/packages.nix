@@ -53,6 +53,7 @@ let
     rsync
     rtk
     ruff
+    spotify
     sshpass
     superhtml
     taplo
