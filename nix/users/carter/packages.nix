@@ -68,7 +68,6 @@ let
   darwinPackages = with pkgs; [
     codex
     gnupg
-    raycast
     terminal-notifier
     tinty
   ];

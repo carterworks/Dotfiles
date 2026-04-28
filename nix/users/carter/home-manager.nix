@@ -209,7 +209,7 @@
   };
 
   programs.zed-editor = {
-    package = if pkgs.stdenv.isDarwin then null else pkgs.zed-editor;
+    package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else pkgs.zed-editor;
     enable = true;
     userSettings = {
       ui_font_family = lib.mkForce ".SystemUIFont";
@@ -341,7 +341,7 @@
 
   programs.ghostty = {
     enable = true;
-    package = if pkgs.stdenv.isDarwin then null else pkgs.ghostty;
+    package = pkgs.ghostty-bin;
     enableFishIntegration = true;
     settings = {
       window-theme = "auto";
