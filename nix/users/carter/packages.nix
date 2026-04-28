@@ -10,8 +10,8 @@
 
 let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
-  opencode = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
-  rtk = inputs.numtime-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
+  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
+  rtk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
 
   commonPackages = with pkgs; [

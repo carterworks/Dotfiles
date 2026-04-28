@@ -34,7 +34,7 @@
       url = "github:nix-community/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    numtime-llm-agents.url = "github:numtide/llm-agents.nix";
+    numtide-llm-agents.url = "github:numtide/llm-agents.nix";
     fff-mcp-aarch64-darwin = {
       url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin";
       flake = false;
