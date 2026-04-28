@@ -23,6 +23,7 @@ let
     agent-browser
     astro-language-server
     bash-language-server
+    brave
     btop
     bun
     claude
@@ -40,10 +41,11 @@ let
     jq
     markdown-oxide
     nodejs
-    opencode
-    ouch
     neovim
     nixd
+    obsidian
+    opencode
+    ouch
     pi-coding-agent
     pnpm
     rclone
@@ -74,7 +76,6 @@ let
     [
       ashell
       bambu-studio-appimage
-      brave
       bibata-cursors
       discord
       google-chrome
@@ -85,7 +86,6 @@ let
       hyprshutdown
       hyprls
       libreoffice-fresh
-      obsidian
       papirus-icon-theme
       playerctl
       protonplus
