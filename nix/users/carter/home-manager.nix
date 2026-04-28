@@ -209,7 +209,7 @@
   };
 
   programs.zed-editor = {
-    package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else pkgs.zed-editor;
+    package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
     userSettings = {
       ui_font_family = lib.mkForce ".SystemUIFont";
