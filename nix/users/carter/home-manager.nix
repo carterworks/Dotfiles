@@ -212,24 +212,82 @@
     package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
     userSettings = {
+      context_servers = {
+        fff = {
+          enabled = true;
+          remote = false;
+          command = "fff-mcp";
+          args = [ ];
+          env = { };
+        };
+      };
+      project_panel = {
+        dock = "left";
+      };
+      outline_panel = {
+        dock = "right";
+      };
+      collaboration_panel = {
+        dock = "right";
+      };
+      git_panel = {
+        dock = "left";
+      };
+      lsp = {
+        vtsls = {
+          settings = {
+            typescript = {
+              updateImportsOnFileMove = {
+                enabled = "always";
+              };
+            };
+            javascript = {
+              updateImportsOnFileMove = {
+                enabled = "always";
+              };
+            };
+          };
+          enable_lsp_tasks = true;
+        };
+      };
+      colorize_brackets = true;
       ui_font_family = lib.mkForce ".SystemUIFont";
+      ui_font_size = 16.0;
+      buffer_font_size = 17.333333333333332;
+      theme = "Base16 selenized-light";
       agent_servers = {
         cursor = {
           type = "registry";
         };
         opencode = {
+          favorite_config_option_values = {
+            model = [
+              "openai/gpt-5.5/low"
+              "openai/gpt-5.5/high"
+            ];
+          };
           type = "registry";
         };
         claude-acp = {
+          default_config_options = {
+            model = "opus[1m]";
+          };
           type = "registry";
         };
       };
       agent = {
-        play_sound_when_agent_done = true;
+        sidebar_side = "right";
+        dock = "right";
+        play_sound_when_agent_done = "always";
         model_parameters = [ ];
       };
       autosave = "on_focus_change";
       auto_signature_help = true;
+      buffer_font_fallbacks = [
+        "Iosevka Nerd Font"
+        ".ZedMono"
+      ];
+      buffer_font_family = "Iosevka";
       buffer_font_features = {
         calt = true;
       };
@@ -261,12 +319,15 @@
       show_whitespaces = "all";
       tab_size = 2;
       terminal = {
+        dock = "bottom";
+        font_family = "Iosevka Term";
+        font_size = 16;
         shell = {
           program = "fish";
         };
       };
       title_bar = {
-        show_branch_icon = true;
+        show_branch_status_icon = true;
         show_menus = true;
       };
       languages = {
