@@ -59,6 +59,10 @@ in
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
+  xdg.configFile."fish/completions/oc.fish".text = ''
+    complete -c oc -f
+    complete -c oc -n 'not __fish_seen_subcommand_from acp agent attach completion db debug export github import mcp models plugin pr providers run serve session stats uninstall upgrade web' -a 'acp agent attach completion db debug export github import mcp models plugin pr providers run serve session stats uninstall upgrade web'
+  '';
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
   xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.isLinux {
