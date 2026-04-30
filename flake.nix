@@ -28,6 +28,10 @@
       url = "github:nix-community/disko/latest";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    copyparty = {
+      url = "github:9001/copyparty";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     hyprland.url = "github:hyprwm/Hyprland";
     vicinae.url = "github:vicinaehq/vicinae";
     stylix = {
@@ -65,7 +69,10 @@
         in
         {
           dotbot = pkgs.dotbot;
-          fff-mcp = mkFffMcp { inherit pkgs fffMcpAssets; lib = nixpkgs.lib; };
+          fff-mcp = mkFffMcp {
+            inherit pkgs fffMcpAssets;
+            lib = nixpkgs.lib;
+          };
         }
       );
 
@@ -73,6 +80,14 @@
         system = "x86_64-linux";
         profile = "carter";
         extraModules = [ inputs.disko.nixosModules.disko ];
+      };
+
+      nixosConfigurations.prostagma = mkSystem "prostagma" {
+        system = "x86_64-linux";
+        profile = "root";
+        systemUsername = "root";
+        gui = false;
+        extraModules = [ inputs.copyparty.nixosModules.default ];
       };
 
       darwinConfigurations."Carters-MacBook-Pro" = mkSystem "carters-macbook-pro" {
