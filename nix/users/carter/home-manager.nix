@@ -476,7 +476,7 @@
   programs.zellij = {
     enable = true;
     attachExistingSession = true;
-  }
+  };
 
   programs.git = {
     enable = true;
