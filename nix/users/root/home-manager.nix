@@ -33,7 +33,18 @@
       };
     };
   };
-  programs.zellij.enable = true;
+  programs.zellij = {
+    enable = true;
+    attachExistingSession = true;
+    settings = {
+      default_shell = "fish";
+      theme = "solarized_light";
+      default_mode = "locked";
+      show_startup_tips = false;
+      show_release_notes = false;
+      osc8_hyperlinks = true;
+    };
+  };
   programs.starship.enable = true;
   programs.fzf.enable = true;
   programs.zoxide = {
