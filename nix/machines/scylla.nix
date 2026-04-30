@@ -5,6 +5,9 @@
   ...
 }:
 
+let
+  opencodePort = 4096;
+in
 {
   imports = [
     ./hardware/scylla.nix
@@ -20,6 +23,7 @@
   networking.hostId = "8425e349";
   networking.hostName = "scylla";
   networking.networkmanager.enable = true;
+  networking.firewall.allowedTCPPorts = [ opencodePort ];
 
   time.timeZone = "America/Denver";
 
@@ -128,6 +132,7 @@
 
   services.gvfs.enable = true;
   services.openssh.enable = true;
+  users.users.carter.linger = true;
 
   systemd.tmpfiles.rules = [
     "d /games 2775 root games -"
