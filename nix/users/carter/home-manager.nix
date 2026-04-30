@@ -152,7 +152,7 @@ in
         if test (count $argv) -gt 0
             opencode $argv
         else if command -sq curl; and command curl --silent --output /dev/null --connect-timeout 0.2 --max-time 0.2 http://127.0.0.1:4096
-            opencode attach http://localhost:4096
+            opencode attach http://localhost:4096 --dir .
         else
             opencode
         end
