@@ -1,4 +1,8 @@
-{ lib, rustPlatform, src }:
+{
+  lib,
+  rustPlatform,
+  src,
+}:
 
 rustPlatform.buildRustPackage {
   pname = "rtk";

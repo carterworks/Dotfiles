@@ -3,7 +3,13 @@
 let
   sunshine-cosmic-randr = pkgs.writeShellApplication {
     name = "sunshine-cosmic-randr";
-    runtimeInputs = with pkgs; [ coreutils cosmic-randr gawk gnused util-linux ];
+    runtimeInputs = with pkgs; [
+      coreutils
+      cosmic-randr
+      gawk
+      gnused
+      util-linux
+    ];
     text = builtins.readFile ./sunshine-cosmic-randr.sh;
   };
   sunshinePrepCmd = [
