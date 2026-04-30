@@ -25,6 +25,7 @@ in
 
   proxmoxLXC = {
     manageNetwork = false;
+    manageHostName = true;
     privileged = true;
   };
 
@@ -36,6 +37,7 @@ in
     pkgs.copyparty
   ];
 
+  networking.hostName = "prostagma";
   networking.firewall.allowedTCPPorts = [ copypartyPort ];
 
   systemd.tmpfiles.rules = [
