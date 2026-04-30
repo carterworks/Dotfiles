@@ -4,9 +4,14 @@
   lib,
   inputs,
   self,
+  currentSystemName,
   ...
 }:
 
+let
+  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
+  opencodePort = 4096;
+in
 {
   imports = [
     inputs.stylix.homeModules.stylix
@@ -137,9 +142,36 @@
           fzf_configure_bindings --history=
       end
     '';
+    functions.oc = {
+      description = "Attach to local opencode server when available";
+      body = ''
+        if test (count $argv) -gt 0
+            opencode $argv
+        else if command -sq curl; and command curl --silent --output /dev/null --connect-timeout 0.2 --max-time 0.2 http://127.0.0.1:4096
+            opencode attach http://localhost:4096
+        else
+            opencode
+        end
+      '';
+    };
   };
 
   programs.atuin.enable = true;
+
+  systemd.user.services.opencode = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
+    Unit.Description = "opencode server";
+    Service = {
+      ExecStart = "${opencode}/bin/opencode serve --hostname 0.0.0.0 --port ${toString opencodePort}";
+      WorkingDirectory = "%h";
+      Environment = [
+        "HOME=%h"
+        "PATH=%h/.local/bin:${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "always";
+      RestartSec = "5s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 
   programs.bat.enable = true;
 
