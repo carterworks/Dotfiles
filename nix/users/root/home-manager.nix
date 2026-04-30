@@ -7,11 +7,6 @@
   ...
 }:
 
-let
-  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
-  opencodePort = 4096;
-in
-
 {
   home = {
     username = "root";
@@ -25,23 +20,6 @@ in
   programs.home-manager.enable = true;
   programs.fish.enable = true;
   programs.atuin.enable = true;
-
-  systemd.user.services.opencode =
-    lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "prostagma")
-      {
-        Unit.Description = "opencode server";
-        Service = {
-          ExecStart = "${opencode}/bin/opencode serve --hostname 0.0.0.0 --port ${toString opencodePort}";
-          WorkingDirectory = "%h";
-          Environment = [
-            "HOME=%h"
-            "PATH=%h/.local/bin:${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
-          ];
-          Restart = "always";
-          RestartSec = "5s";
-        };
-        Install.WantedBy = [ "default.target" ];
-      };
 
   programs.eza = {
     enable = true;

@@ -8,6 +8,7 @@
 
 let
   copypartyPort = 3210;
+  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
@@ -43,7 +44,6 @@ in
     copypartyPort
     opencodePort
   ];
-  users.users.root.linger = true;
 
   systemd.tmpfiles.rules = [
     "d /mnt/truenas 0755 root root -"
@@ -110,6 +110,22 @@ in
     enable = true;
     useRoutingFeatures = "both";
     authKeyFile = "/run/secrets/tailscale_key";
+  };
+
+  systemd.services.opencode = {
+    description = "opencode server";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      ExecStart = "${opencode}/bin/opencode serve --hostname 0.0.0.0 --port ${toString opencodePort}";
+      WorkingDirectory = "/root";
+      Environment = [
+        "HOME=/root"
+        "PATH=/root/.local/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "always";
+      RestartSec = "5s";
+    };
   };
 
   services.postgresql.package = pkgs.postgresql_18;
