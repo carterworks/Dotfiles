@@ -8,6 +8,7 @@
 
 let
   copypartyPort = 3210;
+  opencodePort = 4096;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
   filesHostname = "files.cartermcbri.de";
@@ -38,7 +39,11 @@ in
   ];
 
   networking.hostName = "prostagma";
-  networking.firewall.allowedTCPPorts = [ copypartyPort ];
+  networking.firewall.allowedTCPPorts = [
+    copypartyPort
+    opencodePort
+  ];
+  users.users.root.linger = true;
 
   systemd.tmpfiles.rules = [
     "d /mnt/truenas 0755 root root -"
