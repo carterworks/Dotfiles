@@ -63,6 +63,7 @@ let
     uv
     wget
     yaml-language-server
+    zellij
   ];
 
   darwinPackages = with pkgs; [
