@@ -44,7 +44,7 @@
   services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
 
   home.stateVersion = "25.11";
-  home.shell.enableFishIntegration = true;
+  home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
   gtk.gtk4.theme = config.gtk.theme;
 
