@@ -72,38 +72,36 @@ let
     tinty
   ];
 
-  nixosPackages =
-    with pkgs;
-    [
-      ashell
-      bambu-studio-appimage
-      bibata-cursors
-      discord
-      google-chrome
-      grim
-      heroic
-      hyprpicker
-      hyprpolkitagent
-      hyprshutdown
-      hyprls
-      libreoffice-fresh
-      papirus-icon-theme
-      playerctl
-      protonplus
-      spotify
-      sshpass
-      slurp
-      systemd-lsp
-      telegram-desktop
-      trayscale
-      vicinae
-      wallust
-      wl-clipboard
-      wlogout
-      wtype
-      xan
-      xdotool
-    ];
+  nixosPackages = with pkgs; [
+    ashell
+    bambu-studio-appimage
+    bibata-cursors
+    discord
+    google-chrome
+    grim
+    heroic
+    hyprpicker
+    hyprpolkitagent
+    hyprshutdown
+    hyprls
+    libreoffice-fresh
+    papirus-icon-theme
+    playerctl
+    protonplus
+    spotify
+    sshpass
+    slurp
+    systemd-lsp
+    telegram-desktop
+    trayscale
+    vicinae
+    wallust
+    wl-clipboard
+    wlogout
+    wtype
+    xan
+    xdotool
+  ];
 in
 {
   environment.systemPackages =

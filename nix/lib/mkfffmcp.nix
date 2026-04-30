@@ -1,8 +1,13 @@
-{ pkgs, lib, fffMcpAssets }:
+{
+  pkgs,
+  lib,
+  fffMcpAssets,
+}:
 
 let
-  asset = fffMcpAssets.${pkgs.stdenv.hostPlatform.system}
-    or (throw "Unsupported system for fff-mcp binary: ${pkgs.stdenv.hostPlatform.system}");
+  asset =
+    fffMcpAssets.${pkgs.stdenv.hostPlatform.system}
+      or (throw "Unsupported system for fff-mcp binary: ${pkgs.stdenv.hostPlatform.system}");
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "fff-mcp";
