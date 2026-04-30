@@ -18,7 +18,7 @@ name:
 let
   lib = nixpkgs.lib;
   systemFunc = if darwin then inputs.nix-darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;
-  pkgsMaster = inputs.nixpkgs-master.legacyPackages.${system};
+  pkgsMaster = (inputs.nixpkgs-master or inputs.nixpkgs).legacyPackages.${system};
   homeManagerModule =
     lib.optional homeManager (
       if darwin then
