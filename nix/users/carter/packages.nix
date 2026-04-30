@@ -1,9 +1,7 @@
 {
   inputs,
-  currentSystemName,
   lib,
   pkgs,
-  pkgsMaster,
   self,
   ...
 }:
