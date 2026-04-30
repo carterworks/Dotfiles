@@ -44,6 +44,7 @@
   services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
 
   home.stateVersion = "25.11";
+  home.shell.enableFishIntegration = true;
   programs.home-manager.enable = true;
   gtk.gtk4.theme = config.gtk.theme;
 
@@ -138,10 +139,7 @@
     '';
   };
 
-  programs.atuin = {
-    enable = true;
-    enableFishIntegration = true;
-  };
+  programs.atuin.enable = true;
 
   programs.bat.enable = true;
 
@@ -158,14 +156,10 @@
     EZA_ICON_SPACING = "2";
   };
 
-  programs.fzf = {
-    enable = true;
-    enableFishIntegration = true;
-  };
+  programs.fzf.enable = true;
 
   programs.zoxide = {
     enable = true;
-    enableFishIntegration = true;
     options = [
       "--cmd"
       "cd"
@@ -174,7 +168,6 @@
 
   programs.yazi = {
     enable = true;
-    enableFishIntegration = true;
     shellWrapperName = "yy";
   };
 
@@ -403,7 +396,6 @@
   programs.ghostty = {
     enable = true;
     package = if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
-    enableFishIntegration = true;
     settings = {
       window-theme = "auto";
       command = "sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec \"$SHELL\"'";
@@ -413,7 +405,6 @@
 
   programs.starship = {
     enable = true;
-    enableFishIntegration = true;
     settings = {
       scan_timeout = 10;
       aws.disabled = true;
@@ -481,6 +472,11 @@
       line-numbers = true;
     };
   };
+
+  programs.zellij = {
+    enable = true;
+    attachExistingSession = true;
+  }
 
   programs.git = {
     enable = true;
