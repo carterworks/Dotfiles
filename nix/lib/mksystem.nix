@@ -10,17 +10,22 @@ name:
   profile,
   systemUsername ? profile,
   darwin ? false,
+  gui ? true,
+  homeManager ? true,
   extraModules ? [ ],
 }:
 
 let
+  lib = nixpkgs.lib;
   systemFunc = if darwin then inputs.nix-darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;
   pkgsMaster = inputs.nixpkgs-master.legacyPackages.${system};
   homeManagerModule =
-    if darwin then
-      inputs.home-manager.darwinModules.home-manager
-    else
-      inputs.home-manager.nixosModules.home-manager;
+    lib.optional homeManager (
+      if darwin then
+        inputs.home-manager.darwinModules.home-manager
+      else
+        inputs.home-manager.nixosModules.home-manager
+    );
   userConfig = ../users/${profile}/${if darwin then "darwin" else "nixos"}.nix;
   homeConfig = ../users/${profile}/home-manager.nix;
 in
@@ -36,15 +41,18 @@ systemFunc {
           self
           profile
           systemUsername
+          gui
+          homeManager
           ;
         currentSystem = system;
         currentSystemName = name;
       };
     }
     ../modules/nix.nix
-    ../modules/fonts.nix
-    homeManagerModule
-    {
+  ]
+  ++ lib.optional gui ../modules/fonts.nix
+  ++ homeManagerModule
+  ++ lib.optional homeManager {
       home-manager = {
         useGlobalPkgs = true;
         useUserPackages = false;
@@ -56,6 +64,8 @@ systemFunc {
             self
             profile
             systemUsername
+            gui
+            homeManager
             ;
           currentSystem = system;
           currentSystemName = name;
@@ -63,6 +73,7 @@ systemFunc {
         users.${systemUsername} = homeConfig;
       };
     }
+  ++ [
     ../machines/${name}.nix
     ../users/${profile}/packages.nix
     userConfig
