@@ -89,6 +89,8 @@ in
   };
 
   services.fstrim.enable = false;
+  services.dbus.implementation = "dbus";
+
   services.openssh = {
     enable = true;
     openFirewall = true;
