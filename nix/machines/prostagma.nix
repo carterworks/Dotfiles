@@ -18,7 +18,9 @@ in
   imports = [
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware/prostagma.nix
+    ./prostagma/app-storage.nix
     ./prostagma/bifrost.nix
+    ./prostagma/migrated-apps.nix
   ];
 
   nix.settings.sandbox = false;
