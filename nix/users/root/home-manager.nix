@@ -20,7 +20,7 @@
   programs.home-manager.enable = true;
   programs.fish = {
     enable = true;
-        functions.oc = {
+    functions.oc = {
       description = "Attach to local opencode server when available";
       body = ''
         if test (count $argv) -gt 0
@@ -31,6 +31,7 @@
             opencode
         end
       '';
+    };
   };
   programs.atuin.enable = true;
 
