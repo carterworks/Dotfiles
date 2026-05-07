@@ -16,6 +16,7 @@ let
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   rtk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
+  hunk = self.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   commonPackages = with pkgs; [
@@ -37,6 +38,7 @@ let
     handy
     gum
     hyperfine
+    hunk
     jq
     markdown-oxide
     nodejs
