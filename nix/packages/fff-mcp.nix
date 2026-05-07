@@ -5,22 +5,26 @@
 }:
 
 let
-  asset =
+  version = "latest";
+
+  platformAsset =
     fffMcpAssets.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for fff-mcp binary: ${pkgs.stdenv.hostPlatform.system}");
+      or (throw "Unsupported system for fff-mcp: ${pkgs.stdenv.hostPlatform.system}");
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "fff-mcp";
-  version = "latest";
+  inherit version;
 
-  src = asset;
+  src = platformAsset;
 
   dontUnpack = true;
 
   installPhase = ''
     runHook preInstall
+
     mkdir -p $out/bin
     install -m755 $src $out/bin/fff-mcp
+
     runHook postInstall
   '';
 
