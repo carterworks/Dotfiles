@@ -56,6 +56,7 @@
         inherit inputs nixpkgs self;
       };
       mkFffMcp = import ./nix/lib/mkfffmcp.nix;
+      mkHunk = import ./nix/packages/hunk.nix;
     in
     {
       packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
@@ -71,6 +72,10 @@
           dotbot = pkgs.dotbot;
           fff-mcp = mkFffMcp {
             inherit pkgs fffMcpAssets;
+            lib = nixpkgs.lib;
+          };
+          hunk = mkHunk {
+            inherit pkgs;
             lib = nixpkgs.lib;
           };
         }

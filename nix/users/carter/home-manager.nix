@@ -504,14 +504,6 @@ in
     };
   };
 
-  programs.delta = {
-    enable = true;
-    enableGitIntegration = true;
-    options = {
-      line-numbers = true;
-    };
-  };
-
   programs.zellij = {
     enable = true;
     attachExistingSession = true;
@@ -546,6 +538,7 @@ in
     ];
 
     settings = {
+      core.pager = "hunk pager";
       format.pretty = "%H %ci %ce %ae %d %s";
       push = {
         default = "simple";
