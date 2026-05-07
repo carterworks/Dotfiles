@@ -102,6 +102,9 @@ in
 
   programs.fish = {
     enable = true;
+    shellAliases = {
+      cc = "claude --model opus --effort high";
+    };
     shellInit = ''
       if test -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" && command -qs babelfish
           cat "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" | babelfish | source
