@@ -55,7 +55,7 @@
       mkSystem = import ./nix/lib/mksystem.nix {
         inherit inputs nixpkgs self;
       };
-      mkFffMcp = import ./nix/lib/mkfffmcp.nix;
+      mkFffMcp = import ./nix/packages/fff-mcp.nix;
       mkHunk = import ./nix/packages/hunk.nix;
     in
     {
