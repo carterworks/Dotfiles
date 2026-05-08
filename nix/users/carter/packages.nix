@@ -35,8 +35,9 @@ let
     ffmpeg
     fff-mcp
     fish-lsp
-    handy
+    go
     gum
+    handy
     hyperfine
     hunk
     jq
