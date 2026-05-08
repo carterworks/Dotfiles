@@ -1172,5 +1172,6 @@ main-update = pull --rebase --autostash origin main
 current-branch = rev-parse --abbrev-ref HEAD
 chekcout = checkout
 sw = switch
+swb = "!f() { branch=$(git branch --format='%(refname:short)' --sort=-committerdate | fzf --height=40% --layout=reverse --border --preview='git log --graph --color=always --decorate --oneline --date=relative --pretty=format:\"%C(auto)%h %Cgreen%cr %Creset%s %Cblue[%an]%Creset%C(auto)%d\" -- {}' --preview-window=right:60%); [ -n \"$branch\" ] && git switch \"$branch\"; }; f"
 # remove merged branches (local and remote) - https://news.ycombinator.com/item?id=47089509
     cleanup = "!git branch -vv | grep ': gone]' | awk '{print $1}' | fzf --multi --sync --bind start:select-all | xargs git branch -D; git remote prune origin;"
