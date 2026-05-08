@@ -9,8 +9,10 @@
 }:
 
 let
+  hunk = self.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
+  hunkSkill = "${hunk}/lib/node_modules/hunkdiff/skills/hunk-review/SKILL.md";
 in
 {
   imports = [
@@ -57,6 +59,7 @@ in
   xdg.configFile."gtk-4.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
 
   xdg.configFile."git/aliases".source = ../../../git/aliases;
+  xdg.configFile."opencode/skills/hunk-review/SKILL.md".source = hunkSkill;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
@@ -99,6 +102,8 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
+
+  home.file.".claude/skills/hunk-review/SKILL.md".source = hunkSkill;
 
   programs.fish = {
     enable = true;
