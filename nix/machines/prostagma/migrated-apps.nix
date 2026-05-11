@@ -313,13 +313,13 @@ in
           autoStart = true;
           cmd = [ "--allow-newer-config" ];
           ports = [
-            "20910:20910/tcp"
+            "20910:8384/tcp"
             "20978:22000/tcp"
             "20979:22000/udp"
           ];
           environment = appEnvironment // {
             PCAP = "cap_sys_admin,cap_chown,cap_dac_override,cap_fowner+ep";
-            STGUIADDRESS = "0.0.0.0:20910";
+            STGUIADDRESS = "0.0.0.0:8384";
             STNOUPGRADE = "true";
           };
           volumes = [
