@@ -218,6 +218,31 @@ in
     authKeyFile = "/run/secrets/tailscale_key";
   };
 
+  systemd.services.tailscale-services = {
+    description = "Configure Tailscale Services for prostagma apps";
+    after = [ "tailscaled.service" ];
+    requires = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+
+    script = ''
+      tailscale=${pkgs.tailscale}/bin/tailscale
+
+      "$tailscale" serve --service=svc:bifrost --https=443 http://127.0.0.1:8080
+      "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
+      "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
+      "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
+      "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025
+      "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
+      "$tailscale" serve --service=svc:komga --https=443 http://127.0.0.1:30048
+      "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
+    '';
+  };
+
   systemd.services.opencode = {
     description = "opencode server";
     wantedBy = [ "multi-user.target" ];
