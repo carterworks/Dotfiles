@@ -49,6 +49,7 @@ in
     apps.radarr.enable = true;
     apps.komga.enable = true;
     apps.syncthing.enable = true;
+    apps.backrest.enable = true;
   };
 
   virtualisation.docker.daemon.settings = {
@@ -76,6 +77,7 @@ in
     "d /mnt/truenas/media-direct/tvshows 0755 root root -"
     "d /mnt/truenas/media-direct/movies 0755 root root -"
     "d /mnt/truenas/media-direct/comics 0755 root root -"
+    "d /mnt/truenas/media-direct/audiobooks 0755 root root -"
     "d /mnt/truenas/syncthing-root 0755 root root -"
     "d /mnt/truenas/syncthing-root/media 0755 root root -"
     "d /mnt/truenas/syncthing-root/media/games 0755 root root -"
@@ -129,6 +131,16 @@ in
 
   fileSystems."/mnt/truenas/media-direct/comics" = {
     device = "192.168.5.252:/mnt/reservoir/media/comics";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/media-direct/audiobooks" = {
+    device = "192.168.5.252:/mnt/reservoir/media/audiobooks";
     fsType = "nfs";
     options = [
       "_netdev"
