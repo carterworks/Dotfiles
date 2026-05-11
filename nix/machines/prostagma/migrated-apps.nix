@@ -309,6 +309,7 @@ in
         syncthing = {
           image = "syncthing/syncthing:2.0.15";
           autoStart = true;
+          cmd = [ "--allow-newer-config" ];
           ports = [
             "20910:20910/tcp"
             "20978:22000/tcp"
