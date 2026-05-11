@@ -44,6 +44,10 @@ in
     apps."qbittorrent-vpn".enable = true;
   };
 
+  virtualisation.docker.daemon.settings = {
+    "data-root" = "/srv/apps/docker";
+  };
+
   boot.supportedFilesystems = [ "nfs" ];
 
   environment.systemPackages = [
