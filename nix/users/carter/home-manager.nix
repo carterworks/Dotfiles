@@ -543,7 +543,6 @@ in
     ];
 
     settings = {
-      core.pager = "hunk pager";
       format.pretty = "%H %ci %ce %ae %d %s";
       push = {
         default = "simple";
