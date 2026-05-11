@@ -192,8 +192,8 @@ in
       ];
     };
     accounts = {
-      haley.passwordFile = "/run/keys/copyparty/haley_password";
-      carter.passwordFile = "/run/keys/copyparty/carter_password";
+      haley.passwordFile = "/var/lib/secrets/copyparty/haley_password";
+      carter.passwordFile = "/var/lib/secrets/copyparty/carter_password";
     };
     groups = {
       family = [ "haley" ];
