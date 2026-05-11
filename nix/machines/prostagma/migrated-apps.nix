@@ -26,6 +26,7 @@ let
     "radarr"
     "komga"
     "syncthing"
+    "backrest"
   ];
 
   appRoot = cfg.appRoot;
@@ -209,6 +210,7 @@ in
       ++ optional cfg.apps.sonarr.enable 30113
       ++ optional cfg.apps.radarr.enable 30025
       ++ optional cfg.apps.komga.enable 30048
+      ++ optional cfg.apps.backrest.enable 9898
       ++ optionals cfg.apps.syncthing.enable [
         20910
         20978
@@ -339,7 +341,40 @@ in
               "--cap-add=SYS_ADMIN"
             ];
         };
+      }
+      // optionalAttrs cfg.apps.backrest.enable {
+        backrest = {
+          image = "garethgeorge/backrest:latest";
+          autoStart = true;
+          ports = [ "9898:9898/tcp" ];
+          environment = appEnvironment // {
+            BACKREST_CONFIG = "/config/config.json";
+            BACKREST_DATA = "/data";
+            BACKREST_PORT = "0.0.0.0:9898";
+            XDG_CACHE_HOME = "/cache";
+            TMPDIR = "/tmp";
+          };
+          volumes = [
+            "${appRoot}/backrest/config:/config"
+            "${appRoot}/backrest/data:/data"
+            "${appRoot}/backrest/cache:/cache"
+            "${appRoot}/backrest/tmp:/tmp"
+            "${appRoot}/backrest:/userdata/river-rapid/vm-data/backrest:ro"
+            "${mediaRoot}/audiobooks:/userdata/reservoir/media/audiobooks:ro"
+            "${mediaRoot}/comics:/userdata/reservoir/media/comics:ro"
+            "${cfg.syncthingDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
+            "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
+            "${cfg.syncthingDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
+          ];
+          extraOptions = appExtraOptions ++ dockerNetworkOptions;
+        };
       };
+
+    systemd.tmpfiles.rules = optional cfg.apps.backrest.enable (
+      "d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -"
+    ) ++ optional cfg.apps.backrest.enable (
+      "d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -"
+    );
 
     systemd.services =
       optionalAttrs cfg.dockerNetwork.enable {
@@ -433,6 +468,24 @@ in
           mkPathCheckService [
             "${appRoot}/syncthing/config"
             cfg.syncthingDataRoot
+          ]
+          // {
+            after = dockerNetworkDependencies;
+            requires = dockerNetworkDependencies;
+          };
+      }
+      // optionalAttrs cfg.apps.backrest.enable {
+        docker-backrest =
+          mkPathCheckService [
+            "${appRoot}/backrest/config/config.json"
+            "${appRoot}/backrest/data"
+            "${appRoot}/backrest/cache"
+            "${appRoot}/backrest/tmp"
+            "${mediaRoot}/audiobooks"
+            "${mediaRoot}/comics"
+            "${cfg.syncthingDataRoot}/media/ebooks"
+            "/mnt/truenas/photos"
+            "${cfg.syncthingDataRoot}/users/carter"
           ]
           // {
             after = dockerNetworkDependencies;
