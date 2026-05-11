@@ -304,7 +304,7 @@ in
             "${appRoot}/komga:/config"
             "${mediaRoot}/comics:/data/comics"
           ];
-          extraOptions = appExtraOptions ++ dockerNetworkOptions;
+          extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
         };
       }
       // optionalAttrs cfg.apps.syncthing.enable {
