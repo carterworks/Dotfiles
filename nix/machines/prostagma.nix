@@ -19,7 +19,6 @@ in
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware/prostagma.nix
     ./prostagma/app-storage.nix
-    ./prostagma/bifrost.nix
     ./prostagma/migrated-apps.nix
   ];
 
@@ -232,7 +231,7 @@ in
     script = ''
       tailscale=${pkgs.tailscale}/bin/tailscale
 
-      "$tailscale" serve --service=svc:bifrost --https=443 http://127.0.0.1:8080
+      "$tailscale" serve clear svc:bifrost
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
