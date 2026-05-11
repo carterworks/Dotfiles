@@ -304,7 +304,7 @@ in
             "${appRoot}/komga:/config"
             "${mediaRoot}/comics:/data/comics"
           ];
-          extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
+          extraOptions = appExtraOptions ++ dockerNetworkOptions;
         };
       }
       // optionalAttrs cfg.apps.syncthing.enable {
@@ -366,7 +366,7 @@ in
             "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
             "${cfg.syncthingDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
           ];
-          extraOptions = appExtraOptions ++ dockerNetworkOptions;
+          extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
         };
       };
 
