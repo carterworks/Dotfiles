@@ -127,7 +127,7 @@ in
 
     qbittorrentEnvFile = mkOption {
       type = types.str;
-      default = "/run/secrets/qbittorrent-vpn.env";
+      default = "/var/lib/secrets/qbittorrent-vpn.env";
       description = "Environment file containing VPN/provider settings for binhex qBittorrent VPN.";
     };
 
