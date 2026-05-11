@@ -42,6 +42,7 @@ in
     enable = true;
     appRoot = "/srv/apps";
     apps."qbittorrent-vpn".enable = true;
+    apps.prowlarr.enable = true;
   };
 
   virtualisation.docker.daemon.settings = {
