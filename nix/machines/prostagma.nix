@@ -41,8 +41,14 @@ in
   prostagma.migratedApps = {
     enable = true;
     appRoot = "/srv/apps";
+    mediaRoot = "/mnt/truenas/media-direct";
+    syncthingDataRoot = "/mnt/truenas/syncthing-root";
     apps."qbittorrent-vpn".enable = true;
     apps.prowlarr.enable = true;
+    apps.sonarr.enable = true;
+    apps.radarr.enable = true;
+    apps.komga.enable = true;
+    apps.syncthing.enable = true;
   };
 
   virtualisation.docker.daemon.settings = {
@@ -66,6 +72,16 @@ in
   systemd.tmpfiles.rules = [
     "d /mnt/truenas 0755 root root -"
     "d /mnt/truenas/media 0755 root root -"
+    "d /mnt/truenas/media-direct 0755 root root -"
+    "d /mnt/truenas/media-direct/tvshows 0755 root root -"
+    "d /mnt/truenas/media-direct/movies 0755 root root -"
+    "d /mnt/truenas/media-direct/comics 0755 root root -"
+    "d /mnt/truenas/syncthing-root 0755 root root -"
+    "d /mnt/truenas/syncthing-root/media 0755 root root -"
+    "d /mnt/truenas/syncthing-root/media/games 0755 root root -"
+    "d /mnt/truenas/syncthing-root/media/ebooks 0755 root root -"
+    "d /mnt/truenas/syncthing-root/users 0755 root root -"
+    "d /mnt/truenas/syncthing-root/users/carter 0755 root root -"
     "d /mnt/truenas/vm-data 0755 root root -"
     "d /mnt/truenas/photos 0755 root root -"
     "d /mnt/truenas/immich 0755 root root -"
@@ -83,6 +99,66 @@ in
 
   fileSystems."/mnt/truenas/vm-data" = {
     device = "192.168.5.252:/mnt/river-rapid/vm-data";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/media-direct/tvshows" = {
+    device = "192.168.5.252:/mnt/reservoir/media/tvshows";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/media-direct/movies" = {
+    device = "192.168.5.252:/mnt/reservoir/media/movies";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/media-direct/comics" = {
+    device = "192.168.5.252:/mnt/reservoir/media/comics";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/syncthing-root/media/games" = {
+    device = "192.168.5.252:/mnt/reservoir/media/games";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/syncthing-root/media/ebooks" = {
+    device = "192.168.5.252:/mnt/reservoir/media/ebooks";
+    fsType = "nfs";
+    options = [
+      "_netdev"
+      "nofail"
+      "x-systemd.mount-timeout=30s"
+    ];
+  };
+
+  fileSystems."/mnt/truenas/syncthing-root/users/carter" = {
+    device = "192.168.5.252:/mnt/reservoir/users/carter";
     fsType = "nfs";
     options = [
       "_netdev"
