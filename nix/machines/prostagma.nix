@@ -33,6 +33,17 @@ in
     privileged = true;
   };
 
+  prostagma.appStorage = {
+    enable = true;
+    mode = "external";
+  };
+
+  prostagma.migratedApps = {
+    enable = true;
+    appRoot = "/srv/apps";
+    apps."qbittorrent-vpn".enable = true;
+  };
+
   boot.supportedFilesystems = [ "nfs" ];
 
   environment.systemPackages = [
