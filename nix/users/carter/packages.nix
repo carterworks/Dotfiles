@@ -36,6 +36,7 @@ let
     ffmpeg
     fff-mcp
     fish-lsp
+    git-crypt
     go
     gum
     handy
