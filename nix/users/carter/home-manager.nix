@@ -9,13 +9,14 @@
 }:
 
 let
-  hunk = self.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
+  hunk = config.programs.hunk.package;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
-  hunkSkill = "${hunk}/lib/node_modules/hunkdiff/skills/hunk-review/SKILL.md";
+  hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
 in
 {
   imports = [
+    inputs.hunk.homeManagerModules.default
     inputs.stylix.homeModules.stylix
     ../../modules/cosmic-theme.nix
     ../../modules/vicinae-theme.nix
@@ -53,6 +54,7 @@ in
   home.stateVersion = "25.11";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
+  programs.hunk.enable = true;
   gtk.gtk4.theme = config.gtk.theme;
 
   xdg.configFile."gtk-3.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
