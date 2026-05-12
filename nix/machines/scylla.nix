@@ -7,6 +7,48 @@
 
 let
   opencodePort = 4096;
+  truenasHost = "truenas.dropbear-tortoise.ts.net";
+
+  truenasSmbOptions = [
+    "credentials=%d/truenas-smb.creds"
+    "uid=carter"
+    "gid=users"
+    "file_mode=0664"
+    "dir_mode=0775"
+    "vers=3.1.1"
+    "iocharset=utf8"
+    "_netdev"
+  ];
+
+  mkTruenasMount = share: {
+    what = "//${truenasHost}/${share}";
+    where = "/mnt/truenas/${share}";
+    type = "cifs";
+
+    unitConfig = {
+      Requires = [ "tailscaled.service" ];
+      After = [
+        "tailscaled.service"
+        "network-online.target"
+      ];
+      Wants = [ "network-online.target" ];
+    };
+
+    mountConfig = {
+      LoadCredentialEncrypted = "truenas-smb.creds:/etc/credstore.encrypted/truenas-smb.creds";
+      Options = builtins.concatStringsSep "," truenasSmbOptions;
+      TimeoutSec = "10s";
+    };
+  };
+
+  mkTruenasAutomount = share: {
+    where = "/mnt/truenas/${share}";
+    wantedBy = [ "multi-user.target" ];
+
+    automountConfig = {
+      TimeoutIdleSec = "5min";
+    };
+  };
 in
 {
   imports = [
@@ -57,6 +99,16 @@ in
     enable = true;
     openFirewall = true;
   };
+
+  systemd.mounts = [
+    (mkTruenasMount "media")
+    (mkTruenasMount "users")
+  ];
+
+  systemd.automounts = [
+    (mkTruenasAutomount "media")
+    (mkTruenasAutomount "users")
+  ];
 
   services.syncthing = {
     enable = true;
