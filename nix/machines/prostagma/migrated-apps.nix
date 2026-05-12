@@ -370,11 +370,9 @@ in
         };
       };
 
-    systemd.tmpfiles.rules = optional cfg.apps.backrest.enable (
-      "d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -"
-    ) ++ optional cfg.apps.backrest.enable (
-      "d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -"
-    );
+    systemd.tmpfiles.rules =
+      optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
+      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -");
 
     systemd.services =
       optionalAttrs cfg.dockerNetwork.enable {
