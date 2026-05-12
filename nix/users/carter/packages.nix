@@ -22,6 +22,7 @@ let
   commonPackages = with pkgs; [
     agent-browser
     astro-language-server
+    aube
     bash-language-server
     brave
     btop
