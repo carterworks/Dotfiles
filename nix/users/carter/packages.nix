@@ -68,6 +68,7 @@ let
   ];
 
   darwinPackages = with pkgs; [
+    awscli2
     codex
     gnupg
     terminal-notifier
