@@ -61,6 +61,7 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelModules = [ "ntsync" ];
+  boot.zfs.forceImportRoot = false;
 
   networking.hostId = "8425e349";
   networking.hostName = "scylla";
