@@ -85,6 +85,7 @@ in
     extraGroups = [
       "wheel"
       "games"
+      "uinput"
     ];
   };
 }
