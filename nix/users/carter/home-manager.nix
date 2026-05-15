@@ -10,6 +10,8 @@
 
 let
   hunk = config.programs.hunk.package;
+  hyprColor = color: alpha: "rgba(${lib.removePrefix "#" color}${alpha})";
+  hyprColors = config.lib.stylix.colors.withHashtag;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
@@ -243,8 +245,19 @@ in
     enable = true;
     package = null;
     portalPackage = null;
+    configType = "lua";
     systemd.variables = [ "--all" ];
-    extraConfig = builtins.readFile ../../../hypr/hyprland.conf;
+    extraConfig = builtins.readFile ../../../hypr/hyprland.lua;
+  };
+
+  xdg.configFile."hypr/colors.lua" = lib.mkIf pkgs.stdenv.isLinux {
+    text = ''
+      return {
+        active_border = "${hyprColor hyprColors.base0D "ee"}",
+        inactive_border = "${hyprColor hyprColors.base03 "cc"}",
+        shadow = "${hyprColor hyprColors.base00 "aa"}",
+      }
+    '';
   };
 
   programs.zed-editor = {
