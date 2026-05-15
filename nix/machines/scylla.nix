@@ -93,7 +93,12 @@ in
   hardware.nvidia.open = false;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
 
-  programs.steam.enable = true;
+  hardware.uinput.enable = true;
+
+  programs.steam = {
+    enable = true;
+    extest.enable = true;
+  };
 
   services.tailscale = {
     enable = true;
