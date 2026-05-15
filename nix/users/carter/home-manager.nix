@@ -526,8 +526,6 @@ in
 
   programs.zellij = {
     enable = true;
-    attachExistingSession = true;
-    enableFishIntegration = true;
     settings = {
       default_shell = "fish";
       theme = "solarized_light";
