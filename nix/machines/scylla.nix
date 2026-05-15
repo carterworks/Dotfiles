@@ -7,7 +7,7 @@
 
 let
   opencodePort = 4096;
-  truenasHost = "truenas.dropbear-tortoise.ts.net";
+  truenasHost = "100.80.16.49";
 
   truenasSmbOptions = [
     "credentials=%d/truenas-smb.creds"
