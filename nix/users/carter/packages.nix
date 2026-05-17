@@ -88,6 +88,7 @@ let
     hyprshutdown
     hyprls
     libreoffice-fresh
+    openscad
     papirus-icon-theme
     playerctl
     protonplus
