@@ -91,6 +91,7 @@ in
   };
 
   services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
+  hardware.amdgpu.initrd.enable = true;
   hardware.nvidia.open = false;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
 
