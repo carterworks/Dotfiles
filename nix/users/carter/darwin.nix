@@ -8,9 +8,9 @@
 
   homebrew = {
     enable = true;
-    taps = [ "barutsrb/tap" ];
+    taps = [ ];
     brews = [ ];
-    casks = [ "barutsrb/tap/omniwm" ];
+    casks = [ ];
   };
 
   programs.zsh.enable = true;
