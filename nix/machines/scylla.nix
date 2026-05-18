@@ -109,6 +109,9 @@ in
     openFirewall = true;
   };
 
+  services.resolved.enable = true;
+  networking.networkmanager.dns = "systemd-resolved";
+
   systemd.mounts = [
     (mkTruenasMount "media")
     (mkTruenasMount "users")
