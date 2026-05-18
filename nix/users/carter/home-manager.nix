@@ -57,6 +57,9 @@ in
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
   programs.hunk.enable = true;
+  programs.mangohud = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
+    enable = true;
+  };
   gtk.gtk4.theme = config.gtk.theme;
 
   xdg.configFile."gtk-3.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;

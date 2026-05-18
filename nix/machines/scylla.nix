@@ -101,6 +101,8 @@ in
     extest.enable = true;
   };
 
+  programs.gamescope.enable = true;
+
   services.tailscale = {
     enable = true;
     openFirewall = true;
