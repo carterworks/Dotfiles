@@ -507,9 +507,6 @@
   # Clone a git repository including all submodules
   cloner = clone --recursive
 
-  # Clone a git repository into $CODEHOME/$REMOTE_HOST/$ORGNAME/$REPONAME with shallow history
-  clonehome = !git-clonehome
-
   # Stash aliases for push & pop
   #
   # Note that if you are using an older version of git, before 2.16.0,
