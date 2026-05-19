@@ -2,6 +2,7 @@
   inputs,
   pkgs,
   config,
+  systemUsername,
   ...
 }:
 
@@ -67,6 +68,8 @@ in
   networking.hostName = "scylla";
   networking.networkmanager.enable = true;
   networking.firewall.allowedTCPPorts = [ opencodePort ];
+
+  home-manager.users.${systemUsername}.home.sessionVariables.CODEHOME = "$HOME/Projects/code";
 
   time.timeZone = "America/Denver";
 

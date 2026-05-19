@@ -16,6 +16,8 @@
   programs.zsh.enable = true;
   programs.fish.enable = true;
 
+  home-manager.users.${systemUsername}.home.sessionVariables.CODEHOME = "$HOME/homebase/code";
+
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.primaryUser = systemUsername;
 
