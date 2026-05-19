@@ -34,7 +34,7 @@ org=${path%/*}
 org=${org##*/}
 name=${path##*/}
 
-if [ -z "$host" ] || [ -z "$org" ] || [ -z "$name" ] || [ "$org" = "$name" ]; then
+if [ -z "$host" ] || [ -z "$org" ] || [ -z "$name" ]; then
   echo "git clonehome: could not parse remote: $repo" >&2
   exit 1
 fi
