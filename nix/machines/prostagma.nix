@@ -309,11 +309,12 @@ in
       ];
     };
     accounts = {
+      alex.passwordFile = "/var/lib/secrets/copyparty/alex_password";
       haley.passwordFile = "/var/lib/secrets/copyparty/haley_password";
       carter.passwordFile = "/var/lib/secrets/copyparty/carter_password";
     };
     groups = {
-      family = [ "haley" ];
+      family = [ "haley" "alex" ];
       admins = [ "carter" ];
     };
     volumes = {
