@@ -3,8 +3,19 @@
 set -eu
 
 usage() {
-  echo "usage: git clonehome <repo> [git-clone-options...]" >&2
+  echo "usage: git clonehome [--cd] <repo> [git-clone-options...]" >&2
 }
+
+if [ "$#" -lt 1 ]; then
+  usage
+  exit 2
+fi
+
+cd_after_clone=false
+if [ "$1" = "--cd" ]; then
+  cd_after_clone=true
+  shift
+fi
 
 if [ "$#" -lt 1 ]; then
   usage
@@ -44,3 +55,8 @@ target=$parent/$name
 
 mkdir -p "$parent"
 git clone --depth 1 "$@" "$repo" "$target"
+
+if [ "$cd_after_clone" = true ]; then
+  cd "$target"
+  exec "${SHELL:-/bin/sh}"
+fi
