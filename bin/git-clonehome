@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -eu
+
+usage() {
+  echo "usage: git clonehome <repo> [git-clone-options...]" >&2
+}
+
+if [ "$#" -lt 1 ]; then
+  usage
+  exit 2
+fi
+
+repo=$1
+shift
+
+if [ -z "${CODEHOME:-}" ]; then
+  echo "git clonehome: CODEHOME is not set" >&2
+  exit 1
+fi
+
+remote=${repo#*://}
+remote=${remote#*@}
+host=${remote%%[:/]*}
+
+path=${remote#*:}
+if [ "$path" = "$remote" ]; then
+  path=${remote#*/}
+fi
+
+path=${path%/}
+path=${path%.git}
+org=${path%/*}
+org=${org##*/}
+name=${path##*/}
+
+if [ -z "$host" ] || [ -z "$org" ] || [ -z "$name" ] || [ "$org" = "$name" ]; then
+  echo "git clonehome: could not parse remote: $repo" >&2
+  exit 1
+fi
+
+parent=$CODEHOME/$host/$org
+target=$parent/$name
+
+mkdir -p "$parent"
+git clone --depth 1 "$@" "$repo" "$target"
