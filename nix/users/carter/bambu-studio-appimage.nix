@@ -21,8 +21,6 @@ let
       export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
       export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
       export WEBKIT_DISABLE_DMABUF_RENDERER=1
-      export __GLX_VENDOR_LIBRARY_NAME=nvidia
-      export MESA_LOADER_DRIVER_OVERRIDE=nvidia
     '';
 
     extraPkgs =
