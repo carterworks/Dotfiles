@@ -13,6 +13,7 @@ let
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
+  openspec = inputs.openspec.packages.${pkgs.stdenv.hostPlatform.system}.default;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   rtk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
@@ -71,6 +72,7 @@ let
     awscli2
     codex
     gnupg
+    openspec
     terminal-notifier
     tinty
   ];
