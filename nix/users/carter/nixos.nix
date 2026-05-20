@@ -33,10 +33,6 @@ in
     enable = true;
     openFirewall = true;
     capSysAdmin = true;
-    package = pkgs.sunshine.override {
-      cudaSupport = true;
-      cudaPackages = pkgs.cudaPackages;
-    };
     settings.capture = "kms";
     applications = {
       apps = [
