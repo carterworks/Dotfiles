@@ -188,6 +188,15 @@ in
 
   environment.localBinInPath = true;
 
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+  };
+
+  boot.kernel.sysctl."vm.page-cluster" = 0;
+
+  systemd.oomd.enable = true;
+
   environment.systemPackages = with pkgs; [
     cifs-utils
     samba
