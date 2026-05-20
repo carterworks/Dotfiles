@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  config,
   systemUsername,
   ...
 }:
@@ -93,10 +92,8 @@ in
     ];
   };
 
-  services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
+  services.xserver.videoDrivers = [ "amdgpu" ];
   hardware.amdgpu.initrd.enable = true;
-  hardware.nvidia.open = false;
-  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
 
   hardware.uinput.enable = true;
 
