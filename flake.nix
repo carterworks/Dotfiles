@@ -41,6 +41,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     numtide-llm-agents.url = "github:numtide/llm-agents.nix";
+    openspec.url = "github:Fission-AI/OpenSpec";
     hunk = {
       url = "github:modem-dev/hunk";
       inputs.nixpkgs.follows = "nixpkgs";
