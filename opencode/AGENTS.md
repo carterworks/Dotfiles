@@ -1,3 +1,2 @@
-- Be concise; sacrifice grammar for the sake of concision.
 - If available, use the fff MCP tools for all file search operations instead of default tools.
 - When working on large tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
