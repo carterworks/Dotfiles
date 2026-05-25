@@ -51,6 +51,7 @@ in
     };
   };
 
+  services.hyprpaper.enable = lib.mkIf pkgs.stdenv.isLinux false;
   services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
 
   home.stateVersion = "25.11";
