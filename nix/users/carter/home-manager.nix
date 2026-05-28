@@ -10,8 +10,6 @@
 
 let
   hunk = config.programs.hunk.package;
-  hyprColor = color: alpha: "rgba(${lib.removePrefix "#" color}${alpha})";
-  hyprColors = config.lib.stylix.colors.withHashtag;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
@@ -20,7 +18,6 @@ in
   imports = [
     inputs.hunk.homeManagerModules.default
     inputs.stylix.homeModules.stylix
-    ../../modules/cosmic-theme.nix
     ../../modules/vicinae-theme.nix
   ];
 
@@ -45,13 +42,12 @@ in
       };
     };
     targets = {
-      cosmic.enable = pkgs.stdenv.isLinux;
+      qt.enable = false;
       vicinae.enable = pkgs.stdenv.isLinux;
       wpaperd.enable = pkgs.stdenv.isLinux;
     };
   };
 
-  services.hyprpaper.enable = lib.mkForce false;
   services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
 
   home.stateVersion = "25.11";
@@ -279,25 +275,6 @@ in
     };
   };
 
-  wayland.windowManager.hyprland = lib.mkIf pkgs.stdenv.isLinux {
-    enable = true;
-    package = null;
-    portalPackage = null;
-    configType = "lua";
-    systemd.variables = [ "--all" ];
-    extraConfig = builtins.readFile ../../../hypr/hyprland.lua;
-  };
-
-  xdg.configFile."hypr/colors.lua" = lib.mkIf pkgs.stdenv.isLinux {
-    text = ''
-      return {
-        active_border = "${hyprColor hyprColors.base0D "ee"}",
-        inactive_border = "${hyprColor hyprColors.base03 "cc"}",
-        shadow = "${hyprColor hyprColors.base00 "aa"}",
-      }
-    '';
-  };
-
   programs.zed-editor = {
     package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
@@ -428,27 +405,6 @@ in
           ];
         };
       };
-    };
-  };
-
-  services.mako = lib.mkIf pkgs.stdenv.isLinux {
-    enable = true;
-    settings = {
-      border-size = 2;
-      border-radius = 10;
-      padding = "12";
-      margin = "10";
-      outer-margin = "10";
-      width = 300;
-      height = 100;
-      anchor = "top-right";
-      icons = true;
-      icon-path = "/usr/share/icons/hicolor";
-      max-icon-size = 32;
-      default-timeout = 5000;
-      ignore-timeout = false;
-      history = true;
-      layer = "overlay";
     };
   };
 
