@@ -13,42 +13,28 @@ let
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
+  wallpaper = "${self}/assets/wallpapers/01-miasma.jpg";
+  theme = {
+    fonts = {
+      monospace = "Iosevka";
+      sansSerif = "Inter";
+    };
+  };
 in
 {
   imports = [
     inputs.hunk.homeManagerModules.default
-    inputs.stylix.homeModules.stylix
-    ../../modules/vicinae-theme.nix
   ];
 
-  stylix = {
-    enable = true;
-    overlays.enable = false;
-    base16Scheme = "${pkgs.base16-schemes}/share/themes/selenized-light.yaml";
-    image = "${self}/assets/wallpapers/01-miasma.jpg";
-    polarity = "light";
-    fonts = {
-      monospace = {
-        package = pkgs.iosevka-bin;
-        name = "Iosevka";
-      };
-      sansSerif = {
-        package = pkgs.inter;
-        name = "Inter";
-      };
-      sizes = {
-        terminal = 13;
-        applications = 12;
-      };
-    };
-    targets = {
-      qt.enable = false;
-      vicinae.enable = pkgs.stdenv.isLinux;
-      wpaperd.enable = pkgs.stdenv.isLinux;
-    };
-  };
+  home.packages = [
+    pkgs.inter
+    pkgs.iosevka-bin
+  ];
 
-  services.wpaperd.enable = lib.mkIf pkgs.stdenv.isLinux true;
+  services.wpaperd = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    settings.default.path = wallpaper;
+  };
 
   home.stateVersion = "25.11";
   home.shell.enableShellIntegration = true;
@@ -91,10 +77,29 @@ in
       text_outline = lib.mkForce false;
     };
   };
-  gtk.gtk4.theme = config.gtk.theme;
-
-  xdg.configFile."gtk-3.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
-  xdg.configFile."gtk-4.0/gtk.css".force = lib.mkIf pkgs.stdenv.isLinux true;
+  gtk = lib.mkIf pkgs.stdenv.isLinux {
+    enable = true;
+    font = {
+      name = theme.fonts.sansSerif;
+      size = 12;
+    };
+    theme = {
+      name = "Breeze";
+      package = pkgs.kdePackages.breeze-gtk;
+    };
+    iconTheme = {
+      name = "Papirus";
+      package = pkgs.papirus-icon-theme;
+    };
+    cursorTheme = {
+      name = "Bibata-Modern-Classic";
+      package = pkgs.bibata-cursors;
+      size = 24;
+    };
+    gtk3.extraConfig.gtk-application-prefer-dark-theme = false;
+    gtk4.theme = config.gtk.theme;
+    gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
+  };
 
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."opencode/skills/hunk-review/SKILL.md".source = hunkSkill;

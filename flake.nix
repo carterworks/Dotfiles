@@ -32,10 +32,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     vicinae.url = "github:vicinaehq/vicinae";
-    stylix = {
-      url = "github:nix-community/stylix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     numtide-llm-agents.url = "github:numtide/llm-agents.nix";
     openspec.url = "github:Fission-AI/OpenSpec";
     hunk = {

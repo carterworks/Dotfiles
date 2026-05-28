@@ -75,20 +75,6 @@
 		}
 	},
 
-	// The general vicinae theme as well as the system icon theme (used for applications and file icons) can be customized
-	// according to the system appearance.
-	// When editing the current theme through the vicinae GUI, it will modify the value that maps to the current system appearance.
-	"theme": {
-		"light": {
-			"name": "stylix",
-			"icon_theme": "auto"
-		},
-		"dark": {
-			"name": "stylix",
-			"icon_theme": "auto"
-		}
-	},
-
 	"launcher_window": {
 		// Control the opacity of the main window.
 		// Opacity for other surfaces are controlled by the active theme.
