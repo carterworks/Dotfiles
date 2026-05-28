@@ -140,6 +140,7 @@ in
   };
 
   services.desktopManager.cosmic.enable = true;
+  services.desktopManager.plasma6.enable = true;
   services.system76-scheduler.enable = true;
 
   environment.cosmic.excludePackages = with pkgs; [
@@ -164,8 +165,15 @@ in
         "gtk"
         "hyprland"
       ];
+      kde.default = [
+        "kde"
+        "gtk"
+      ];
     };
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    extraPortals = with pkgs; [
+      kdePackages.xdg-desktop-portal-kde
+      xdg-desktop-portal-gtk
+    ];
   };
 
   services.displayManager = {
