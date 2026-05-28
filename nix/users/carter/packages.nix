@@ -73,7 +73,6 @@ let
     codex
     gnupg
     openspec
-    terminal-notifier
     tinty
   ];
 
@@ -85,10 +84,6 @@ let
     google-chrome
     grim
     heroic
-    hyprpicker
-    hyprpolkitagent
-    hyprshutdown
-    hyprls
     libreoffice-fresh
     openscad
     papirus-icon-theme

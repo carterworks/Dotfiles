@@ -132,24 +132,14 @@ in
     overrideFolders = false;
   };
 
-  programs.hyprland = {
+
+  services.desktopManager.plasma6 = {
     enable = true;
-    package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    portalPackage =
-      inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
-
-  services.desktopManager.cosmic.enable = true;
-  services.desktopManager.plasma6.enable = true;
-  services.system76-scheduler.enable = true;
-
-  environment.cosmic.excludePackages = with pkgs; [
-    cosmic-edit
-    cosmic-player
-    cosmic-reader
-    cosmic-store
-    cosmic-term
-    cosmic-wallpapers
+  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+    konsole
+    elisa
+    kate
   ];
 
   xdg.portal = {
@@ -157,14 +147,6 @@ in
     xdgOpenUsePortal = true;
     config = {
       common.default = [ "gtk" ];
-      cosmic.default = [
-        "cosmic"
-        "gtk"
-      ];
-      hyprland.default = [
-        "gtk"
-        "hyprland"
-      ];
       kde.default = [
         "kde"
         "gtk"
@@ -179,8 +161,7 @@ in
   services.displayManager = {
     autoLogin.enable = true;
     autoLogin.user = "carter";
-    sddm.enable = true;
-    sddm.wayland.enable = true;
+    plasma-login-manager.enable = true;
   };
 
   programs.dconf.profiles.user.databases = [

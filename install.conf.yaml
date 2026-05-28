@@ -23,5 +23,4 @@
     ~/.local/bin/:
       glob: true
       path: bin/*
-    ~/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom: cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
