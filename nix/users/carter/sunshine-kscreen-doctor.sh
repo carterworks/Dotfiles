@@ -3,10 +3,10 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  sunshine-cosmic-randr push-client [output]
-  sunshine-cosmic-randr pop [output]
-  sunshine-cosmic-randr mode <output> <width> <height> <fps>
-  sunshine-cosmic-randr resolve <output> <width> <height> <fps>
+  sunshine-kscreen-doctor push-client [output]
+  sunshine-kscreen-doctor pop [output]
+  sunshine-kscreen-doctor mode <output> <width> <height> <fps>
+  sunshine-kscreen-doctor resolve <output> <width> <height> <fps>
 
 Commands:
   push-client  Push the current mode, then apply SUNSHINE_CLIENT_*.
@@ -18,7 +18,7 @@ EOF
 }
 
 log() {
-  printf 'sunshine-cosmic-randr: %s\n' "$*" >&2
+  printf 'sunshine-kscreen-doctor: %s\n' "$*" >&2
 }
 
 die() {
@@ -26,21 +26,17 @@ die() {
   exit 1
 }
 
-strip_ansi() {
-  sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g'
-}
-
-cosmic_state() {
-  cosmic-randr list | strip_ansi
+kscreen_state() {
+  kscreen-doctor --json
 }
 
 state_dir() {
   if [ -n "${XDG_STATE_HOME:-}" ]; then
-    printf '%s\n' "$XDG_STATE_HOME/sunshine-cosmic-randr"
+    printf '%s\n' "$XDG_STATE_HOME/sunshine-kscreen-doctor"
   elif [ -n "${HOME:-}" ]; then
-    printf '%s\n' "$HOME/.local/state/sunshine-cosmic-randr"
+    printf '%s\n' "$HOME/.local/state/sunshine-kscreen-doctor"
   else
-    printf '%s\n' "/tmp/sunshine-cosmic-randr-${UID:-unknown}"
+    printf '%s\n' "/tmp/sunshine-kscreen-doctor-${UID:-unknown}"
   fi
 }
 
@@ -61,53 +57,48 @@ init_state_dir() {
 output_modes() {
   local output=$1
 
-  cosmic_state | awk -v output="$output" '
-    $1 == output { in_output = 1; next }
-    in_output && /^[^[:space:]]/ { exit }
-    in_output && /Modes:/ { in_modes = 1; next }
-    in_output && in_modes && /^[[:space:]]+[0-9]/ { print; next }
-    in_output && in_modes && !/^[[:space:]]+[0-9]/ { exit }
+  kscreen_state | jq -r --arg output "$output" '
+    .outputs[]
+    | select(.name == $output) as $o
+    | $o.modes[]
+    | "  \(.id): \(.size.width)x\(.size.height) @ \(.refreshRate) Hz\(if .id == $o.currentModeId then " (current)" else "" end)"
   '
 }
 
 detect_output() {
-  cosmic_state | awk '
-    /^[^[:space:]]/ {
-      output = $1
-      enabled = index($0, "(enabled)") > 0
-      next
-    }
-
-    output != "" && /Xwayland primary:[[:space:]]+true/ {
-      found = 1
-      print output
-      exit
-    }
-
-    output != "" && enabled && first_enabled == "" {
-      first_enabled = output
-    }
-
-    END {
-      if (!found && first_enabled != "") {
-        print first_enabled
-      }
-    }
+  kscreen_state | jq -r '
+    [
+      .outputs[]
+      | select(.connected and .enabled)
+    ]
+    | sort_by(if .priority == 0 then 2147483647 else .priority end)
+    | .[0].name // empty
   '
+}
+
+canonical_output() {
+  local output=${1:-}
+
+  kscreen_state | jq -er --arg output "$output" '
+    .outputs[]
+    | select(.connected and (.name == $output or (.id | tostring) == $output))
+    | .name
+  ' 2>/dev/null
 }
 
 resolve_output() {
   local output=${1:-}
 
   if [ -n "$output" ]; then
-    printf '%s\n' "$output"
+    if ! canonical_output "$output"; then
+      return 1
+    fi
+
     return
   fi
 
   output=$(detect_output)
-  if [ -z "$output" ]; then
-    die "could not auto-detect an enabled output"
-  fi
+  [ -n "$output" ] || return 1
 
   log "auto-detected output '$output'"
   printf '%s\n' "$output"
@@ -116,26 +107,27 @@ resolve_output() {
 current_mode() {
   local output=$1
 
-  cosmic_state | awk -v output="$output" '
-    $1 == output { in_output = 1; next }
-    in_output && /^[^[:space:]]/ { exit }
-    in_output && /Modes:/ { in_modes = 1; next }
-    in_output && in_modes && /\(current\)/ {
-      match($0, /([0-9]+)x([0-9]+)[[:space:]]+@[[:space:]]*([0-9.]+)[[:space:]]+Hz/, mode)
-      if (mode[1] != "") {
-        printf "%s %s %s\n", mode[1], mode[2], mode[3]
-        exit
-      }
-    }
-  '
+  kscreen_state | jq -er --arg output "$output" '
+    .outputs[]
+    | select(.name == $output and .connected and .enabled) as $o
+    | $o.modes[]
+    | select(.id == $o.currentModeId)
+    | "\(.size.width) \(.size.height) \(.refreshRate)"
+  ' 2>/dev/null
 }
 
 require_output() {
   local output
 
-  output=$(resolve_output "${1:-}")
+  if ! output=$(resolve_output "${1:-}"); then
+    if [ -n "${1:-}" ]; then
+      die "unknown output '${1}'"
+    fi
 
-  if ! cosmic_state | awk -v output="$output" '$1 == output { found = 1 } END { exit(found ? 0 : 1) }'; then
+    die "could not auto-detect an enabled output"
+  fi
+
+  if ! canonical_output "$output" >/dev/null; then
     die "unknown output '$output'"
   fi
 
@@ -143,6 +135,13 @@ require_output() {
 }
 
 resolve_refresh() {
+  local mode
+
+  mode=$(resolve_mode "$@") || return 1
+  printf '%s\n' "${mode#* }"
+}
+
+resolve_mode() {
   local output
   local width=$2
   local height=$3
@@ -150,30 +149,29 @@ resolve_refresh() {
 
   output=$(require_output "$1")
 
-  output_modes "$output" | awk -v width="$width" -v height="$height" -v fps="$requested_fps" '
-    function abs(x) { return x < 0 ? -x : x }
+  kscreen_state | jq -er \
+    --arg output "$output" \
+    --argjson width "$width" \
+    --argjson height "$height" \
+    --argjson fps "$requested_fps" '
+      def abs: if . < 0 then -. else . end;
 
-    match($0, /([0-9]+)x([0-9]+)[[:space:]]+@[[:space:]]*([0-9.]+)[[:space:]]+Hz/, mode) {
-      if (mode[1] != width || mode[2] != height) {
-        next
-      }
-
-      diff = abs(mode[3] - fps)
-      if (!found || diff < best_diff) {
-        best = mode[3]
-        best_diff = diff
-        found = 1
-      }
-    }
-
-    END {
-      if (!found) {
-        exit 1
-      }
-
-      print best
-    }
-  '
+      [
+        .outputs[]
+        | select(.name == $output and .connected)
+        | .modes[]
+        | select(.size.width == $width and .size.height == $height)
+        | {
+            id: .id,
+            refreshRate: .refreshRate,
+            diff: (.refreshRate - $fps | abs)
+          }
+      ]
+      | sort_by(.diff)
+      | .[0]
+      | select(. != null)
+      | "\(.id) \(.refreshRate)"
+    ' 2>/dev/null
 }
 
 apply_mode() {
@@ -181,19 +179,25 @@ apply_mode() {
   local width=$2
   local height=$3
   local requested_fps=$4
+  local mode
+  local mode_id
   local refresh
 
   output=$(require_output "$1")
 
-  if ! refresh=$(resolve_refresh "$output" "$width" "$height" "$requested_fps"); then
+  if ! mode=$(resolve_mode "$output" "$width" "$height" "$requested_fps"); then
     log "no supported mode for ${output} at ${width}x${height}"
     log "available modes for ${output}:"
     output_modes "$output" >&2
     exit 1
   fi
 
+  read -r mode_id refresh <<EOF
+$mode
+EOF
+
   log "applying ${output} -> ${width}x${height}@${refresh}Hz (requested ${requested_fps}Hz)"
-  cosmic-randr mode "$output" "$width" "$height" --refresh "$refresh"
+  kscreen-doctor "output.${output}.mode.${mode_id}"
 }
 
 push_current_mode() {
@@ -251,7 +255,7 @@ EOF
 with_lock() {
   local output
 
-  output=$(resolve_output "${1:-}")
+  output=$(require_output "${1:-}")
 
   init_state_dir
   exec 9>"$(lock_file "$output")"
@@ -283,7 +287,7 @@ case "$command" in
     ;;
   resolve)
     [ "$#" -eq 5 ] || usage
-    require_output "$2"
+    require_output "$2" >/dev/null
     resolve_refresh "$2" "$3" "$4" "$5"
     ;;
   *)
