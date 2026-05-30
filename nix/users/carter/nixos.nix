@@ -1,21 +1,21 @@
 { pkgs, ... }:
 
 let
-  sunshine-cosmic-randr = pkgs.writeShellApplication {
-    name = "sunshine-cosmic-randr";
+  sunshine-kscreen-doctor = pkgs.writeShellApplication {
+    name = "sunshine-kscreen-doctor";
     runtimeInputs = with pkgs; [
       coreutils
-      cosmic-randr
-      gawk
+      jq
+      kdePackages.libkscreen
       gnused
       util-linux
     ];
-    text = builtins.readFile ./sunshine-cosmic-randr.sh;
+    text = builtins.readFile ./sunshine-kscreen-doctor.sh;
   };
   sunshinePrepCmd = [
     {
-      do = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr push-client";
-      undo = "${sunshine-cosmic-randr}/bin/sunshine-cosmic-randr pop";
+      do = "${sunshine-kscreen-doctor}/bin/sunshine-kscreen-doctor push-client";
+      undo = "${sunshine-kscreen-doctor}/bin/sunshine-kscreen-doctor pop";
     }
   ];
 in
