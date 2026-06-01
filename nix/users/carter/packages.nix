@@ -108,5 +108,4 @@ in
     commonPackages
     ++ lib.optionals pkgs.stdenv.isDarwin darwinPackages
     ++ lib.optionals pkgs.stdenv.isLinux nixosPackages;
-
 }
