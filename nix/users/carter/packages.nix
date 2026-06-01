@@ -77,7 +77,6 @@ let
   ];
 
   nixosPackages = with pkgs; [
-    ashell
     bambu-studio-appimage
     bibata-cursors
     discord
