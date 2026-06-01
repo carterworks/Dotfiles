@@ -37,6 +37,7 @@ let
     fff-mcp
     fish-lsp
     git-crypt
+    gnupg
     go
     gum
     handy
@@ -71,7 +72,6 @@ let
   darwinPackages = with pkgs; [
     awscli2
     codex
-    gnupg
     openspec
     tinty
   ];
