@@ -27,6 +27,11 @@ in
 
   programs.fish.enable = true;
 
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-qt;
+  };
+
   services.sunshine = {
     enable = true;
     openFirewall = true;
