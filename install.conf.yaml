@@ -9,7 +9,6 @@
       create: true
       force: true
 - link:
-    ~/.config/ashell/config.toml: ashell-config.toml
     ~/.config/opencode:
       glob: true
       path: opencode/**/*
