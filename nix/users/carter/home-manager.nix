@@ -96,11 +96,11 @@ in
       package = pkgs.bibata-cursors;
       size = 24;
     };
+    gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
     gtk3.extraConfig.gtk-application-prefer-dark-theme = false;
     gtk4.theme = config.gtk.theme;
     gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
   };
-
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."opencode/skills/hunk-review/SKILL.md".source = hunkSkill;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
