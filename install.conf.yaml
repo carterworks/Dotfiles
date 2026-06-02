@@ -9,9 +9,6 @@
         - opencode/skills/**
       path: opencode/**/*
     ~/.claude/CLAUDE.md: opencode/AGENTS.md
-    ~/.claude/commands/:
-      glob: true
-      path: opencode/command/*
     ~/.claude/skills/:
       glob: true
       path: opencode/skills/*
