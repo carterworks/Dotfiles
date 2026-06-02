@@ -84,7 +84,7 @@ let
     grim
     heroic
     libreoffice-fresh
-    openscad
+    lmstudio
     papirus-icon-theme
     playerctl
     protonplus
