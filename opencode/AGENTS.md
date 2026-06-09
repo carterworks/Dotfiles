@@ -1,4 +1,9 @@
 - If available, use the fff MCP tools for all file search operations instead of default tools.
-- When working on medium tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
+- Practice git commit best practices-make commits that are small, atomic, and frequent.
+- Practice red/green TDD when a test harness exists.
+- Favor battle-tested libraries (aka "choose boring technology") over homebrew, especially for anything with edge cases.
+- Verify, don't assert. Check claims against source or docs before stating them; if unsure, say so. Don't be confidently wrong.
+- Gather context first, propose. Context may include local reproduction.
+- Be terse and casual in replies. Skip preamble and flattery - lead with the answer.
 - One command per tool call — no chaining via `&&`, `;`, `||`, or newlines. Combine only when splitting breaks correctness (shared shell state like `cd`/`source`/`export`, or a failure-guard on a mutating step), never for convenience. Run independent commands as separate parallel calls. Piping is fine.
 - No `echo` for headers or narration — separate calls already label output, and narration belongs in your reply. (Piping `echo` as data is fine.)
