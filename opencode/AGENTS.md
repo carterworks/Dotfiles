@@ -1,3 +1,4 @@
 - If available, use the fff MCP tools for all file search operations instead of default tools.
 - When working on medium tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
-- One command per tool call. Only chain (`&&`) when splitting would break correctness: shared shell state (`cd`, `source`, `export`) or a failure-guard on a mutating sequence. Never chain for convenience. Piping is fine.
+- One command per tool call — no chaining via `&&`, `;`, `||`, or newlines. Combine only when splitting breaks correctness (shared shell state like `cd`/`source`/`export`, or a failure-guard on a mutating step), never for convenience. Run independent commands as separate parallel calls. Piping is fine.
+- No `echo` for headers or narration — separate calls already label output, and narration belongs in your reply. (Piping `echo` as data is fine.)
