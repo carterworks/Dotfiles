@@ -1,2 +1,3 @@
 - If available, use the fff MCP tools for all file search operations instead of default tools.
-- When working on large tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
+- When working on medium tasks, practice git commit best practices. Make commits that are small, atomic, and frequent.
+- One command per tool call. Only chain (`&&`) when splitting would break correctness: shared shell state (`cd`, `source`, `export`) or a failure-guard on a mutating sequence. Never chain for convenience. Piping is fine.
