@@ -98,6 +98,17 @@ in
   };
   hardware.amdgpu.initrd.enable = true;
 
+  hardware.amd-npu = {
+    enable = true;
+    enableNPU = false;
+    enableFastFlowLM = false;
+    enableLemonade = true;
+    enableROCm = true;
+    enableVulkan = true;
+    enableImageGen = true;
+    lemonade.user = systemUsername;
+  };
+
   hardware.uinput.enable = true;
 
   programs.steam = {
@@ -134,7 +145,6 @@ in
     overrideDevices = false;
     overrideFolders = false;
   };
-
 
   services.desktopManager.plasma6 = {
     enable = true;

@@ -4,12 +4,14 @@
       "https://cache.numtide.com"
       "https://vicinae.cachix.org"
       "https://nix-community.cachix.org"
+      "https://nix-amd-ai.cachix.org"
     ];
     extra-trusted-public-keys = [
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
       "vicinae.cachix.org-1:1kDrfienkGHPYbkpNj1mWTr7Fm1+zcenzgTizIcI3oc="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "nix-amd-ai.cachix.org-1:F4OU4vw/lV2oiG6SBHZ+nqjl4EFJuqI4X9A7pvaBmhQ="
     ];
   };
 
@@ -34,6 +36,7 @@
     vicinae.url = "github:vicinaehq/vicinae";
     numtide-llm-agents.url = "github:numtide/llm-agents.nix";
     openspec.url = "github:Fission-AI/OpenSpec";
+    nix-amd-ai.url = "github:noamsto/nix-amd-ai";
     hunk = {
       url = "github:modem-dev/hunk";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -78,7 +81,10 @@
       nixosConfigurations.scylla = mkSystem "scylla" {
         system = "x86_64-linux";
         profile = "carter";
-        extraModules = [ inputs.disko.nixosModules.disko ];
+        extraModules = [
+          inputs.disko.nixosModules.disko
+          inputs.nix-amd-ai.nixosModules.default
+        ];
       };
 
       nixosConfigurations.prostagma = mkSystem "prostagma" {
