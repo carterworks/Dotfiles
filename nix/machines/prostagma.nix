@@ -303,6 +303,7 @@ in
       nih = true;
       vague-403 = true;
       no-dav = true;
+      opds = true;
       xff-hdr = "cf-connecting-ip";
       rproxy = 1;
       xff-src = [
