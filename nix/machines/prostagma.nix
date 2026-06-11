@@ -49,6 +49,7 @@ in
     apps.komga.enable = true;
     apps.syncthing.enable = true;
     apps.backrest.enable = true;
+    apps."koreader-sync-server".enable = true;
   };
 
   virtualisation.docker.daemon.settings = {
@@ -239,6 +240,7 @@ in
       "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
       "$tailscale" serve --service=svc:komga --https=443 http://127.0.0.1:30048
       "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
+      "$tailscale" serve --service=svc:koreader-sync --https=443 http://127.0.0.1:17200
     '';
   };
 
@@ -314,7 +316,10 @@ in
       carter.passwordFile = "/var/lib/secrets/copyparty/carter_password";
     };
     groups = {
-      family = [ "haley" "alex" ];
+      family = [
+        "haley"
+        "alex"
+      ];
       admins = [ "carter" ];
     };
     volumes = {
