@@ -111,6 +111,15 @@ in
 
   hardware.uinput.enable = true;
 
+  users.groups.plugdev = { };
+
+  services.udev.extraRules = ''
+    KERNEL=="hidraw*", ATTRS{idVendor}=="16c0", MODE="0664", GROUP="plugdev"
+    KERNEL=="hidraw*", ATTRS{idVendor}=="3297", MODE="0664", GROUP="plugdev"
+    SUBSYSTEM=="usb", ATTR{idVendor}=="3297", ATTR{idProduct}=="1969", GROUP="plugdev"
+    SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", MODE:="0666", SYMLINK+="stm32_dfu"
+  '';
+
   programs.steam = {
     enable = true;
     extest.enable = true;
@@ -208,7 +217,10 @@ in
 
   services.gvfs.enable = true;
   services.openssh.enable = true;
-  users.users.carter.linger = true;
+  users.users.carter = {
+    extraGroups = [ "plugdev" ];
+    linger = true;
+  };
 
   systemd.tmpfiles.rules = [
     "d /games 2775 root games -"
