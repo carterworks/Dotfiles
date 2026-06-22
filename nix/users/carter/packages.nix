@@ -14,6 +14,7 @@ let
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   openspec = inputs.openspec.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   rtk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.rtk;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
@@ -48,6 +49,7 @@ let
     nodejs
     neovim
     nixd
+    nub
     obsidian
     opencode
     ouch
