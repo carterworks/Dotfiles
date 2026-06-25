@@ -11,7 +11,7 @@
   home = {
     username = "root";
     homeDirectory = "/root";
-    stateVersion = "25.11";
+    stateVersion = "26.11";
     sessionVariables = {
       EZA_ICON_SPACING = "2";
     };
