@@ -83,6 +83,7 @@ let
     bambu-studio-appimage
     bibata-cursors
     discord
+    dolphin-emu
     google-chrome
     grim
     heroic
@@ -91,6 +92,7 @@ let
     papirus-icon-theme
     playerctl
     protonplus
+    sgdboop
     spotify
     sshpass
     slurp
