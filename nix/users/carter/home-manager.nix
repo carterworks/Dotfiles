@@ -36,7 +36,7 @@ in
     settings.default.path = wallpaper;
   };
 
-  home.stateVersion = "25.11";
+  home.stateVersion = "26.05";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
   programs.hunk.enable = true;
