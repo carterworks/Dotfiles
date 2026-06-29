@@ -43,6 +43,7 @@ let
     go
     gum
     handy
+    herdr
     hyperfine
     jq
     markdown-oxide
