@@ -111,6 +111,7 @@ in
   '';
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
+  xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
   xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.isLinux {
     force = true;
     text = ''
