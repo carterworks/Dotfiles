@@ -193,9 +193,6 @@ in
       else if command -qs nano
           set -gx EDITOR nano
       end
-      if command -qs fzf_configure_bindings
-          fzf_configure_bindings --history=
-      end
     '';
     functions.oc = {
       description = "Attach to local opencode server when available";
@@ -243,7 +240,10 @@ in
     EZA_ICON_SPACING = "2";
   };
 
-  programs.fzf.enable = true;
+  programs.fzf = {
+    enable = true;
+    historyWidget.command = "";
+  };
 
   programs.zoxide = {
     enable = true;
