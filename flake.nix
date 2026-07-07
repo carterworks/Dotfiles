@@ -22,10 +22,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-darwin = {
-      # TODO: switch back to LnL7/nix-darwin/master once
-      # https://github.com/nix-darwin/nix-darwin/pull/1819 merges (fixes
-      # nixos-render-docs --toc-depth removal breaking manual builds).
-      url = "github:p42software/nix-darwin/manual-toc-depth";
+      url = "github:nix-darwin/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     disko = {

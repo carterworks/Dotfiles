@@ -343,16 +343,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1783280054,
-        "narHash": "sha256-VHalOuGyoPsHFHZByNMzD/9ESHPi9nImYfi9+yt0wt8=",
-        "owner": "p42software",
+        "lastModified": 1783395956,
+        "narHash": "sha256-AAbexQvDoK+6GFJdhY6kqjA+6ECKRkidgWxkn4gMwAA=",
+        "owner": "nix-darwin",
         "repo": "nix-darwin",
-        "rev": "ebaac1f1e5cbb10ea5e9815bb1f69e53164f8b9b",
+        "rev": "d5bd9cd77aea4c0a8f49e7fd85545671a208ed15",
         "type": "github"
       },
       "original": {
-        "owner": "p42software",
-        "ref": "manual-toc-depth",
+        "owner": "nix-darwin",
         "repo": "nix-darwin",
         "type": "github"
       }
