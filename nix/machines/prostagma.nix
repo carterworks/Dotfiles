@@ -23,7 +23,9 @@ in
   ];
 
   nix.settings.sandbox = false;
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "plexmediaserver" ];
+  nix.gc.automatic = true;
+  nix.gc.options = "--delete-older-than 7d";
+  nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [ inputs.copyparty.overlays.default ];
 
   proxmoxLXC = {
