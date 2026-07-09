@@ -29,7 +29,7 @@ let
     brave
     btop
     bun
-    claude
+    codex
     curl
     docker-language-server
     dust
@@ -74,7 +74,7 @@ let
 
   darwinPackages = with pkgs; [
     awscli2
-    codex
+    claude
     openspec
     tinty
   ];
