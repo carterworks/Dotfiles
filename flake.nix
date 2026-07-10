@@ -17,6 +17,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    systems = {
+      url = "path:./nix/systems";
+      flake = false;
+    };
     home-manager = {
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -34,12 +38,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     vicinae.url = "github:vicinaehq/vicinae";
-    numtide-llm-agents.url = "github:numtide/llm-agents.nix";
+    numtide-llm-agents = {
+      url = "github:numtide/llm-agents.nix";
+      inputs.systems.follows = "systems";
+    };
     openspec.url = "github:Fission-AI/OpenSpec";
     nix-amd-ai.url = "github:noamsto/nix-amd-ai";
     hunk = {
       url = "github:modem-dev/hunk";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.bun2nix.inputs.systems.follows = "systems";
     };
     fff-mcp-aarch64-darwin = {
       url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin";
