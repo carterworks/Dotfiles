@@ -85,7 +85,6 @@ let
     discord
     dolphin-emu
     google-chrome
-    grim
     heroic
     libreoffice-fresh
     lmstudio
@@ -95,17 +94,12 @@ let
     sgdboop
     spotify
     sshpass
-    slurp
     systemd-lsp
     telegram-desktop
     trayscale
     vicinae
     wallust
-    wl-clipboard
-    wlogout
-    wtype
     xan
-    xdotool
   ];
 in
 {

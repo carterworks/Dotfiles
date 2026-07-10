@@ -3,7 +3,6 @@
   pkgs,
   lib,
   inputs,
-  self,
   currentSystemName,
   ...
 }:
@@ -13,7 +12,6 @@ let
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
-  wallpaper = "${self}/assets/wallpapers/01-miasma.jpg";
   theme = {
     fonts = {
       monospace = "Iosevka";
@@ -30,11 +28,6 @@ in
     pkgs.inter
     pkgs.iosevka-bin
   ];
-
-  services.wpaperd = lib.mkIf pkgs.stdenv.isLinux {
-    enable = true;
-    settings.default.path = wallpaper;
-  };
 
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
