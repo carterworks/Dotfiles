@@ -173,9 +173,6 @@ in
       else
           set -gx PI_CODING_AGENT_DIR "$HOME/.config/pi/agent"
       end
-      if command -qs codex
-          set -gx CODEX_HOME "$XDG_CONFIG_HOME/codex"
-      end
     '';
     interactiveShellInit = ''
       if command -qs hx
