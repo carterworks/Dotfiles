@@ -44,6 +44,7 @@ let
     gum
     handy
     herdr
+    home-assistant-cli
     hyperfine
     jq
     markdown-oxide
