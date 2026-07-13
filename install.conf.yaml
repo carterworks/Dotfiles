@@ -18,4 +18,6 @@
     ~/.local/bin/:
       glob: true
       path: bin/*
+    ~/.config/git-quick-commit/config.json: git-quick-commit/config.json
+    ~/.config/git-quick-commit/PROMPT.md: git-quick-commit/PROMPT.md
     ~/.config/vicinae/settings.json: vicinae-config.jsonc

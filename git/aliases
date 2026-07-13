@@ -72,6 +72,9 @@
   # commit with a message
   cm = commit --message
 
+  # quick-commit - generate a commit message with an AI CLI, then commit. See bin/git-quick-commit.
+  qc = quick-commit
+
   ### checkout ###
 
   # checkout - update the working tree to match a branch or paths. [same as "o" for "out"]
