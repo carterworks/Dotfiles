@@ -1,0 +1,8 @@
+{
+  "default": "anthropic",
+  "profiles": {
+    "anthropic": "claude -p --model haiku --effort low --strict-mcp-config",
+    "copilot": "opencode run -m github-copilot/gpt-5.5 --variant minimal",
+    "openai": "codex exec -s read-only --color never -m gpt-5.4-mini -c model_reasoning_effort=low -o \"$GIT_QC_OUT_FILE\" - >/dev/null && cat \"$GIT_QC_OUT_FILE\""
+  }
+}

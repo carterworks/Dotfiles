@@ -1,0 +1,171 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}/git-quick-commit/config.json"
+
+usage() {
+  cat >&2 <<EOF
+usage: git quick-commit [options]
+
+Generate a commit message with an AI CLI, then commit the staged changes.
+
+Options:
+  -p, --profile <name>   Use a named profile from config.json
+  -a, --all              Stage tracked changes (git add --update) first
+  -y, --yes, --no-confirm  Commit without confirmation
+  -n, --dry-run          Print the message; do not commit
+  -l, --list             List profiles (marks the active one) and exit
+  -h, --help             Show this help
+
+Profile resolution (first match wins):
+  --profile  >  \$GIT_QC_PROFILE  >  git config quick-commit.profile
+  >  "default" in config.json
+
+Config: $config
+
+Each profile is a shell command that receives the prompt on stdin and
+prints the commit message to stdout. Two env vars are exported for CLIs
+that don't fit that shape:
+  \$GIT_QC_PROMPT_FILE  path to the prompt (for CLIs that take it as an arg)
+  \$GIT_QC_OUT_FILE     scratch path to write the message to, then cat it
+                        (for CLIs whose stdout carries session noise)
+
+The prompt template lives in PROMPT.md next to config.json; the recent
+commit log and staged diff are appended to it.
+EOF
+}
+
+profile=""
+stage_all=false
+assume_yes=false
+dry_run=false
+list=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p|--profile)
+      [[ $# -ge 2 ]] || { echo "git quick-commit: --profile requires a name" >&2; exit 2; }
+      profile="$2"; shift 2 ;;
+    -a|--all) stage_all=true; shift ;;
+    -y|--yes|--no-confirm) assume_yes=true; shift ;;
+    -n|--dry-run) dry_run=true; shift ;;
+    -l|--list) list=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "git quick-commit: unknown option: $1" >&2; usage; exit 2 ;;
+  esac
+done
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "git quick-commit: jq is required but not found" >&2
+  exit 1
+fi
+
+if [[ ! -f "$config" ]]; then
+  echo "git quick-commit: config not found: $config" >&2
+  exit 1
+fi
+
+if [[ "$list" == true ]]; then
+  if [[ -n "${GIT_QC_PROFILE:-}" ]]; then
+    active="$GIT_QC_PROFILE"; source="\$GIT_QC_PROFILE"
+  elif active="$(git config quick-commit.profile 2>/dev/null)" && [[ -n "$active" ]]; then
+    source="git config quick-commit.profile"
+  else
+    active="$(jq -r '.default // empty' "$config")"; source="config.json default"
+  fi
+  jq -r '.profiles | to_entries[] | "\(.key)\t\(.value)"' "$config" | while IFS=$'\t' read -r name cmd; do
+    marker=" "; [[ "$name" == "$active" ]] && marker="*"
+    printf '%s %-10s %s\n' "$marker" "$name" "$cmd"
+  done
+  echo
+  echo "* = active profile (from $source); override per-run with --profile <name>"
+  exit 0
+fi
+
+[[ -n "$profile" ]] || profile="${GIT_QC_PROFILE:-}"
+[[ -n "$profile" ]] || profile="$(git config quick-commit.profile || true)"
+[[ -n "$profile" ]] || profile="$(jq -r '.default // empty' "$config")"
+if [[ -z "$profile" ]]; then
+  echo "git quick-commit: no profile selected and no default in $config" >&2
+  exit 1
+fi
+
+cmd="$(jq -r --arg p "$profile" '.profiles[$p] // empty' "$config")"
+if [[ -z "$cmd" ]]; then
+  echo "git quick-commit: profile not found: $profile" >&2
+  exit 1
+fi
+
+[[ "$stage_all" == true ]] && git add --update
+
+if git diff --cached --quiet; then
+  echo "git quick-commit: no staged changes" >&2
+  exit 1
+fi
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+prompt_file="$tmpdir/prompt"
+edit_file="$tmpdir/message"
+
+prompt_md="${config:h}/PROMPT.md"
+if [[ -f "$prompt_md" ]]; then
+  template="$(cat "$prompt_md")"
+else
+  template=$'Write a single, minimal git commit message for the staged changes below.\nOutput ONLY the message: no code fences, preamble, or commentary. Do not run commands.\nMatch the style of the recent commits (prefix, capitalization, mood, length); bias to the most recent.\nSubject in imperative mood, no trailing period. Add a body only to explain a non-obvious WHY.\nNo attribution or "Generated with" trailers.'
+fi
+
+{
+  print -r -- "$template"
+  print
+  print "Recent commits (style reference, newest first):"
+  git log -20 --pretty=format:'%s' 2>/dev/null || true
+  print
+  print
+  print "Staged diff:"
+  git diff --cached --no-ext-diff
+} > "$prompt_file"
+
+export GIT_QC_PROMPT_FILE="$prompt_file"
+export GIT_QC_OUT_FILE="$tmpdir/out"
+
+err_file="$tmpdir/err"
+if ! message="$(eval "$cmd" 2>"$err_file" < "$prompt_file")"; then
+  echo "git quick-commit: profile command failed: $profile" >&2
+  [[ -s "$err_file" ]] && cat "$err_file" >&2
+  exit 1
+fi
+
+message="$(print -r -- "$message" | sed '1{/^[[:space:]]*```/d;};${/^[[:space:]]*```[[:space:]]*$/d;}')"
+
+if [[ -z "${message//[[:space:]]/}" ]]; then
+  echo "git quick-commit: generated message was empty" >&2
+  exit 1
+fi
+
+if [[ "$dry_run" == true ]]; then
+  print -r -- "$message"
+  exit 0
+fi
+
+print -r -- "$message" > "$edit_file"
+commit_args=(--file "$edit_file")
+
+if [[ "$assume_yes" != true ]]; then
+  print -r -- "$message"
+  print
+  if [[ ! -e /dev/tty ]]; then
+    echo "git quick-commit: no terminal for confirmation; re-run with --yes" >&2
+    exit 1
+  fi
+  printf 'commit? [y]es / [e]dit / [n]o: ' > /dev/tty
+  read -r reply < /dev/tty || true
+  case "$reply" in
+    y|Y|yes) ;;
+    e|E|edit) commit_args=(--edit --file "$edit_file") ;;
+    *) echo "git quick-commit: aborted" >&2; exit 1 ;;
+  esac
+fi
+
+git commit "${commit_args[@]}"
