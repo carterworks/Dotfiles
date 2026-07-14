@@ -44,11 +44,6 @@
     };
     openspec.url = "github:Fission-AI/OpenSpec";
     nix-amd-ai.url = "github:noamsto/nix-amd-ai";
-    hunk = {
-      url = "github:modem-dev/hunk";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.bun2nix.inputs.systems.follows = "systems";
-    };
     fff-mcp-aarch64-darwin = {
       url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin";
       flake = false;
