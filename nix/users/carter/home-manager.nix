@@ -8,10 +8,8 @@
 }:
 
 let
-  hunk = config.programs.hunk.package;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
-  hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
   theme = {
     fonts = {
       monospace = "Iosevka";
@@ -20,10 +18,6 @@ let
   };
 in
 {
-  imports = [
-    inputs.hunk.homeManagerModules.default
-  ];
-
   home.packages = [
     pkgs.inter
     pkgs.iosevka-bin
@@ -32,7 +26,6 @@ in
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
-  programs.hunk.enable = true;
   programs.mangohud = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
     enable = true;
     settings = {
@@ -95,7 +88,6 @@ in
     gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
   };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
-  xdg.configFile."opencode/skills/hunk-review/SKILL.md".source = hunkSkill;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
@@ -139,8 +131,6 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
-
-  home.file.".claude/skills/hunk-review/SKILL.md".source = hunkSkill;
 
   programs.fish = {
     enable = true;
