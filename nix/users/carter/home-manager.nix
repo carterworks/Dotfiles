@@ -8,6 +8,7 @@
 }:
 
 let
+  hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
   hunk = config.programs.hunk.package;
   hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
   theme = {
@@ -21,7 +22,8 @@ in
   home.packages = [
     pkgs.inter
     pkgs.iosevka-bin
-  ];
+  ]
+  ++ lib.optional (currentSystemName == "scylla") hermes;
 
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
@@ -186,6 +188,30 @@ in
 
   programs.atuin.enable = true;
   programs.zsh.enable = true;
+
+  systemd.user.services.hermes-agent =
+    lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla")
+      {
+        Unit = {
+          Description = "Hermes Agent Gateway";
+          After = [ "network-online.target" ];
+          Wants = [ "network-online.target" ];
+          ConditionPathExists = "${config.home.homeDirectory}/.hermes/config.yaml";
+        };
+        Service = {
+          ExecStart = "${hermes}/bin/hermes gateway run --replace";
+          WorkingDirectory = config.home.homeDirectory;
+          Environment = [
+            "HOME=${config.home.homeDirectory}"
+            "HERMES_HOME=${config.home.homeDirectory}/.hermes"
+            "MESSAGING_CWD=${config.home.homeDirectory}"
+            "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+          ];
+          Restart = "always";
+          RestartSec = "5s";
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
 
   programs.bat.enable = true;
 
