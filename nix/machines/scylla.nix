@@ -5,7 +5,6 @@
 }:
 
 let
-  opencodePort = 4096;
   truenasHost = "100.80.16.49";
 
   truenasSmbOptions = [
@@ -67,8 +66,6 @@ in
   networking.hostId = "8425e349";
   networking.hostName = "scylla";
   networking.networkmanager.enable = true;
-  networking.firewall.allowedTCPPorts = [ opencodePort ];
-
   home-manager.users.${systemUsername}.home.sessionVariables.CODEHOME = "$HOME/Projects/code";
 
   time.timeZone = "America/Denver";
