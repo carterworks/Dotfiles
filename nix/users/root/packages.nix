@@ -12,9 +12,11 @@ in
 
 {
   environment.systemPackages = with pkgs; [
+    age
     btop
     curl
     fff-mcp
+    fnox
     jq
     nfs-utils
     opencode
