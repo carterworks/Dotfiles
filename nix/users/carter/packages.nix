@@ -22,6 +22,7 @@ let
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   commonPackages = with pkgs; [
+    age
     agent-browser
     astro-language-server
     ast-grep
@@ -39,6 +40,7 @@ let
     ffmpeg
     fff-mcp
     fish-lsp
+    fnox
     git-crypt
     gnupg
     go
