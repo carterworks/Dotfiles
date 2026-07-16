@@ -18,6 +18,11 @@
   };
 
   programs.home-manager.enable = true;
+  programs.direnv = {
+    enable = true;
+    enableFishIntegration = true;
+    enableZshIntegration = true;
+  };
   programs.fish = {
     enable = true;
     functions.oc = {
@@ -33,6 +38,7 @@
       '';
     };
   };
+  programs.zsh.enable = true;
   programs.atuin.enable = true;
 
   programs.eza = {
