@@ -8,6 +8,7 @@
 
 let
   copypartyPort = 3210;
+  koreaderSyncPort = 17200;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
@@ -69,6 +70,7 @@ in
   networking.hostName = "prostagma";
   networking.firewall.allowedTCPPorts = [
     copypartyPort
+    koreaderSyncPort
     opencodePort
   ];
 
