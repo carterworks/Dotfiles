@@ -26,6 +26,11 @@ in
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
+  programs.direnv = {
+    enable = true;
+    enableFishIntegration = true;
+    enableZshIntegration = true;
+  };
   programs.mangohud = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
     enable = true;
     settings = {
@@ -190,6 +195,7 @@ in
   };
 
   programs.atuin.enable = true;
+  programs.zsh.enable = true;
 
   systemd.user.services.opencode = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
     Unit.Description = "opencode server";
