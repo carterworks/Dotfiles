@@ -25,6 +25,9 @@
   };
   programs.fish = {
     enable = true;
+    interactiveShellInit = ''
+      ${lib.getExe' pkgs.fnox "fnox"} activate fish | source
+    '';
     functions.oc = {
       description = "Attach to local opencode server when available";
       body = ''
