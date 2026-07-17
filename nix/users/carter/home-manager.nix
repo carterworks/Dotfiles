@@ -163,6 +163,8 @@ in
       end
     '';
     interactiveShellInit = ''
+      ${lib.getExe' pkgs.fnox "fnox"} activate fish | source
+
       if command -qs hx
           set -gx EDITOR hx
       else if command -qs helix
