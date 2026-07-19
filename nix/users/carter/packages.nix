@@ -13,8 +13,6 @@ let
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
-  hunk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
-  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   openspec = inputs.openspec.packages.${pkgs.stdenv.hostPlatform.system}.default;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
@@ -48,7 +46,6 @@ let
     handy
     herdr
     home-assistant-cli
-    hunk
     hyperfine
     jq
     markdown-oxide
@@ -57,7 +54,7 @@ let
     nixd
     nub
     obsidian
-    opencode
+    inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode
     ouch
     pi-coding-agent
     pnpm

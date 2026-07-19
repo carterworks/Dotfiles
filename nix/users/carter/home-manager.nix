@@ -9,8 +9,6 @@
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  hunk = config.programs.hunk.package;
-  hunkSkill = "${hunk}/skills/hunk-review/SKILL.md";
   theme = {
     fonts = {
       monospace = "Iosevka";
@@ -93,6 +91,20 @@ in
     gtk3.extraConfig.gtk-application-prefer-dark-theme = false;
     gtk4.theme = config.gtk.theme;
     gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
+  };
+  xdg.dataFile."applications/brave-agent.desktop" = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=Brave Browser (Agent)
+      GenericName=Web Browser with CDP
+      Exec=brave --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 %U
+      TryExec=brave
+      Terminal=false
+      Categories=Network;WebBrowser;
+      MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+    '';
   };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
