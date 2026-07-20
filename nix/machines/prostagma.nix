@@ -11,9 +11,154 @@ let
   koreaderSyncPort = 17200;
   opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
   opencodePort = 4096;
+  tailnetDomain = "dropbear-tortoise.ts.net";
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
   filesHostname = "files.cartermcbri.de";
+
+  prostagmaDirectory = pkgs.writeTextDir "index.html" ''
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Prostagma services</title>
+        <style>
+          :root {
+            color-scheme: light dark;
+            font-family: system-ui, sans-serif;
+          }
+
+          body {
+            margin: 2rem auto;
+            max-width: 40rem;
+            padding: 0 1rem;
+          }
+
+          li {
+            margin-block: 0.5rem;
+          }
+
+          .status {
+            align-items: center;
+            display: inline-flex;
+            font-size: 0.875rem;
+            gap: 0.4rem;
+          }
+
+          .status::before {
+            background: #888;
+            border-radius: 50%;
+            content: "";
+            height: 0.65rem;
+            width: 0.65rem;
+          }
+
+          .status[data-state="healthy"]::before {
+            background: #22a447;
+          }
+
+          .status[data-state="unhealthy"]::before {
+            background: #d33c32;
+          }
+        </style>
+      </head>
+      <body>
+        <header>
+          <h1>Prostagma services</h1>
+        </header>
+        <main>
+          <nav aria-label="Prostagma services">
+            <ul>
+              <li><a href="http://prostagma.${tailnetDomain}:9898/">Backrest</a></li>
+              <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
+              <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
+              <li><a href="https://komga.${tailnetDomain}/">Komga</a></li>
+              <li><a href="http://prostagma.${tailnetDomain}:${toString opencodePort}/">OpenCode</a></li>
+              <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
+              <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
+              <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
+              <li><a href="https://radarr.${tailnetDomain}/">Radarr</a></li>
+              <li><a href="https://sonarr.${tailnetDomain}/">Sonarr</a></li>
+              <li><a href="https://syncthing.${tailnetDomain}/">Syncthing</a></li>
+            </ul>
+          </nav>
+
+          <section aria-labelledby="api-health-heading">
+            <h2 id="api-health-heading">API health</h2>
+            <ul>
+              <li>
+                Immich Machine Learning:
+                <output class="status" data-health-url="/health/immich-ml" data-state="checking" aria-live="polite">Checking…</output>
+              </li>
+              <li>
+                KOReader Sync:
+                <output class="status" data-health-url="/health/koreader-sync" data-state="checking" aria-live="polite">Checking…</output>
+              </li>
+            </ul>
+          </section>
+        </main>
+        <script>
+          const checks = document.querySelectorAll("[data-health-url]");
+
+          async function checkHealth(status) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+
+            status.dataset.state = "checking";
+            status.textContent = "Checking…";
+
+            try {
+              const response = await fetch(status.dataset.healthUrl, {
+                cache: "no-store",
+                signal: controller.signal,
+              });
+
+              if (!response.ok) {
+                throw new Error("Health check returned " + response.status);
+              }
+
+              status.dataset.state = "healthy";
+              status.textContent = "Healthy";
+            } catch (error) {
+              status.dataset.state = "unhealthy";
+              status.textContent = "Unavailable";
+            } finally {
+              clearTimeout(timeout);
+            }
+          }
+
+          function checkAll() {
+            checks.forEach(checkHealth);
+          }
+
+          checkAll();
+          setInterval(checkAll, 30000);
+        </script>
+      </body>
+    </html>
+  '';
+
+  prostagmaSiteConfig = ''
+    bind 127.0.0.1 ::1
+
+    handle /health/immich-ml {
+      rewrite * /ping
+      reverse_proxy 127.0.0.1:3003
+    }
+
+    handle /health/koreader-sync {
+      rewrite * /healthcheck
+      reverse_proxy 127.0.0.1:${toString koreaderSyncPort} {
+        header_up Accept application/vnd.koreader.v1+json
+      }
+    }
+
+    handle {
+      root * ${prostagmaDirectory}
+      file_server
+    }
+  '';
 in
 {
   imports = [
@@ -222,10 +367,24 @@ in
     authKeyFile = "/run/secrets/tailscale_key";
   };
 
+  services.caddy = {
+    enable = true;
+    virtualHosts = {
+      "http://prostagma.localhost".extraConfig = prostagmaSiteConfig;
+      "http://prostagma.${tailnetDomain}".extraConfig = prostagmaSiteConfig;
+    };
+  };
+
   systemd.services.tailscale-services = {
     description = "Configure Tailscale Services for prostagma apps";
-    after = [ "tailscaled.service" ];
-    requires = [ "tailscaled.service" ];
+    after = [
+      "caddy.service"
+      "tailscaled.service"
+    ];
+    requires = [
+      "caddy.service"
+      "tailscaled.service"
+    ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -237,6 +396,7 @@ in
       tailscale=${pkgs.tailscale}/bin/tailscale
 
       "$tailscale" serve clear svc:bifrost
+      "$tailscale" serve --bg --https=443 http://127.0.0.1:80
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
