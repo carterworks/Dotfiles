@@ -6,6 +6,11 @@
     ~/.config/opencode:
       glob: true
       exclude:
+        - opencode/.gitignore
+        - opencode/bun.lock
+        - opencode/node_modules/**
+        - opencode/package-lock.json
+        - opencode/package.json
         - opencode/skills/**
       path: opencode/**/*
     ~/.claude/CLAUDE.md: opencode/AGENTS.md
