@@ -212,7 +212,6 @@ in
   networking.hostName = "prostagma";
   networking.firewall.allowedTCPPorts = [
     copypartyPort
-    koreaderSyncPort
   ];
 
   systemd.tmpfiles.rules = [
