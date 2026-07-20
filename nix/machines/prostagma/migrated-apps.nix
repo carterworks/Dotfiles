@@ -203,7 +203,7 @@ in
     virtualisation.oci-containers.containers =
       optionalAttrs cfg.apps."qbittorrent-vpn".enable {
         "qbittorrent-vpn" = {
-          image = "ghcr.io/binhex/arch-qbittorrentvpn:latest";
+          image = "ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:202f2fbbd5d70b2a57ce4fafdd22ef12af2f64ca2f87b277ea7456fe37c9063d";
           autoStart = true;
           ports = [
             "127.0.0.1:38080:8080/tcp"
@@ -239,7 +239,7 @@ in
       }
       // optionalAttrs cfg.apps.prowlarr.enable {
         prowlarr = mkArrContainer {
-          image = "ghcr.io/home-operations/prowlarr:2.3.4.5307";
+          image = "ghcr.io/home-operations/prowlarr:2.3.4.5307@sha256:4df82f58d39fde43a206c4bba126226b63ecf2394df202e94c31afc9faae3ed9";
           envPrefix = "PROWLARR";
           instanceName = "Prowlarr";
           port = 30050;
@@ -248,7 +248,7 @@ in
       }
       // optionalAttrs cfg.apps.sonarr.enable {
         sonarr = mkArrContainer {
-          image = "ghcr.io/home-operations/sonarr:4.0.17.2950";
+          image = "ghcr.io/home-operations/sonarr:4.0.17.2950@sha256:bdc787fe07bb7c0b6af9c030764902f70092ec9a426e52a36716d3a13917fe2d";
           envPrefix = "SONARR";
           instanceName = "Sonarr";
           port = 30113;
@@ -260,7 +260,7 @@ in
       }
       // optionalAttrs cfg.apps.radarr.enable {
         radarr = mkArrContainer {
-          image = "ghcr.io/home-operations/radarr:6.1.1.10317";
+          image = "ghcr.io/home-operations/radarr:6.1.1.10317@sha256:5e08c0eefd2770d1d29395c4f84fe5bf7dfc3a986598021306a5d8ac017a3989";
           envPrefix = "RADARR";
           instanceName = "Radarr";
           port = 30025;
@@ -272,7 +272,7 @@ in
       }
       // optionalAttrs cfg.apps.komga.enable {
         komga = {
-          image = "gotson/komga:1.24.1";
+          image = "gotson/komga:1.24.1@sha256:a84a0424e2f8235ba9373ed10b9b903e0feecdbb500a1b4aebac01f08e9e57db";
           autoStart = true;
           ports = [ "127.0.0.1:30048:30048/tcp" ];
           environment = appEnvironment // {
@@ -290,7 +290,7 @@ in
       }
       // optionalAttrs cfg.apps.syncthing.enable {
         syncthing = {
-          image = "syncthing/syncthing:2.0.15";
+          image = "syncthing/syncthing:2.0.15@sha256:37c0e031d9f5559dfa416f0f9157509277d97a24abd0ad27590bd92a91616ecc";
           autoStart = true;
           cmd = [ "--allow-newer-config" ];
           ports = [
@@ -325,7 +325,7 @@ in
       }
       // optionalAttrs cfg.apps.backrest.enable {
         backrest = {
-          image = "garethgeorge/backrest:latest";
+          image = "garethgeorge/backrest:latest@sha256:9c9966b5c285ec791a6b06cb4545fa0247424d05442e12f9558b4322d9f8a15f";
           autoStart = true;
           ports = [ "9898:9898/tcp" ];
           environment = appEnvironment // {
@@ -352,7 +352,7 @@ in
       }
       // optionalAttrs cfg.apps."koreader-sync-server".enable {
         "koreader-sync-server" = {
-          image = "koreader/kosync:latest";
+          image = "koreader/kosync:latest@sha256:bb3f13615365703315a43b9059f65e71e876440f867e23a42bf27f2fa18264e1";
           autoStart = true;
           ports = [ "127.0.0.1:17200:17200/tcp" ];
           volumes = [
