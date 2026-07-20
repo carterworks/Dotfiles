@@ -4,16 +4,16 @@
 }:
 
 let
-  version = "0.1.6";
+  version = "0.4.13";
 
   platformPackages = {
     aarch64-darwin = {
       packageName = "nub-darwin-arm64";
-      hash = "sha256-SokxXqX8Tp15qjjmNaAFj/+e8DscYnNCsJWi79oEVCY=";
+      hash = "sha256-JzIyR8mTQlfTLrcshp1hJKDG8bvot7FtkrMW1dbzcF4=";
     };
     x86_64-linux = {
       packageName = "nub-linux-x64";
-      hash = "sha256-VtgH2c3PexHCmJfbDvM/5IGXmEP0zHxOnYYiLVztVcU=";
+      hash = "sha256-EeI0lfA7qTxpJfCDk4C5ZPgg8irUvcR4bTAgcmM140s=";
     };
   };
 
@@ -43,7 +43,7 @@ pkgs.stdenvNoCC.mkDerivation {
   '';
 
   meta = {
-    description = "All-in-one toolkit for Node.js";
+    description = "Fast TypeScript-first runtime and pnpm-compatible package manager for Node";
     homepage = "https://nubjs.com";
     license = lib.licenses.mit;
     mainProgram = "nub";
