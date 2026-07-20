@@ -92,8 +92,6 @@ let
     playerctl
     protonplus
     sgdboop
-    spotify
-    sshpass
     systemd-lsp
     telegram-desktop
     trayscale
