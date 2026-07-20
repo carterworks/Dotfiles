@@ -99,7 +99,7 @@ in
       Version=1.0
       Name=Brave Browser (Agent)
       GenericName=Web Browser with CDP
-      Exec=brave --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 %U
+      Exec=brave --password-store=kwallet6 --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 %U
       TryExec=brave
       Terminal=false
       Categories=Network;WebBrowser;
