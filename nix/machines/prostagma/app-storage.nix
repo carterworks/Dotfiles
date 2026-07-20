@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.prostagma.appStorage;
@@ -48,9 +53,21 @@ in
           }
         ];
 
-        systemd.tmpfiles.rules = [
-          "d ${cfg.mountPoint} 0755 root root -"
-        ];
+        systemd.services.prostagma-app-storage = {
+          description = "Validate Prostagma app storage";
+          before = [ "docker.service" ];
+          unitConfig.RequiresMountsFor = [ cfg.mountPoint ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${lib.getExe' pkgs.util-linux "mountpoint"} --quiet ${cfg.mountPoint}";
+          };
+        };
+
+        systemd.services.docker = {
+          after = [ "prostagma-app-storage.service" ];
+          requires = [ "prostagma-app-storage.service" ];
+        };
       }
       (lib.mkIf (cfg.mode == "mount") {
         fileSystems.${cfg.mountPoint} = {
