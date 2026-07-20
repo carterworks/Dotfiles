@@ -92,20 +92,22 @@ in
     gtk4.theme = config.gtk.theme;
     gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
   };
-  xdg.dataFile."applications/brave-agent.desktop" = lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla") {
-    text = ''
-      [Desktop Entry]
-      Type=Application
-      Version=1.0
-      Name=Brave Browser (Agent)
-      GenericName=Web Browser with CDP
-      Exec=brave --password-store=kwallet6 --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 %U
-      TryExec=brave
-      Terminal=false
-      Categories=Network;WebBrowser;
-      MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
-    '';
-  };
+  xdg.dataFile."applications/brave-agent.desktop" =
+    lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla")
+      {
+        text = ''
+          [Desktop Entry]
+          Type=Application
+          Version=1.0
+          Name=Brave Browser (Agent)
+          GenericName=Web Browser with CDP
+          Exec=brave --password-store=kwallet6 --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 %U
+          TryExec=brave
+          Terminal=false
+          Categories=Network;WebBrowser;
+          MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+        '';
+      };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
