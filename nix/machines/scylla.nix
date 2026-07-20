@@ -47,6 +47,33 @@ let
       TimeoutIdleSec = "5min";
     };
   };
+
+  scyllaLocalhostDirectory = pkgs.writeTextDir "index.html" ''
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Scylla services</title>
+      </head>
+      <body>
+        <header>
+          <h1>Scylla services</h1>
+        </header>
+        <main>
+          <nav aria-label="Scylla services">
+            <ul>
+              <li><a href="http://cups.scylla.localhost/">CUPS</a></li>
+              <li><a href="http://hermes.scylla.localhost/">Hermes Web UI</a></li>
+              <li><a href="http://lemonade.scylla.localhost/">Lemonade AI</a></li>
+              <li><a href="http://sunshine.scylla.localhost/">Sunshine</a></li>
+              <li><a href="http://syncthing.scylla.localhost/">Syncthing</a></li>
+            </ul>
+          </nav>
+        </main>
+      </body>
+    </html>
+  '';
 in
 {
   imports = [
@@ -80,6 +107,50 @@ in
     nssmdns4 = true;
     nssmdns6 = true;
     openFirewall = true;
+  };
+
+  services.caddy = {
+    enable = true;
+    virtualHosts = {
+      "http://cups.scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        reverse_proxy 127.0.0.1:631 {
+          header_up Host 127.0.0.1:631
+        }
+      '';
+
+      "http://scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        root * ${scyllaLocalhostDirectory}
+        file_server
+      '';
+
+      "http://lemonade.scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        reverse_proxy 127.0.0.1:13305
+      '';
+
+      "http://sunshine.scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        reverse_proxy https://127.0.0.1:47990 {
+          transport http {
+            tls_insecure_skip_verify
+          }
+        }
+      '';
+
+      "http://hermes.scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        reverse_proxy 127.0.0.1:9119 {
+          header_up Host 127.0.0.1:9119
+        }
+      '';
+
+      "http://syncthing.scylla.localhost".extraConfig = ''
+        bind 127.0.0.1 ::1
+        reverse_proxy 127.0.0.1:8384
+      '';
+    };
   };
 
   services.printing = {
