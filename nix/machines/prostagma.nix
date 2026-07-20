@@ -500,6 +500,26 @@ in
     ];
   };
 
+  users.users.carter = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" ];
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILR4/6L4CG8EylhmV7laHQyn81YfQTk63tKWP4y9GB2O carter@bitwarden"
+    ];
+  };
+
+  security.sudo.extraRules = [
+    {
+      users = [ "carter" ];
+      commands = [
+        {
+          command = "ALL";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   users.users.immich.extraGroups = [
     "video"
     "render"
