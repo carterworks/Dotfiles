@@ -42,7 +42,6 @@ systemFunc {
         backupFileExtension = "hm-backup";
         extraSpecialArgs = {
           inherit inputs;
-          currentSystemName = name;
         };
         users.${systemUsername} = homeConfig;
       };
