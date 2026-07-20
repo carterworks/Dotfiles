@@ -414,6 +414,7 @@ in
     accelerationDevices = [ "/dev/dri/renderD128" ];
     machine-learning.environment.MPLCONFIGDIR = "/var/cache/immich/matplotlib";
   };
+  systemd.services.immich-server.unitConfig.RequiresMountsFor = [ "/mnt/truenas/immich" ];
 
   services.plex = {
     enable = true;
@@ -423,6 +424,7 @@ in
     dataDir = "/mnt/truenas/vm-data/plex/config";
     accelerationDevices = [ "/dev/dri/renderD128" ];
   };
+  systemd.services.plex.unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/plex/config" ];
 
   services.cloudflared = {
     enable = true;
@@ -482,6 +484,7 @@ in
       };
     };
   };
+  systemd.services.copyparty.unitConfig.RequiresMountsFor = [ "/mnt/truenas/media" ];
 
   users.groups.video.gid = lib.mkForce 44;
   users.groups.render.gid = lib.mkForce 993;
