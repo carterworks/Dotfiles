@@ -9,8 +9,6 @@
 let
   copypartyPort = 3210;
   koreaderSyncPort = 17200;
-  opencode = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode;
-  opencodePort = 4096;
   tailnetDomain = "dropbear-tortoise.ts.net";
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
@@ -74,7 +72,6 @@ let
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
               <li><a href="https://komga.${tailnetDomain}/">Komga</a></li>
-              <li><a href="http://prostagma.${tailnetDomain}:${toString opencodePort}/">OpenCode</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
               <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
               <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
@@ -216,7 +213,6 @@ in
   networking.firewall.allowedTCPPorts = [
     copypartyPort
     koreaderSyncPort
-    opencodePort
   ];
 
   systemd.tmpfiles.rules = [
@@ -406,22 +402,6 @@ in
       "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
       "$tailscale" serve --service=svc:koreader-sync --https=443 http://127.0.0.1:17200
     '';
-  };
-
-  systemd.services.opencode = {
-    description = "opencode server";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-    serviceConfig = {
-      ExecStart = "${opencode}/bin/opencode serve --hostname 0.0.0.0 --port ${toString opencodePort}";
-      WorkingDirectory = "/root";
-      Environment = [
-        "HOME=/root"
-        "PATH=/root/.local/bin:/run/current-system/sw/bin"
-      ];
-      Restart = "always";
-      RestartSec = "5s";
-    };
   };
 
   services.postgresql.package = pkgs.postgresql_18;
