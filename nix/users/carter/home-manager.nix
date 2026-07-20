@@ -144,6 +144,7 @@ in
   };
 
   programs.atuin.enable = true;
+  programs.man.generateCaches = pkgs.stdenv.isLinux;
   programs.zsh.enable = true;
 
   programs.bat.enable = true;
