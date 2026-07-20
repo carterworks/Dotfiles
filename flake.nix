@@ -54,7 +54,15 @@
         inherit inputs nixpkgs self;
       };
       mkNub = import ./nix/packages/nub.nix;
-      packageSets = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
+      source = self.outPath;
+      nixFiles = nixpkgs.lib.filter (nixpkgs.lib.hasSuffix ".nix") (
+        nixpkgs.lib.filesystem.listFilesRecursive source
+      );
+      packageSets = nixpkgs.lib.genAttrs systems (
         system:
         let
           pkgs = import nixpkgs { inherit system; };
@@ -65,6 +73,32 @@
             inherit pkgs;
             lib = nixpkgs.lib;
           };
+        }
+      );
+      repositoryChecks = nixpkgs.lib.genAttrs systems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          dotbot-config = pkgs.runCommandLocal "dotbot-config-check" { } ''
+            export HOME="$TMPDIR/home"
+            mkdir -p "$HOME"
+            ${pkgs.dotbot}/bin/dotbot \
+              --exit-on-failure \
+              --dry-run \
+              --base-directory ${source} \
+              --config-file ${source}/install.conf.yaml
+            touch "$out"
+          '';
+          nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
+            nixfmt --check ${nixpkgs.lib.escapeShellArgs nixFiles}
+            touch "$out"
+          '';
+          shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
+            shellcheck --severity=warning ${source}/check ${source}/install
+            touch "$out"
+          '';
         }
       );
       scylla = mkSystem "scylla" {
@@ -95,11 +129,11 @@
       nixosConfigurations = { inherit prostagma scylla; };
       darwinConfigurations."Carters-MacBook-Pro" = carters-macbook-pro;
 
-      checks.aarch64-darwin = {
+      checks.aarch64-darwin = repositoryChecks.aarch64-darwin // {
         inherit (packageSets.aarch64-darwin) dotbot nub;
         carters-macbook-pro = carters-macbook-pro.system;
       };
-      checks.x86_64-linux = {
+      checks.x86_64-linux = repositoryChecks.x86_64-linux // {
         inherit (packageSets.x86_64-linux) dotbot nub;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
