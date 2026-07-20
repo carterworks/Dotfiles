@@ -1,4 +1,3 @@
-- If available, use the fff MCP tools for all file search operations instead of default tools.
 - Practice git commit best practices-make commits that are small, atomic, and frequent.
 - Practice red/green TDD when a test harness exists.
 - Favor battle-tested libraries (aka "choose boring technology") over homebrew, especially for anything with edge cases.

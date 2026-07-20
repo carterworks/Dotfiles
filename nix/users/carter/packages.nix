@@ -16,7 +16,6 @@ let
   openspec = inputs.openspec.packages.${pkgs.stdenv.hostPlatform.system}.default;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
-  fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   commonPackages = with pkgs; [
@@ -36,7 +35,6 @@ let
     fastfetch
     fd
     ffmpeg
-    fff-mcp
     fish-lsp
     fnox
     git-crypt

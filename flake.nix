@@ -45,14 +45,6 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
     openspec.url = "github:Fission-AI/OpenSpec";
     nix-amd-ai.url = "github:noamsto/nix-amd-ai";
-    fff-mcp-aarch64-darwin = {
-      url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin";
-      flake = false;
-    };
-    fff-mcp-x86_64-linux = {
-      url = "file+https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-x86_64-unknown-linux-gnu";
-      flake = false;
-    };
   };
 
   outputs =
@@ -61,7 +53,6 @@
       mkSystem = import ./nix/lib/mksystem.nix {
         inherit inputs nixpkgs self;
       };
-      mkFffMcp = import ./nix/packages/fff-mcp.nix;
       mkNub = import ./nix/packages/nub.nix;
     in
     {
@@ -69,17 +60,9 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          fffMcpAssets = {
-            aarch64-darwin = inputs.fff-mcp-aarch64-darwin;
-            x86_64-linux = inputs.fff-mcp-x86_64-linux;
-          };
         in
         {
           dotbot = pkgs.dotbot;
-          fff-mcp = mkFffMcp {
-            inherit pkgs fffMcpAssets;
-            lib = nixpkgs.lib;
-          };
           nub = mkNub {
             inherit pkgs;
             lib = nixpkgs.lib;
