@@ -350,9 +350,10 @@ in
     enable = true;
     openFirewall = true;
     settings = {
-      PermitRootLogin = "yes";
-      PasswordAuthentication = true;
-      PermitEmptyPasswords = "yes";
+      KbdInteractiveAuthentication = false;
+      PasswordAuthentication = false;
+      PermitEmptyPasswords = "no";
+      PermitRootLogin = "prohibit-password";
     };
   };
 
