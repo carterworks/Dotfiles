@@ -14,11 +14,6 @@
       "url": "https://mcp.exa.ai/mcp?exaApiKey={env:EXA_API_KEY}",
       "enabled": true,
     },
-    "fff": {
-      "type": "local",
-      "command": ["fff-mcp"],
-      "enabled": true,
-    },
   },
   "disabled_providers": [],
 }

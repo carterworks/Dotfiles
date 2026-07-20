@@ -307,15 +307,6 @@ in
     package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
     userSettings = {
-      context_servers = {
-        fff = {
-          enabled = true;
-          remote = false;
-          command = "fff-mcp";
-          args = [ ];
-          env = { };
-        };
-      };
       project_panel = {
         dock = "left";
       };

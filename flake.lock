@@ -75,30 +75,6 @@
         "type": "github"
       }
     },
-    "fff-mcp-aarch64-darwin": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-uKm+4fu58vLPWG2ySXM9aC7TX2sHP6K0Lhm149zRnmc=",
-        "type": "file",
-        "url": "https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin"
-      },
-      "original": {
-        "type": "file",
-        "url": "https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-aarch64-apple-darwin"
-      }
-    },
-    "fff-mcp-x86_64-linux": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-9Egjn4vIL837da8qrYvNZyPZJ0Mzpt3kWzMCGRW0r04=",
-        "type": "file",
-        "url": "https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-x86_64-unknown-linux-gnu"
-      },
-      "original": {
-        "type": "file",
-        "url": "https://github.com/dmtrKovalenko/fff.nvim/releases/latest/download/fff-mcp-x86_64-unknown-linux-gnu"
-      }
-    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -556,8 +532,6 @@
       "inputs": {
         "copyparty": "copyparty",
         "disko": "disko",
-        "fff-mcp-aarch64-darwin": "fff-mcp-aarch64-darwin",
-        "fff-mcp-x86_64-linux": "fff-mcp-x86_64-linux",
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
         "nix-amd-ai": "nix-amd-ai",
