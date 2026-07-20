@@ -64,7 +64,9 @@ run_quiet_step() {
     log_message info "${title}"
   fi
 
-  if ! wait "${pid}"; then
+  if wait "${pid}"; then
+    status=0
+  else
     status=$?
   fi
 
