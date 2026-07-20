@@ -92,7 +92,7 @@ let
     {
       inherit image;
       autoStart = true;
-      ports = [ "${toString port}:${toString port}/tcp" ];
+      ports = [ "127.0.0.1:${toString port}:${toString port}/tcp" ];
       environment = appEnvironment // {
         "${envPrefix}__APP__INSTANCENAME" = instanceName;
         "${envPrefix}__SERVER__PORT" = toString port;
@@ -200,34 +200,13 @@ in
     virtualisation.docker.enable = lib.mkDefault true;
     virtualisation.oci-containers.backend = lib.mkDefault "docker";
 
-    networking.firewall.allowedTCPPorts =
-      optionals cfg.apps."qbittorrent-vpn".enable [
-        38080
-        38118
-        39118
-        58946
-      ]
-      ++ optional cfg.apps.prowlarr.enable 30050
-      ++ optional cfg.apps.sonarr.enable 30113
-      ++ optional cfg.apps.radarr.enable 30025
-      ++ optional cfg.apps.komga.enable 30048
-      ++ optional cfg.apps.backrest.enable 9898
-      ++ optional cfg.apps."koreader-sync-server".enable 17200
-      ++ optionals cfg.apps.syncthing.enable [
-        20910
-        20978
-      ];
-
-    networking.firewall.allowedUDPPorts =
-      optional cfg.apps."qbittorrent-vpn".enable 58946 ++ optional cfg.apps.syncthing.enable 20979;
-
     virtualisation.oci-containers.containers =
       optionalAttrs cfg.apps."qbittorrent-vpn".enable {
         "qbittorrent-vpn" = {
           image = "ghcr.io/binhex/arch-qbittorrentvpn:latest";
           autoStart = true;
           ports = [
-            "38080:8080/tcp"
+            "127.0.0.1:38080:8080/tcp"
             "38118:8118/tcp"
             "39118:9118/tcp"
             "58946:58946/tcp"
@@ -295,7 +274,7 @@ in
         komga = {
           image = "gotson/komga:1.24.1";
           autoStart = true;
-          ports = [ "30048:30048/tcp" ];
+          ports = [ "127.0.0.1:30048:30048/tcp" ];
           environment = appEnvironment // {
             KOMGA_CONFIGDIR = "/config";
             KOMGA_DATABASE_FILE = "/config/database.sqlite";
@@ -315,7 +294,7 @@ in
           autoStart = true;
           cmd = [ "--allow-newer-config" ];
           ports = [
-            "20910:8384/tcp"
+            "127.0.0.1:20910:8384/tcp"
             "20978:22000/tcp"
             "20979:22000/udp"
           ];
@@ -375,7 +354,7 @@ in
         "koreader-sync-server" = {
           image = "koreader/kosync:latest";
           autoStart = true;
-          ports = [ "17200:17200/tcp" ];
+          ports = [ "127.0.0.1:17200:17200/tcp" ];
           volumes = [
             "${appRoot}/koreader-sync-server/logs/app:/app/koreader-sync-server/logs"
             "${appRoot}/koreader-sync-server/logs/redis:/var/log/redis"
