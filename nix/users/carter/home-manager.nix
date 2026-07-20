@@ -225,6 +225,29 @@ in
         Install.WantedBy = [ "default.target" ];
       };
 
+  systemd.user.services.hermes-dashboard =
+    lib.mkIf (pkgs.stdenv.isLinux && currentSystemName == "scylla")
+      {
+        Unit = {
+          Description = "Hermes Agent Web Dashboard";
+          After = [ "network-online.target" ];
+          Wants = [ "network-online.target" ];
+          ConditionPathExists = "${config.home.homeDirectory}/.hermes/config.yaml";
+        };
+        Service = {
+          ExecStart = "${hermes}/bin/hermes dashboard --host 127.0.0.1 --port 9119 --no-open";
+          WorkingDirectory = config.home.homeDirectory;
+          Environment = [
+            "HOME=${config.home.homeDirectory}"
+            "HERMES_HOME=${config.home.homeDirectory}/.hermes"
+            "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+          ];
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
+
   programs.bat.enable = true;
 
   programs.eza = {
