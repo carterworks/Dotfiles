@@ -54,9 +54,7 @@
         inherit inputs nixpkgs self;
       };
       mkNub = import ./nix/packages/nub.nix;
-    in
-    {
-      packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
+      packageSets = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (
         system:
         let
           pkgs = import nixpkgs { inherit system; };
@@ -69,8 +67,7 @@
           };
         }
       );
-
-      nixosConfigurations.scylla = mkSystem "scylla" {
+      scylla = mkSystem "scylla" {
         system = "x86_64-linux";
         profile = "carter";
         extraModules = [
@@ -78,20 +75,34 @@
           inputs.nix-amd-ai.nixosModules.default
         ];
       };
-
-      nixosConfigurations.prostagma = mkSystem "prostagma" {
+      prostagma = mkSystem "prostagma" {
         system = "x86_64-linux";
         profile = "root";
         systemUsername = "root";
         gui = false;
         extraModules = [ inputs.copyparty.nixosModules.default ];
       };
-
-      darwinConfigurations."Carters-MacBook-Pro" = mkSystem "carters-macbook-pro" {
+      carters-macbook-pro = mkSystem "carters-macbook-pro" {
         system = "aarch64-darwin";
         profile = "carter";
         systemUsername = "cmcbride";
         darwin = true;
+      };
+    in
+    {
+      packages = packageSets;
+
+      nixosConfigurations = { inherit prostagma scylla; };
+      darwinConfigurations."Carters-MacBook-Pro" = carters-macbook-pro;
+
+      checks.aarch64-darwin = {
+        inherit (packageSets.aarch64-darwin) dotbot nub;
+        carters-macbook-pro = carters-macbook-pro.system;
+      };
+      checks.x86_64-linux = {
+        inherit (packageSets.x86_64-linux) dotbot nub;
+        prostagma = prostagma.config.system.build.toplevel;
+        scylla = scylla.config.system.build.toplevel;
       };
 
       formatter.aarch64-darwin = nixpkgs.legacyPackages.aarch64-darwin.nixfmt-tree;
