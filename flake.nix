@@ -42,7 +42,7 @@
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";
     };
-    hermes-agent.url = "github:NousResearch/hermes-agent/07f07c7b51643fe2ebbd6ac582f80b2a1b1c29d2";
+    hermes-agent.url = "github:NousResearch/hermes-agent";
     openspec.url = "github:Fission-AI/OpenSpec";
     nix-amd-ai.url = "github:noamsto/nix-amd-ai";
     fff-mcp-aarch64-darwin = {
