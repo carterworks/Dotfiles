@@ -461,6 +461,7 @@ in
       ".cursor/"
       ".worktrees/"
       ".osgrep/"
+      ".scout/"
     ];
 
     includes = [
