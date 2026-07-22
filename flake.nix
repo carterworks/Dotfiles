@@ -127,7 +127,10 @@
       packages = packageSets;
 
       nixosConfigurations = { inherit prostagma scylla; };
-      darwinConfigurations."Carters-MacBook-Pro" = carters-macbook-pro;
+      darwinConfigurations = {
+        "Carters-MacBook-Pro" = carters-macbook-pro;
+        "Carters-MacBook-Pro-2" = carters-macbook-pro;
+      };
 
       checks.aarch64-darwin = repositoryChecks.aarch64-darwin // {
         inherit (packageSets.aarch64-darwin) dotbot nub;

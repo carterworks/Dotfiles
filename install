@@ -133,6 +133,7 @@ current_machine_name() {
 run_rebuild() {
   local rebuild
   local machine_name
+  local system_path
 
   machine_name="$(current_machine_name)"
 
@@ -140,8 +141,9 @@ run_rebuild() {
     Darwin)
       rebuild="$(command -v darwin-rebuild || true)"
       if [[ -z "${rebuild}" ]]; then
-        printf 'darwin-rebuild is required on nix-darwin systems.\n' >&2
-        exit 1
+        log_message info "Bootstrapping nix-darwin from the pinned configuration"
+        system_path="$(nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+        rebuild="${system_path}/sw/bin/darwin-rebuild"
       fi
 
       sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}"
