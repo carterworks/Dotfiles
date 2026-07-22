@@ -28,7 +28,7 @@ Machine selection is automatic:
 - on macOS, via `scutil --get LocalHostName`
 - on NixOS, via the static hostname from `hostnamectl` or `/etc/hostname`
 
-Those names must match the flake host names.
+Those names must match the flake host names. Multiple names may point to the same configuration when a machine has an alias.
 
 ## Install
 
@@ -37,6 +37,8 @@ Those names must match the flake host names.
 ```bash
 ./install
 ```
+
+On a Mac without nix-darwin, the installer builds the selected configuration from this flake and uses its pinned `darwin-rebuild` to perform the first activation. Only Nix itself must already be installed.
 
 ## Dotbot
 
