@@ -240,26 +240,6 @@ in
       ui_font_size = 16.0;
       buffer_font_size = 17.333333333333332;
       theme = "Base16 selenized-light";
-      agent_servers = {
-        cursor = {
-          type = "registry";
-        };
-        opencode = {
-          favorite_config_option_values = {
-            model = [
-              "openai/gpt-5.5/low"
-              "openai/gpt-5.5/high"
-            ];
-          };
-          type = "registry";
-        };
-        claude-acp = {
-          default_config_options = {
-            model = "opus[1m]";
-          };
-          type = "registry";
-        };
-      };
       agent = {
         sidebar_side = "right";
         dock = "right";
@@ -293,7 +273,7 @@ in
       git = {
         inline_blame = {
           delay_ms = 300;
-          min_column = 100;
+          min_column = 80;
         };
       };
       icon_theme = {
