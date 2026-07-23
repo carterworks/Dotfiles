@@ -3,23 +3,14 @@
       create: true
       force: true
 - link:
-    ~/.config/opencode:
+    ~/.config/opencode/skills/:
       glob: true
-      exclude:
-        - opencode/.gitignore
-        - opencode/bun.lock
-        - opencode/node_modules/**
-        - opencode/package-lock.json
-        - opencode/package.json
-        - opencode/skills/**
-      path: opencode/**/*
-    ~/.claude/CLAUDE.md: opencode/AGENTS.md
+      path: agents/skills/*
+    ~/.config/opencode/opencode.jsonc: agents/opencode.jsonc
+    ~/.claude/CLAUDE.md: agents/AGENTS.md
     ~/.claude/skills/:
       glob: true
-      path: opencode/skills/*
-    ~/.agents/skills/:
-      glob: true
-      path: opencode/skills/*
+      path: agents/skills/*
     ~/.local/bin/:
       glob: true
       path: bin/*
