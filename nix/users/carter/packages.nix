@@ -75,6 +75,7 @@ let
   darwinPackages = with pkgs; [
     awscli2
     claude
+    litellm
     openspec
     tinty
   ];
