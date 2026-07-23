@@ -62,6 +62,9 @@ in
     docker-litellm = {
       after = [ "docker-litellm-postgres.service" ];
       requires = [ "docker-litellm-postgres.service" ];
+      postStart = ''
+        ${pkgs.docker}/bin/docker exec --user 0 litellm apk add --no-cache nodejs npm
+      '';
       preStart = ''
         docker=${pkgs.docker}/bin/docker
 
