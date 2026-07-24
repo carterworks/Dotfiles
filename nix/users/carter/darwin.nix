@@ -10,6 +10,19 @@ let
   litellmConfigDir = "${home}/.config/litellm";
 in
 {
+  nixpkgs.overlays = [
+    (final: prev: {
+      # TODO: Remove this override and verify LiteLLM builds once langfuse supports wrapt 2.
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (pythonFinal: pythonPrev: {
+          langfuse = pythonPrev.langfuse.overridePythonAttrs (old: {
+            pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "wrapt" ];
+          });
+        })
+      ];
+    })
+  ];
+
   users.users.${systemUsername} = {
     name = systemUsername;
     home = "/Users/${systemUsername}";
