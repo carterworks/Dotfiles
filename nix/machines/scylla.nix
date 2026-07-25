@@ -92,6 +92,7 @@ in
 
   networking.hostId = "8425e349";
   networking.hostName = "scylla";
+  networking.firewall.enable = false;
   networking.networkmanager.enable = true;
   home-manager.users.${systemUsername} = {
     imports = [ ./scylla/home-manager.nix ];
