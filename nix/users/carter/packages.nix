@@ -98,6 +98,7 @@ let
     trayscale
     vicinae
     wallust
+    wl-clipboard
     xan
   ];
 in
