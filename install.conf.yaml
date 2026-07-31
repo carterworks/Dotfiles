@@ -6,7 +6,6 @@
     ~/.config/opencode/skills/:
       glob: true
       path: agents/skills/*
-    ~/.config/opencode/opencode.jsonc: agents/opencode.jsonc
     ~/.claude/CLAUDE.md: agents/AGENTS.md
     ~/.claude/skills/:
       glob: true
