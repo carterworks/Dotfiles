@@ -4,16 +4,16 @@
 }:
 
 let
-  version = "0.4.13";
+  version = "0.6.0";
 
   platformPackages = {
     aarch64-darwin = {
       packageName = "nub-darwin-arm64";
-      hash = "sha256-JzIyR8mTQlfTLrcshp1hJKDG8bvot7FtkrMW1dbzcF4=";
+      hash = "sha256-9JWxc0FOLfYIxmoZUG++y52LnLV6djLGv2y4Ar4eg3k=";
     };
     x86_64-linux = {
       packageName = "nub-linux-x64";
-      hash = "sha256-EeI0lfA7qTxpJfCDk4C5ZPgg8irUvcR4bTAgcmM140s=";
+      hash = "sha256-hKIH/lXf9dHD8XgMvhusYkpTLt8FO8F9YYgdT1BppQY=";
     };
   };
 
