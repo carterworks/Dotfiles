@@ -1,4 +1,5 @@
 - Practice git commit best practices-make commits that are small, atomic, and frequent.
+- Only report to me in ASD-STE100 msimplified Technical English.
 - Practice red/green TDD when a test harness exists.
 - Favor battle-tested libraries (aka "choose boring technology") over homebrew, especially for anything with edge cases.
 - Verify, don't assert. Check claims against source or docs before stating them; if unsure, say so. Don't be confidently wrong.
