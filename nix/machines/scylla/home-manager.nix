@@ -71,7 +71,7 @@ in
       ConditionPathExists = "${config.home.homeDirectory}/.hermes/config.yaml";
     };
     Service = {
-      ExecStart = "${lib.getExe pkgs.fnox} exec --non-interactive -- ${hermes}/bin/hermes gateway run --replace";
+      ExecStart = "${lib.getExe' pkgs.fnox "fnox"} exec --non-interactive -- ${hermes}/bin/hermes gateway run --replace";
       WorkingDirectory = config.home.homeDirectory;
       Environment = [
         "HOME=${config.home.homeDirectory}"
