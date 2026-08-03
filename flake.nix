@@ -42,8 +42,7 @@
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";
     };
-    # TODO: Remove the revision pin after upstream fixes the missing @nous-research/ui npm cache entry.
-    hermes-agent.url = "github:NousResearch/hermes-agent/126ff7071b6b755055879648f4e859b3187d0fac";
+    hermes-agent.url = "github:NousResearch/hermes-agent";
     nix-amd-ai.url = "github:noamsto/nix-amd-ai";
   };
 
