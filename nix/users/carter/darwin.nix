@@ -26,15 +26,6 @@ in
           runHook postInstall
         '';
       };
-
-      # TODO: Remove this override and verify LiteLLM builds once langfuse supports wrapt 2.
-      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
-        (pythonFinal: pythonPrev: {
-          langfuse = pythonPrev.langfuse.overridePythonAttrs (old: {
-            pythonRelaxDeps = (old.pythonRelaxDeps or [ ]) ++ [ "wrapt" ];
-          });
-        })
-      ];
     })
   ];
 
