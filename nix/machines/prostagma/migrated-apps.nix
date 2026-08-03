@@ -13,6 +13,7 @@ let
     mkOption
     optional
     optionalAttrs
+    optionalString
     optionals
     types
     ;
@@ -63,17 +64,36 @@ let
 
   mkPathCheckService = paths: {
     unitConfig.RequiresMountsFor = paths;
-    preStart = concatStringsSep "\n" (
-      map (path: ''
-        if [ ! -e ${lib.escapeShellArg path} ]; then
-          echo "Missing required migration path: ${path}" >&2
+    preStart =
+      concatStringsSep "\n" (
+        map (path: ''
+          if [ ! -e ${lib.escapeShellArg path} ]; then
+            echo "Missing required migration path: ${path}" >&2
+            exit 1
+          fi
+        '') paths
+      )
+      + optionalString (builtins.elem torrentData paths && cfg.torrentDataMountSource != null) ''
+        findmnt=${lib.getExe' pkgs.util-linux "findmnt"}
+        actual_source=$("$findmnt" -n -o SOURCE -T ${lib.escapeShellArg torrentData})
+        actual_fstype=$("$findmnt" -n -o FSTYPE -T ${lib.escapeShellArg torrentData})
+
+        if [ "$actual_source" != ${lib.escapeShellArg cfg.torrentDataMountSource} ]; then
+          echo "Torrent payload path ${torrentData} is backed by $actual_source, expected ${cfg.torrentDataMountSource}" >&2
           exit 1
         fi
-      '') paths
-    );
+
+        case "$actual_fstype" in
+          nfs|nfs4) ;;
+          *)
+            echo "Torrent payload path ${torrentData} uses $actual_fstype, expected NFS" >&2
+            exit 1
+            ;;
+        esac
+      '';
   };
 
-  torrentData = "${appRoot}/qbittorrent-vpn/data";
+  torrentData = cfg.torrentDataRoot;
   torrentConfig = "${appRoot}/qbittorrent-vpn/config";
   dockerNetworkOptions = optionals cfg.dockerNetwork.enable [
     "--network=${cfg.dockerNetwork.name}"
@@ -119,6 +139,32 @@ in
       type = types.str;
       default = "/mnt/truenas/media";
       description = "Root containing media libraries exposed to media apps.";
+    };
+
+    torrentDataRoot = mkOption {
+      type = types.str;
+      default = "${config.prostagma.migratedApps.appRoot}/qbittorrent-vpn/data";
+      description = "Bulk qBittorrent payload root mounted into qBittorrent and Arr containers as /data.";
+    };
+
+    torrentDataMountSource = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Expected NFS source backing torrentDataRoot; when set, application units fail closed on a missing or wrong mount.";
+    };
+
+    torrentSpaceGuard = {
+      warningGiB = mkOption {
+        type = types.ints.positive;
+        default = 30;
+        description = "Log a warning when app or torrent storage has less than this many GiB available.";
+      };
+
+      stopGiB = mkOption {
+        type = types.ints.positive;
+        default = 20;
+        description = "Stop all qBittorrent transfers when app or torrent storage has less than this many GiB available.";
+      };
     };
 
     syncthingDataRoot = mkOption {
@@ -340,10 +386,12 @@ in
             "${appRoot}/backrest/data:/data"
             "${appRoot}/backrest/cache:/cache"
             "${appRoot}/backrest/tmp:/tmp"
-            "${appRoot}/backrest:/userdata/river-rapid/vm-data/backrest:ro"
             "${mediaRoot}/audiobooks:/userdata/reservoir/media/audiobooks:ro"
             "${mediaRoot}/comics:/userdata/reservoir/media/comics:ro"
+            "${mediaRoot}/tvshows:/userdata/reservoir/media/tvshows:ro"
+            "${mediaRoot}/movies:/userdata/reservoir/media/movies:ro"
             "${cfg.syncthingDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
+            "${cfg.syncthingDataRoot}/media/games:/userdata/reservoir/media/games:ro"
             "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
             "${cfg.syncthingDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
           ];
@@ -418,6 +466,91 @@ in
             requires = dockerNetworkDependencies;
           };
       }
+      // optionalAttrs (cfg.apps."qbittorrent-vpn".enable && cfg.torrentDataMountSource != null) {
+        prostagma-qbittorrent-space-guard = {
+          description = "Stop qBittorrent before Prostagma storage is exhausted";
+          after = [ "docker-qbittorrent-vpn.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            TimeoutStartSec = "180s";
+          };
+          script = ''
+            set -u
+
+            docker=${lib.getExe pkgs.docker}
+            findmnt=${lib.getExe' pkgs.util-linux "findmnt"}
+            stat=${lib.getExe' pkgs.coreutils "stat"}
+            systemctl=${lib.getExe' pkgs.systemd "systemctl"}
+            timeout=${lib.getExe' pkgs.coreutils "timeout"}
+            warn_bytes=$((${toString cfg.torrentSpaceGuard.warningGiB} * 1024 * 1024 * 1024))
+            stop_bytes=$((${toString cfg.torrentSpaceGuard.stopGiB} * 1024 * 1024 * 1024))
+            must_stop=0
+
+            check_path() {
+              path=$1
+              label=$2
+
+              if ! blocks=$("$timeout" -k 2 10 "$stat" -f -c %a "$path"); then
+                echo "$label storage probe failed at $path" >&2
+                must_stop=1
+                return
+              fi
+              if ! block_size=$("$timeout" -k 2 10 "$stat" -f -c %S "$path"); then
+                echo "$label block-size probe failed at $path" >&2
+                must_stop=1
+                return
+              fi
+
+              available=$((blocks * block_size))
+              if [ "$available" -lt "$stop_bytes" ]; then
+                echo "$label storage critically low: $available bytes available at $path" >&2
+                must_stop=1
+              elif [ "$available" -lt "$warn_bytes" ]; then
+                echo "$label storage low: $available bytes available at $path" >&2
+              fi
+            }
+
+            check_path ${lib.escapeShellArg appRoot} application
+
+            actual_source=unknown
+            actual_fstype=unknown
+            if ! actual_source=$("$timeout" -k 2 10 "$findmnt" -n -o SOURCE -T ${lib.escapeShellArg torrentData}); then
+              echo "Torrent payload mount source probe failed at ${torrentData}" >&2
+              must_stop=1
+            elif [ "$actual_source" != ${lib.escapeShellArg cfg.torrentDataMountSource} ]; then
+              echo "Torrent payload mount mismatch: got $actual_source, expected ${cfg.torrentDataMountSource}" >&2
+              must_stop=1
+            fi
+
+            if ! actual_fstype=$("$timeout" -k 2 10 "$findmnt" -n -o FSTYPE -T ${lib.escapeShellArg torrentData}); then
+              echo "Torrent payload filesystem probe failed at ${torrentData}" >&2
+              must_stop=1
+            else
+              case "$actual_fstype" in
+                nfs|nfs4) ;;
+                *)
+                  echo "Torrent payload filesystem mismatch: got $actual_fstype, expected NFS" >&2
+                  must_stop=1
+                  ;;
+              esac
+            fi
+
+            check_path ${lib.escapeShellArg torrentData} torrent
+
+            if [ "$must_stop" -eq 1 ]; then
+              running=$("$timeout" -k 2 10 "$docker" container inspect -f '{{.State.Running}}' qbittorrent-vpn 2>/dev/null || true)
+              if [ "$running" = true ]; then
+                if ! "$timeout" -k 2 15 "$docker" exec qbittorrent-vpn curl -fsS --max-time 10 -X POST \
+                  -d hashes=all \
+                  http://127.0.0.1:8080/api/v2/torrents/stop; then
+                  echo "qBittorrent API stop failed; stopping its systemd unit" >&2
+                fi
+              fi
+              "$systemctl" --no-block stop docker-qbittorrent-vpn.service
+            fi
+          '';
+        };
+      }
       // optionalAttrs cfg.apps.prowlarr.enable {
         docker-prowlarr =
           mkPathCheckService [
@@ -484,7 +617,10 @@ in
             "${appRoot}/backrest/tmp"
             "${mediaRoot}/audiobooks"
             "${mediaRoot}/comics"
+            "${mediaRoot}/tvshows"
+            "${mediaRoot}/movies"
             "${cfg.syncthingDataRoot}/media/ebooks"
+            "${cfg.syncthingDataRoot}/media/games"
             "/mnt/truenas/photos"
             "${cfg.syncthingDataRoot}/users/carter"
           ]
@@ -505,5 +641,25 @@ in
             requires = dockerNetworkDependencies;
           };
       };
+
+    systemd.timers.prostagma-qbittorrent-space-guard =
+      mkIf (cfg.apps."qbittorrent-vpn".enable && cfg.torrentDataMountSource != null)
+        {
+          description = "Check Prostagma app and torrent storage headroom";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "2m";
+            OnUnitActiveSec = "1m";
+            Persistent = true;
+            Unit = "prostagma-qbittorrent-space-guard.service";
+          };
+        };
+
+    assertions = [
+      {
+        assertion = cfg.torrentSpaceGuard.warningGiB > cfg.torrentSpaceGuard.stopGiB;
+        message = "prostagma.migratedApps.torrentSpaceGuard.warningGiB must exceed stopGiB";
+      }
+    ];
   };
 }

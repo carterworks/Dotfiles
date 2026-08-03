@@ -188,6 +188,8 @@ in
     enable = true;
     appRoot = "/srv/apps";
     mediaRoot = "/mnt/truenas/media-direct";
+    torrentDataRoot = "/mnt/truenas/vm-data/qbittorrent-downloads";
+    torrentDataMountSource = "192.168.5.252:/mnt/river-rapid/vm-data";
     syncthingDataRoot = "/mnt/truenas/syncthing-root";
     apps."qbittorrent-vpn".enable = true;
     apps.prowlarr.enable = true;
