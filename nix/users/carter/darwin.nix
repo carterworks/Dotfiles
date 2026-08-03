@@ -12,6 +12,21 @@ in
 {
   nixpkgs.overlays = [
     (final: prev: {
+      # TODO: Remove after nixos-unstable includes https://github.com/NixOS/nixpkgs/commit/c594c220.
+      # Remove this override, then run the Obsidian package build and ./check.
+      # nix build '.#darwinConfigurations."Carters-MacBook-Pro".pkgs.obsidian' --no-link
+      obsidian = prev.obsidian.overrideAttrs {
+        sourceRoot = null;
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/{Applications,bin}
+          cp -R Obsidian.app $out/Applications
+          makeWrapper $out/Applications/Obsidian.app/Contents/MacOS/Obsidian $out/bin/obsidian
+          makeWrapper $out/Applications/Obsidian.app/Contents/MacOS/obsidian-cli $out/bin/obsidian-cli
+          runHook postInstall
+        '';
+      };
+
       # TODO: Remove this override and verify LiteLLM builds once langfuse supports wrapt 2.
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (pythonFinal: pythonPrev: {
