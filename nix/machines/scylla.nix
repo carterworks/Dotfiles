@@ -65,7 +65,6 @@ let
             <ul>
               <li><a href="http://cups.scylla.localhost/">CUPS</a></li>
               <li><a href="http://hermes.scylla.localhost/">Hermes Web UI</a></li>
-              <li><a href="http://lemonade.scylla.localhost/">Lemonade AI</a></li>
               <li><a href="http://sunshine.scylla.localhost/">Sunshine</a></li>
               <li><a href="http://syncthing.scylla.localhost/">Syncthing</a></li>
             </ul>
@@ -129,11 +128,6 @@ in
         file_server
       '';
 
-      "http://lemonade.scylla.localhost".extraConfig = ''
-        bind 127.0.0.1 ::1
-        reverse_proxy 127.0.0.1:13305
-      '';
-
       "http://sunshine.scylla.localhost".extraConfig = ''
         bind 127.0.0.1 ::1
         reverse_proxy https://127.0.0.1:47990 {
@@ -171,17 +165,6 @@ in
     enable32Bit = true;
   };
   hardware.amdgpu.initrd.enable = true;
-
-  hardware.amd-npu = {
-    enable = true;
-    enableNPU = false;
-    enableFastFlowLM = false;
-    enableLemonade = true;
-    enableROCm = true;
-    enableVulkan = true;
-    enableImageGen = true;
-    lemonade.user = systemUsername;
-  };
 
   hardware.uinput.enable = true;
 
