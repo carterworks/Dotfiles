@@ -78,6 +78,7 @@ let
     litellm
     openspec
     tinty
+    vault
   ];
 
   nixosPackages = with pkgs; [
