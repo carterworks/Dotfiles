@@ -11,6 +11,7 @@ let
   bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
   claude = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
+  fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
@@ -75,6 +76,7 @@ let
   darwinPackages = with pkgs; [
     awscli2
     claude
+    fff-mcp
     litellm
     openspec
     tinty

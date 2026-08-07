@@ -50,6 +50,7 @@
         inherit inputs nixpkgs self;
       };
       mkNub = import ./nix/packages/nub.nix;
+      mkFffMcp = import ./nix/packages/fff-mcp.nix;
       systems = [
         "aarch64-darwin"
         "x86_64-linux"
@@ -66,6 +67,10 @@
         {
           dotbot = pkgs.dotbot;
           nub = mkNub {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+          };
+          fff-mcp = mkFffMcp {
             inherit pkgs;
             lib = nixpkgs.lib;
           };
@@ -126,11 +131,11 @@
       };
 
       checks.aarch64-darwin = repositoryChecks.aarch64-darwin // {
-        inherit (packageSets.aarch64-darwin) dotbot nub;
+        inherit (packageSets.aarch64-darwin) dotbot nub fff-mcp;
         carters-macbook-pro = carters-macbook-pro.system;
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
-        inherit (packageSets.x86_64-linux) dotbot nub;
+        inherit (packageSets.x86_64-linux) dotbot nub fff-mcp;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
       };
