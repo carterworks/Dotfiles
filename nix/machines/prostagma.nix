@@ -167,6 +167,8 @@ in
     ./prostagma/migrated-apps.nix
   ];
 
+  home-manager.users.carter = import ./prostagma/hermes-carter.nix;
+
   nix.settings.sandbox = false;
   nix.gc.automatic = true;
   nix.gc.options = "--delete-older-than 7d";
@@ -214,6 +216,7 @@ in
   ];
 
   networking.hostName = "prostagma";
+  networking.hosts."100.91.175.4" = [ "homeassistant.local" ];
   networking.firewall.allowedTCPPorts = [
     copypartyPort
   ];
@@ -509,6 +512,7 @@ in
 
   users.users.carter = {
     isNormalUser = true;
+    linger = true;
     extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILR4/6L4CG8EylhmV7laHQyn81YfQTk63tKWP4y9GB2O carter@bitwarden"
