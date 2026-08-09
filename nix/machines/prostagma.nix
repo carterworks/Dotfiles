@@ -158,6 +158,13 @@ let
       file_server
     }
   '';
+
+  hermesDashboardSiteConfig = ''
+    bind 100.96.32.111
+    reverse_proxy 127.0.0.1:9119 {
+      header_up Host 127.0.0.1:9119
+    }
+  '';
 in
 {
   imports = [
@@ -220,6 +227,9 @@ in
   networking.hosts."100.91.175.4" = [ "homeassistant.local" ];
   networking.firewall.allowedTCPPorts = [
     copypartyPort
+  ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
+    9119
   ];
 
   systemd.tmpfiles.rules = [
@@ -376,6 +386,7 @@ in
     virtualHosts = {
       "http://prostagma.localhost".extraConfig = prostagmaSiteConfig;
       "http://prostagma.${tailnetDomain}".extraConfig = prostagmaSiteConfig;
+      "http://prostagma.${tailnetDomain}:9119".extraConfig = hermesDashboardSiteConfig;
     };
   };
 
