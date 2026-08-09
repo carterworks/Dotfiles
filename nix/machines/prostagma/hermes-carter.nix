@@ -117,4 +117,25 @@ in
     };
     Install.WantedBy = [ "default.target" ];
   };
+
+  systemd.user.services.obsidian-sync = {
+    Unit = {
+      Description = "Obsidian Notes vault sync";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+      ConditionPathExists = "${config.home.homeDirectory}/Documents/Notes";
+    };
+    Service = {
+      ExecStart = "${obsidian-headless}/bin/ob sync --path ${config.home.homeDirectory}/Documents/Notes --continuous";
+      WorkingDirectory = "${config.home.homeDirectory}/Documents/Notes";
+      Environment = [
+        "HOME=${config.home.homeDirectory}"
+        "HERMES_HOME=${config.home.homeDirectory}/.hermes"
+        "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "always";
+      RestartSec = "10s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 }
