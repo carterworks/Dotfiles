@@ -8,6 +8,7 @@
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  obsidian-headless = pkgs.callPackage ../../packages/obsidian-headless.nix { };
 in
 {
   home = {
@@ -18,6 +19,7 @@ in
       hermes
       pkgs.age
       pkgs.fnox
+      obsidian-headless
     ];
   };
 

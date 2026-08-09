@@ -1,0 +1,15 @@
+{
+  "name": "obsidian-headless",
+  "version": "0.0.14",
+  "main": "cli.js",
+  "bin": {
+    "ob": "cli.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.11.1",
+    "commander": "14.0.3"
+  }
+}
