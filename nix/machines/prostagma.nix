@@ -177,9 +177,23 @@ in
 
   home-manager.users.carter = import ./prostagma/hermes-carter.nix;
 
-  nix.settings.sandbox = false;
-  nix.gc.automatic = true;
-  nix.gc.options = "--delete-older-than 7d";
+  nix = {
+    gc = {
+      automatic = true;
+      options = "--delete-older-than 7d";
+    };
+    settings = {
+      sandbox = false;
+      min-free = 5 * 1024 * 1024 * 1024;
+      max-free = 10 * 1024 * 1024 * 1024;
+    };
+  };
+
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+    SystemKeepFree=5G
+  '';
+
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [ inputs.copyparty.overlays.default ];
 
