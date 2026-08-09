@@ -70,6 +70,7 @@ let
             <ul>
               <li><a href="http://prostagma.${tailnetDomain}:9898/">Backrest</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
+              <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
               <li><a href="https://komga.${tailnetDomain}/">Komga</a></li>
               <li><a href="https://litellm.${tailnetDomain}/">LiteLLM</a></li>
