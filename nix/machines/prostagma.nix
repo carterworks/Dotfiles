@@ -225,8 +225,15 @@ in
     apps."koreader-sync-server".enable = true;
   };
 
-  virtualisation.docker.daemon.settings = {
-    "data-root" = "/srv/apps/docker";
+  virtualisation.docker = {
+    autoPrune = {
+      enable = true;
+      dates = "weekly";
+      flags = [ "--filter=until=168h" ];
+    };
+    daemon.settings = {
+      "data-root" = "/srv/apps/docker";
+    };
   };
 
   boot.supportedFilesystems = [ "nfs" ];
