@@ -7,7 +7,6 @@
 }:
 
 let
-  cobaltPort = 39000;
   copypartyPort = 3210;
   koreaderSyncPort = 17200;
   tailnetDomain = "dropbear-tortoise.ts.net";
@@ -237,27 +236,6 @@ in
     };
   };
 
-  virtualisation.oci-containers.containers.cobalt = {
-    image = "ghcr.io/imputnet/cobalt:11@sha256:df14a3b3fe4390d4e1c2d4761ed58981d34aa5fc82d0df2091bab890e7dfaa8b";
-    autoStart = true;
-    ports = [ "127.0.0.1:${toString cobaltPort}:9000/tcp" ];
-    environment = {
-      API_URL = "https://cobalt.${tailnetDomain}/";
-      DURATION_LIMIT = "10800";
-      PROCESSING_PRIORITY = "10";
-    };
-    extraOptions = [
-      "--pull=missing"
-      "--read-only"
-      "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=64m"
-      "--cap-drop=ALL"
-      "--security-opt=no-new-privileges=true"
-      "--memory=2g"
-      "--memory-swap=2g"
-      "--pids-limit=256"
-    ];
-  };
-
   boot.supportedFilesystems = [ "nfs" ];
 
   environment.systemPackages = [
@@ -437,12 +415,10 @@ in
     description = "Configure Tailscale Services for prostagma apps";
     after = [
       "caddy.service"
-      "docker-cobalt.service"
       "tailscaled.service"
     ];
     requires = [
       "caddy.service"
-      "docker-cobalt.service"
       "tailscaled.service"
     ];
     wantedBy = [ "multi-user.target" ];
@@ -456,7 +432,6 @@ in
       tailscale=${pkgs.tailscale}/bin/tailscale
 
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
-      "$tailscale" serve --service=svc:cobalt --https=443 http://127.0.0.1:${toString cobaltPort}
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
