@@ -3,6 +3,8 @@
       create: true
       force: true
 - link:
+    ~/.config/opencode/cli.json: opencode/cli.json
+    ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
     ~/.config/opencode/skills/:
       glob: true
       path: agents/skills/*

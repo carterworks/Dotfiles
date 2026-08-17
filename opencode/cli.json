@@ -1,0 +1,24 @@
+{
+  "theme": {
+    "name": "system"
+  },
+  "diffs": {
+    "wrap": "word"
+  },
+  "session": {
+    "sidebar": "auto",
+    "scrollbar": true,
+    "thinking": "hide",
+    "image_preview": true
+  },
+  "animations": true,
+  "tabs": {
+    "layout": "vertical"
+  },
+  "prompt": {
+    "image_preview": true
+  },
+  "debug": {
+    "devtools": false
+  }
+}
