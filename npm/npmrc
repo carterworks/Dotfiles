@@ -1,0 +1,4 @@
+//artifactory.corp.adobe.com/artifactory/api/npm/:_auth=${NPM_ADOBE_AUTH}
+@axe-devtools:registry=https://artifactory.corp.adobe.com/artifactory/api/npm/npm-deque-axe-devtools-remote/
+//artifactory.corp.adobe.com/artifactory/api/npm/:_authToken=${NPM_ADOBE_AUTH_TOKEN}
+prefix=/Users/cmcbride/.npm-global
