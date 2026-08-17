@@ -41,6 +41,7 @@
       inputs.systems.follows = "systems";
     };
     hermes-agent.url = "github:NousResearch/hermes-agent";
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
   };
 
   outputs =
@@ -119,6 +120,7 @@
         profile = "carter";
         systemUsername = "cmcbride";
         darwin = true;
+        extraModules = [ inputs.determinate.darwinModules.default ];
       };
     in
     {

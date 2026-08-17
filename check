@@ -139,7 +139,6 @@ verify_darwin_build() {
 
   [[ -d "${output}/sw" ]]
   [[ -x "${output}/sw/bin/darwin-rebuild" ]]
-  [[ -x "${output}/sw/bin/nix" ]]
 }
 
 verify_nixos_build() {
