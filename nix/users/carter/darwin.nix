@@ -46,7 +46,13 @@ in
     onActivation.cleanup = "zap";
     taps = [ ];
     brews = [ ];
-    casks = [ ];
+    casks = [
+      "bitwarden"
+      "lunar"
+      "podman-desktop"
+      "space-rabbit"
+      "zed"
+    ];
   };
 
   programs.zsh.enable = true;
