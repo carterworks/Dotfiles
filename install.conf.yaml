@@ -7,6 +7,7 @@
     ~/.claude/rules/context7.md: claude/rules/context7.md
     ~/.claude/settings.json: claude/settings.json
     ~/.claude/statusline.mjs: claude/statusline.mjs
+    ~/.npmrc: npm/npmrc
     ~/.config/opencode/cli.json: opencode/cli.json
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
     ~/.config/opencode/skills/:
