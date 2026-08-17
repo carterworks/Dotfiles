@@ -52,7 +52,6 @@ in
     gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
   };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
-  xdg.configFile."fish/fish_plugins".source = ../../../fish/fish_plugins;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
     complete -c oc -f
@@ -98,6 +97,20 @@ in
 
   programs.fish = {
     enable = true;
+    plugins = [
+      {
+        name = "done";
+        src = pkgs.fishPlugins.done.src;
+      }
+      {
+        name = "bang-bang";
+        src = pkgs.fishPlugins.bang-bang.src;
+      }
+      {
+        name = "fzf-fish";
+        src = pkgs.fishPlugins.fzf-fish.src;
+      }
+    ];
     shellAliases = {
       cc = "claude --model opus --effort high";
     };
