@@ -143,7 +143,13 @@ in
     '';
   };
 
-  programs.atuin.enable = true;
+  programs.atuin = {
+    enable = true;
+    settings = {
+      enter_accept = true;
+      sync.records = true;
+    };
+  };
   programs.man.generateCaches = pkgs.stdenv.isLinux;
   programs.zsh.enable = true;
 
@@ -205,17 +211,32 @@ in
   programs.zed-editor = {
     package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
+    userKeymaps = [
+      {
+        context = "Terminal";
+        bindings.shift-enter = [
+          "terminal::SendText"
+          "\u001b\r"
+        ];
+      }
+    ];
     userSettings = {
+      debugger.button = false;
+      cli_default_open_behavior = "new_window";
       project_panel = {
         dock = "left";
       };
       outline_panel = {
+        button = false;
         dock = "right";
       };
       collaboration_panel = {
+        button = false;
         dock = "right";
       };
       git_panel = {
+        group_by = "status";
+        tree_view = false;
         dock = "left";
       };
       lsp = {
@@ -256,6 +277,7 @@ in
       buffer_font_features = {
         calt = true;
       };
+      file_scan_exclusions = [ ".claude/worktrees" ];
       show_edit_predictions = true;
       minimap = {
         show = "auto";
@@ -294,6 +316,27 @@ in
       title_bar = {
         show_branch_status_icon = true;
         show_menus = true;
+      };
+      agent_servers = {
+        claude-acp = {
+          default_config_options.model = "opus[1m]";
+          type = "registry";
+        };
+        cursor.type = "registry";
+        opencode = {
+          favorite_config_option_values.model = [
+            "openai/gpt-5.5/low"
+            "openai/gpt-5.5/high"
+          ];
+          type = "registry";
+        };
+      };
+      context_servers.fff = {
+        args = [ ];
+        command = "fff-mcp";
+        enabled = true;
+        env = { };
+        remote = false;
       };
       languages = {
         Nix = {
