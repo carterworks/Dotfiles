@@ -1,0 +1,51 @@
+{
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES": "3",
+    "CLAUDE_CODE_NO_FLICKER": "1",
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
+  },
+  "permissions": {
+    "deny": [
+      "Read(*.env)"
+    ],
+    "defaultMode": "auto"
+  },
+  "model": "claude-opus-4-8[1m]",
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "MSG=$(jq -r '.message // \"Needs attention\"'); node \"$HOME/.claude/hooks/notify.js\" -e '🔔' -t 'Claude' \"$MSG\" 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"$HOME/.claude/statusline.mjs\""
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": false,
+    "superpowers@claude-plugins-official": false,
+    "code-review@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false
+  },
+  "sandbox": {
+    "enabled": false
+  },
+  "effortLevel": "xhigh",
+  "advisorModel": "opus",
+  "autoUpdatesChannel": "stable",
+  "minimumVersion": "2.1.193",
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
+  "preferredNotifChannel": "auto",
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
+}

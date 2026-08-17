@@ -3,6 +3,10 @@
       create: true
       force: true
 - link:
+    ~/.claude/hooks/notify.js: claude/hooks/notify.js
+    ~/.claude/rules/context7.md: claude/rules/context7.md
+    ~/.claude/settings.json: claude/settings.json
+    ~/.claude/statusline.mjs: claude/statusline.mjs
     ~/.config/opencode/cli.json: opencode/cli.json
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
     ~/.config/opencode/skills/:
