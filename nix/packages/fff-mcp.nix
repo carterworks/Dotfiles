@@ -4,17 +4,17 @@
 }:
 
 let
-  version = "0.10.3";
+  version = "0.10.5";
 
   platformPackages = {
     aarch64-darwin = {
       assetName = "fff-mcp-aarch64-apple-darwin";
-      hash = "sha256-jFKs8elVQPAs9VV5Em6/WAz0ivFcduHJAwHCyMWsvPk=";
+      hash = "sha256-Lxp1wkAeXff1oQgn+c6f6EAfKQ/5nD8/FCPH17FW2Ek=";
     };
     # musl (static) so the binary runs on NixOS without autoPatchelf.
     x86_64-linux = {
       assetName = "fff-mcp-x86_64-unknown-linux-musl";
-      hash = "sha256-iCNHZpmXfz2/41GGLwgxY4EPZmVlIgB8u2W+FAxxmUw=";
+      hash = "sha256-arT0Ee7ug+fjkARQsju1AXLk+T0k3HICZRJvDDobHyM=";
     };
   };
 

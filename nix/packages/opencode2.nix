@@ -4,17 +4,17 @@
 }:
 
 let
-  version = "0.0.0-beta-17519";
+  version = "0.0.0-beta-17595";
 
   platformPackages = {
     aarch64-darwin = {
       target = "darwin-arm64";
-      hash = "sha256-QhiarAoRAOmuaV7PG9Wb5ASVAgUzJY3nffFFPaO/+pg=";
+      hash = "sha256-gHyepNRxN6C/k/5gqsQ4duLpkp3GlkYWb/tmf+xrFRY=";
     };
     # musl (static) so the binary runs on NixOS without autoPatchelf.
     x86_64-linux = {
       target = "linux-x64-musl";
-      hash = "sha256-KXGYSzjVI6mbzo44aCKUingpdSajbGDDCwxlKN+UrZU=";
+      hash = "sha256-KOoYj7b/ejbVwzTDfNjPv6w5ZR6j5vPTEJFXEcblkHs=";
     };
   };
 

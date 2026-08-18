@@ -4,16 +4,16 @@
 }:
 
 let
-  version = "0.6.0";
+  version = "0.7.5";
 
   platformPackages = {
     aarch64-darwin = {
       packageName = "nub-darwin-arm64";
-      hash = "sha256-9JWxc0FOLfYIxmoZUG++y52LnLV6djLGv2y4Ar4eg3k=";
+      hash = "sha256-u41jnjbsiMhwWxHWvdKxiONEA2HBw+sal7RethV5DUE=";
     };
     x86_64-linux = {
       packageName = "nub-linux-x64";
-      hash = "sha256-hKIH/lXf9dHD8XgMvhusYkpTLt8FO8F9YYgdT1BppQY=";
+      hash = "sha256-5QeyWvWg/yeZW4kLAgF8ywLLH0jlY06KQp+hLFB8pyc=";
     };
   };
 
@@ -35,9 +35,10 @@ pkgs.stdenvNoCC.mkDerivation {
 
     mkdir -p $out/lib/nub $out/bin
     cp -R . $out/lib/nub
-    chmod 755 $out/lib/nub/bin/nub $out/lib/nub/bin/nubx
+    chmod 755 $out/lib/nub/bin/nub
     ln -s $out/lib/nub/bin/nub $out/bin/nub
-    ln -s $out/lib/nub/bin/nubx $out/bin/nubx
+    # 0.7.0+ ships one multi-call binary; the nub/nubx verb is chosen by argv[0].
+    ln -s $out/lib/nub/bin/nub $out/bin/nubx
 
     runHook postInstall
   '';
