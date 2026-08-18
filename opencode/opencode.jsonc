@@ -1,6 +1,13 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
+  "permissions": [
+    {
+      "action": "websearch",
+      "resource": "*",
+      "effect": "deny",
+    },
+  ],
   "mcp": {
     "context7": {
       "type": "remote",
