@@ -25,7 +25,6 @@ let
     agent-browser
     astro-language-server
     ast-grep
-    aube
     bash-language-server
     brave
     btop
@@ -67,6 +66,7 @@ let
     sshpass
     superhtml
     taplo
+    tmux
     typescript-language-server
     vscode-css-languageserver
     vscode-json-languageserver
