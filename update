@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+APPLY=false
+
+has_gum() {
+  command -v gum >/dev/null 2>&1
+}
+
+log_message() {
+  local level="$1"
+  shift
+
+  if has_gum; then
+    gum log --level "${level}" "$*"
+  else
+    case "${level}" in
+      error|warn)
+        printf '%s\n' "$*" >&2
+        ;;
+      *)
+        printf '%s\n' "$*"
+        ;;
+    esac
+  fi
+}
+
+section() {
+  local title="$1"
+
+  if has_gum; then
+    gum style --bold --foreground 255 --background 62 --padding "0 1" --margin "1 0" "${title}"
+  else
+    printf '\n== %s ==\n' "${title}"
+  fi
+}
+
+show_log() {
+  local logfile="$1"
+
+  if [[ -s "${logfile}" ]]; then
+    printf '\n' >&2
+    cat "${logfile}" >&2
+  fi
+}
+
+run_quiet_step() {
+  local title="$1"
+  shift
+
+  local logfile
+  local pid
+  local status=0
+
+  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-update.XXXXXX")"
+  "$@" >"${logfile}" 2>&1 &
+  pid=$!
+
+  if has_gum; then
+    gum spin --spinner dot --title "${title}" -- bash -c 'pid="$1"; while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done' _ "${pid}"
+  else
+    log_message info "${title}"
+  fi
+
+  if wait "${pid}"; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if (( status == 0 )); then
+    rm -f "${logfile}"
+    log_message info "${title} complete"
+    return 0
+  fi
+
+  log_message error "${title} failed"
+  show_log "${logfile}"
+  rm -f "${logfile}"
+  return "${status}"
+}
+
+warn_if_git_dirty() {
+  if command -v git >/dev/null 2>&1 && [[ -n "$(git -C "${BASEDIR}" status --short 2>/dev/null)" ]]; then
+    log_message warn "Git tree is dirty; Nix may warn during evaluation"
+  fi
+}
+
+confirm_apply() {
+  local count="$1"
+
+  if [[ "${APPLY}" == true ]]; then
+    return 0
+  fi
+
+  if has_gum && [[ -t 0 ]]; then
+    if gum confirm "Apply ${count} package update(s)?"; then
+      return 0
+    fi
+    return 1
+  fi
+
+  log_message info "Re-run with --apply to bump versions and hashes"
+  return 1
+}
+
+require_tool() {
+  local tool="$1"
+
+  if ! command -v "${tool}" >/dev/null 2>&1; then
+    log_message error "${tool} is required to run this updater"
+    exit 1
+  fi
+}
+
+# Latest upstream version for a manually packaged binary. Each package tracks a
+# different release channel, so the lookup is per-package and cannot be derived
+# from the pinned expression.
+latest_version() {
+  local pkg="$1"
+
+  case "${pkg}" in
+    nub)
+      curl -fsSL 'https://registry.npmjs.org/@nubjs/nub-darwin-arm64' \
+        | jq -r '.["dist-tags"].latest'
+      ;;
+    fff-mcp)
+      curl -fsSL 'https://api.github.com/repos/dmtrKovalenko/fff/releases/latest' \
+        | jq -r '.tag_name' | sed 's/^v//'
+      ;;
+    opencode2)
+      curl -fsSL 'https://registry.npmjs.org/@opencode-ai/cli' \
+        | jq -r '.["dist-tags"].beta'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Rewrite version and every per-platform hash in a package expression. URLs and
+# current hashes come from the flake itself, so no URL scheme is duplicated here.
+apply_update() {
+  local pkg="$1"
+  local file="$2"
+  local current="$3"
+  local latest="$4"
+
+  local system oldurl oldhash newurl newhash content i
+  local -a old_hashes=()
+  local -a new_hashes=()
+
+  for system in "${SYSTEMS[@]}"; do
+    oldurl="$(nix eval --raw ".#packages.${system}.${pkg}.src.url")"
+    oldhash="$(nix eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
+    newurl="${oldurl//${current}/${latest}}"
+    newhash="$(nix store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
+    old_hashes+=("${oldhash}")
+    new_hashes+=("${newhash}")
+  done
+
+  content="$(cat "${file}")"
+  for i in "${!old_hashes[@]}"; do
+    content="${content//${old_hashes[$i]}/${new_hashes[$i]}}"
+  done
+  content="${content//version = \"${current}\"/version = \"${latest}\"}"
+  printf '%s\n' "${content}" >"${file}"
+}
+
+usage() {
+  cat <<EOF
+Update flake inputs and manually packaged binaries.
+
+Usage: ./update [--apply]
+
+  --apply   Bump version and hashes for any out-of-date package.
+  -h, --help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --apply)
+      APPLY=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      log_message error "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+require_tool nix
+require_tool curl
+require_tool jq
+
+cd "${BASEDIR}"
+section "Dotfiles update"
+warn_if_git_dirty
+
+section "Update flake inputs"
+run_quiet_step "Updating flake inputs" nix flake update
+
+section "Check packaged binaries"
+
+mapfile -t SYSTEMS < <(nix eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
+DEFAULT_SYSTEM="${SYSTEMS[0]}"
+
+updates=()
+for file in "${BASEDIR}"/nix/packages/*.nix; do
+  pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
+  [[ -n "${pkg}" ]] || continue
+
+  current="$(nix eval --raw ".#packages.${DEFAULT_SYSTEM}.${pkg}.version" 2>/dev/null || true)"
+  if [[ -z "${current}" ]]; then
+    log_message warn "${pkg}: no version attribute; skipping"
+    continue
+  fi
+
+  latest="$(latest_version "${pkg}" 2>/dev/null || true)"
+  if [[ -z "${latest}" ]]; then
+    log_message warn "${pkg}: no update source configured; skipping"
+    continue
+  fi
+
+  if [[ "${current}" == "${latest}" ]]; then
+    log_message info "${pkg}: up to date (${current})"
+  else
+    log_message warn "${pkg}: update available (${current} -> ${latest})"
+    updates+=("${pkg}|${file}|${current}|${latest}")
+  fi
+done
+
+if (( ${#updates[@]} == 0 )); then
+  log_message info "All packaged binaries up to date"
+  exit 0
+fi
+
+if ! confirm_apply "${#updates[@]}"; then
+  exit 0
+fi
+
+section "Apply updates"
+for entry in "${updates[@]}"; do
+  IFS='|' read -r pkg file current latest <<<"${entry}"
+  if ! run_quiet_step "Bumping ${pkg} to ${latest}" apply_update "${pkg}" "${file}" "${current}" "${latest}"; then
+    log_message error "${pkg}: failed to bump; left unchanged"
+  fi
+done
+
+log_message info "Run ./check to validate, then ./install to switch"

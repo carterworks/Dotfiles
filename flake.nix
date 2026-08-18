@@ -103,7 +103,7 @@
             touch "$out"
           '';
           shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-            shellcheck --severity=warning ${source}/check ${source}/install
+            shellcheck --severity=warning ${source}/check ${source}/install ${source}/update
             touch "$out"
           '';
         }
