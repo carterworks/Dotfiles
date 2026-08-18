@@ -4,6 +4,14 @@ set -euo pipefail
 
 CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NIX_ACCESS_TOKEN_ARGS=()
+
+if command -v gh >/dev/null 2>&1; then
+  github_token="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "${github_token}" ]]; then
+    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
+  fi
+fi
 
 has_gum() {
   command -v gum >/dev/null 2>&1
@@ -95,7 +103,7 @@ if ! command -v nix >/dev/null 2>&1; then
 fi
 
 run_dotbot() {
-  nix run ".#dotbot" -- --verbose --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
+  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#dotbot" -- --verbose --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
 }
 
 current_machine_name() {
@@ -142,11 +150,11 @@ run_rebuild() {
       rebuild="$(command -v darwin-rebuild || true)"
       if [[ -z "${rebuild}" ]]; then
         log_message info "Bootstrapping nix-darwin from the pinned configuration"
-        system_path="$(nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+        system_path="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
         rebuild="${system_path}/sw/bin/darwin-rebuild"
       fi
 
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}"
+      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
       ;;
     Linux)
       if [[ ! -e /etc/NIXOS && ! -e /run/current-system/nixos-version ]]; then
@@ -160,7 +168,7 @@ run_rebuild() {
         exit 1
       fi
 
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}"
+      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
       ;;
     *)
       printf 'Unsupported system: %s\n' "$(uname -s)" >&2

@@ -4,6 +4,14 @@ set -euo pipefail
 
 CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NIX_ACCESS_TOKEN_ARGS=()
+
+if command -v gh >/dev/null 2>&1; then
+  github_token="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "${github_token}" ]]; then
+    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
+  fi
+fi
 
 has_gum() {
   command -v gum >/dev/null 2>&1
@@ -95,7 +103,7 @@ if ! command -v nix >/dev/null 2>&1; then
 fi
 
 run_dotbot_check() {
-  nix run ".#dotbot" -- --verbose --exit-on-failure --dry-run --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
+  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#dotbot" -- --verbose --exit-on-failure --dry-run --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
 }
 
 current_machine_name() {
@@ -135,7 +143,7 @@ verify_darwin_build() {
   local output
 
   machine_name="$(current_machine_name)"
-  output="$(nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+  output="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
 
   [[ -d "${output}/sw" ]]
   [[ -x "${output}/sw/bin/darwin-rebuild" ]]
@@ -146,7 +154,7 @@ verify_nixos_build() {
   local output
 
   machine_name="$(current_machine_name)"
-  output="$(nix build --print-out-paths --no-link "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
+  output="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
 
   [[ -x "${output}/bin/switch-to-configuration" ]]
 }

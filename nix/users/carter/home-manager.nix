@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   lib,
   ...
@@ -28,6 +29,8 @@ let
   };
 in
 {
+  imports = [ inputs.hunk.homeManagerModules.default ];
+
   home.packages = [
     pkgs.inter
     pkgs.iosevka-bin
@@ -36,6 +39,7 @@ in
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
+  programs.hunk.enable = true;
   programs.direnv = {
     enable = true;
     enableFishIntegration = true;

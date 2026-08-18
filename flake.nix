@@ -41,6 +41,11 @@
       inputs.systems.follows = "systems";
     };
     hermes-agent.url = "github:NousResearch/hermes-agent";
+    hunk = {
+      url = "github:modem-dev/hunk";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
   };
 
@@ -50,6 +55,7 @@
       mkSystem = import ./nix/lib/mksystem.nix {
         inherit inputs nixpkgs self;
       };
+      mkBambuStudio = import ./nix/packages/bambu-studio.nix;
       mkNub = import ./nix/packages/nub.nix;
       mkFffMcp = import ./nix/packages/fff-mcp.nix;
       mkOpencode2 = import ./nix/packages/opencode2.nix;
@@ -77,6 +83,12 @@
             lib = nixpkgs.lib;
           };
           opencode2 = mkOpencode2 {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+          };
+        }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          bambu-studio = mkBambuStudio {
             inherit pkgs;
             lib = nixpkgs.lib;
           };
@@ -148,6 +160,7 @@
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
         inherit (packageSets.x86_64-linux)
+          bambu-studio
           dotbot
           nub
           fff-mcp

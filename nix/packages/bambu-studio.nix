@@ -1,22 +1,24 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+}:
 
 let
-  version = "02.04.00.70";
+  version = "02.08.02.60";
+  assetName = "BambuStudio_ubuntu24.04-v02.08.02.60-20260814171356.AppImage";
 
-  # Fetch the Ubuntu AppImage (better compatibility than Fedora on NixOS)
+  # The Ubuntu AppImage has better compatibility than the Fedora build on NixOS.
   appimageSource = pkgs.fetchurl {
-    url = "https://github.com/bambulab/BambuStudio/releases/download/v${version}/Bambu_Studio_ubuntu-24.04_PR-8834.AppImage";
-    hash = "sha256-JrwH3MsE3y5GKx4Do3ZlCSAcRuJzEqFYRPb11/3x3r0=";
+    url = "https://github.com/bambulab/BambuStudio/releases/download/v${version}/${assetName}";
+    hash = "sha256-t40lJ6IO6fvPcO6CE4w7PKcHqpxmJYgWKdspYnJSrMM=";
   };
 
-  # Build the AppImage wrapper
-  bambu-studio-appimage = pkgs.appimageTools.wrapType2 rec {
+  bambu-studio = pkgs.appimageTools.wrapType2 rec {
     pname = "bambu-studio";
     inherit version;
 
     src = appimageSource;
 
-    # Set environment variables for SSL, GIO, and webkit rendering
     profile = ''
       export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
       export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
@@ -32,24 +34,22 @@ let
         gst_all_1.gst-plugins-bad
         gst_all_1.gst-plugins-base
         gst_all_1.gst-plugins-good
-        webkitgtk_4_1 # Provides libwebkit2gtk-4.1.so.0
+        webkitgtk_4_1
       ];
 
     extraInstallCommands =
       let
-        contents = pkgs.appimageTools.extractType2 {
+        contents = pkgs.appimageTools.extract {
           inherit pname version;
           src = appimageSource;
         };
       in
       ''
-        # Install desktop file
         install -Dm644 ${contents}/BambuStudio.desktop $out/share/applications/BambuStudio.desktop
         substituteInPlace $out/share/applications/BambuStudio.desktop \
           --replace-fail 'Exec=AppRun' 'Exec=bambu-studio' \
           --replace-fail 'Icon=BambuStudio' 'Icon=bambu-studio'
 
-        # Install icon
         mkdir -p $out/share/pixmaps
         cp ${contents}/resources/images/BambuStudioLogo.png $out/share/pixmaps/bambu-studio.png 2>/dev/null || \
         cp ${contents}/.DirIcon $out/share/pixmaps/bambu-studio.png 2>/dev/null || true
@@ -59,9 +59,9 @@ let
       description = "PC Software for BambuLab's 3D printers (AppImage wrapper)";
       homepage = "https://github.com/bambulab/BambuStudio";
       license = lib.licenses.agpl3Plus;
-      platforms = lib.platforms.linux;
+      platforms = [ "x86_64-linux" ];
       mainProgram = "bambu-studio";
     };
   };
 in
-bambu-studio-appimage
+bambu-studio

@@ -8,7 +8,7 @@
 
 let
   agent-browser = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser;
-  bambu-studio-appimage = import ./bambu-studio-appimage.nix { inherit pkgs lib; };
+  bambu-studio = self.packages.${pkgs.stdenv.hostPlatform.system}.bambu-studio;
   claude = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
@@ -86,7 +86,7 @@ let
   ];
 
   nixosPackages = with pkgs; [
-    bambu-studio-appimage
+    bambu-studio
     bibata-cursors
     discord
     dolphin-emu

@@ -3,6 +3,14 @@
 set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NIX_ACCESS_TOKEN_ARGS=()
+
+if command -v gh >/dev/null 2>&1; then
+  github_token="$(gh auth token 2>/dev/null || true)"
+  if [[ -n "${github_token}" ]]; then
+    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
+  fi
+fi
 
 APPLY=false
 
@@ -116,6 +124,16 @@ require_tool() {
   fi
 }
 
+github_api() {
+  local endpoint="$1"
+
+  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    gh api "${endpoint}"
+  else
+    curl -fsSL "https://api.github.com/${endpoint}"
+  fi
+}
+
 # Latest upstream version for a manually packaged binary. Each package tracks a
 # different release channel, so the lookup is per-package and cannot be derived
 # from the pinned expression.
@@ -123,12 +141,16 @@ latest_version() {
   local pkg="$1"
 
   case "${pkg}" in
+    bambu-studio)
+      github_api 'repos/bambulab/BambuStudio/releases/latest' \
+        | jq -r '.tag_name' | sed 's/^v//'
+      ;;
     nub)
       curl -fsSL 'https://registry.npmjs.org/@nubjs/nub-darwin-arm64' \
         | jq -r '.["dist-tags"].latest'
       ;;
     fff-mcp)
-      curl -fsSL 'https://api.github.com/repos/dmtrKovalenko/fff/releases/latest' \
+      github_api 'repos/dmtrKovalenko/fff/releases/latest' \
         | jq -r '.tag_name' | sed 's/^v//'
       ;;
     opencode2)
@@ -141,6 +163,25 @@ latest_version() {
   esac
 }
 
+bambu_asset_url() {
+  local version="$1"
+
+  github_api "repos/bambulab/BambuStudio/releases/tags/v${version}" \
+    | jq -er '[.assets[] | select(.name | test("^BambuStudio_ubuntu-?24\\.04.*\\.AppImage$")) | .browser_download_url]
+      | if length == 1 then .[0] else error("expected exactly one Ubuntu 24.04 AppImage") end'
+}
+
+package_systems() {
+  local pkg="$1"
+  local system
+
+  for system in "${SYSTEMS[@]}"; do
+    if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.pname" >/dev/null 2>&1; then
+      printf '%s\n' "${system}"
+    fi
+  done
+}
+
 # Rewrite version and every per-platform hash in a package expression. URLs and
 # current hashes come from the flake itself, so no URL scheme is duplicated here.
 apply_update() {
@@ -149,15 +190,27 @@ apply_update() {
   local current="$3"
   local latest="$4"
 
-  local system oldurl oldhash newurl newhash content i
+  local system oldurl oldhash newurl newhash content i old_asset new_asset
+  local -a pkg_systems=()
   local -a old_hashes=()
   local -a new_hashes=()
 
-  for system in "${SYSTEMS[@]}"; do
-    oldurl="$(nix eval --raw ".#packages.${system}.${pkg}.src.url")"
-    oldhash="$(nix eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
-    newurl="${oldurl//${current}/${latest}}"
-    newhash="$(nix store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
+  mapfile -t pkg_systems < <(package_systems "${pkg}")
+  if (( ${#pkg_systems[@]} == 0 )); then
+    return 1
+  fi
+
+  if [[ "${pkg}" == bambu-studio ]]; then
+    newurl="$(bambu_asset_url "${latest}")" || return 1
+  fi
+
+  for system in "${pkg_systems[@]}"; do
+    oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.url")"
+    oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
+    if [[ "${pkg}" != bambu-studio ]]; then
+      newurl="${oldurl//${current}/${latest}}"
+    fi
+    newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
     old_hashes+=("${oldhash}")
     new_hashes+=("${newhash}")
   done
@@ -166,6 +219,11 @@ apply_update() {
   for i in "${!old_hashes[@]}"; do
     content="${content//${old_hashes[$i]}/${new_hashes[$i]}}"
   done
+  if [[ "${pkg}" == bambu-studio ]]; then
+    old_asset="${oldurl##*/}"
+    new_asset="${newurl##*/}"
+    content="${content//${old_asset}/${new_asset}}"
+  fi
   content="${content//version = \"${current}\"/version = \"${latest}\"}"
   printf '%s\n' "${content}" >"${file}"
 }
@@ -208,19 +266,24 @@ section "Dotfiles update"
 warn_if_git_dirty
 
 section "Update flake inputs"
-run_quiet_step "Updating flake inputs" nix flake update
+run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
 section "Check packaged binaries"
 
-mapfile -t SYSTEMS < <(nix eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
-DEFAULT_SYSTEM="${SYSTEMS[0]}"
+mapfile -t SYSTEMS < <(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
 
 updates=()
 for file in "${BASEDIR}"/nix/packages/*.nix; do
   pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
   [[ -n "${pkg}" ]] || continue
 
-  current="$(nix eval --raw ".#packages.${DEFAULT_SYSTEM}.${pkg}.version" 2>/dev/null || true)"
+  package_system="$(package_systems "${pkg}" | head -n1)"
+  if [[ -z "${package_system}" ]]; then
+    log_message warn "${pkg}: not exposed through flake packages; skipping"
+    continue
+  fi
+
+  current="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.version" 2>/dev/null || true)"
   if [[ -z "${current}" ]]; then
     log_message warn "${pkg}: no version attribute; skipping"
     continue
