@@ -405,8 +405,8 @@ in
     package = if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
       window-theme = "auto";
-      command = "sh -c 'command -v fish >/dev/null 2>&1 && exec fish || test -x /run/current-system/sw/bin/fish && exec /run/current-system/sw/bin/fish || exec \"$SHELL\"'";
-      shell-integration-features = "ssh-terminfo";
+      command = "fish";
+      shell-integration-features = "ssh-terminfo,ssh-env";
     };
   };
 
