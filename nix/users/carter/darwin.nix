@@ -73,7 +73,6 @@ in
       "bitwarden"
       "lunar"
       "podman-desktop"
-      "space-rabbit"
       "zed"
     ];
   };
