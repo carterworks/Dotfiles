@@ -456,7 +456,7 @@ in
     package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
       window-theme = "auto";
-      command = "fish";
+      command = lib.getExe pkgs.fish;
       shell-integration-features = "ssh-terminfo,ssh-env";
     };
   };
