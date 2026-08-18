@@ -13,17 +13,6 @@
   },
   "model": "claude-opus-4-8[1m]",
   "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "MSG=$(jq -r '.message // \"Needs attention\"'); node \"$HOME/.claude/hooks/notify.js\" -e '🔔' -t 'Claude' \"$MSG\" 2>/dev/null || true",
-            "async": true
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "*",
