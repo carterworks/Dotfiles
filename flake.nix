@@ -70,11 +70,19 @@
       packageSets = nixpkgs.lib.genAttrs systems (
         system:
         let
+          herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
+          hunk = inputs.hunk.packages.${system}.default;
           pkgs = import nixpkgs { inherit system; };
         in
         {
           dotbot = pkgs.dotbot;
-          herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
+          inherit herdr hunk;
+          herdr-skill = pkgs.runCommand "herdr-skill-${herdr.version}.md" { } ''
+            ${herdr}/bin/herdr --skill > "$out"
+          '';
+          hunk-skill = pkgs.runCommand "hunk-review-skill-${hunk.version}.md" { } ''
+            cp "$(${hunk}/bin/hunk skill path)" "$out"
+          '';
           nub = mkNub {
             inherit pkgs;
             lib = nixpkgs.lib;
@@ -98,7 +106,8 @@
       repositoryChecks = nixpkgs.lib.genAttrs systems (
         system:
         let
-          herdr = packageSets.${system}.herdr;
+          herdrSkill = packageSets.${system}.herdr-skill;
+          hunkSkill = packageSets.${system}.hunk-skill;
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
@@ -112,11 +121,14 @@
               --config-file ${source}/install.conf.yaml
             touch "$out"
           '';
+          hunk-skill = pkgs.runCommandLocal "hunk-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
+            diff -u ${source}/agents/skills/hunk-review/SKILL.md ${hunkSkill}
+            touch "$out"
+          '';
           herdr-skill =
             pkgs.runCommandLocal "herdr-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
               ''
-                ${herdr}/bin/herdr --skill > expected.md
-                diff -u ${source}/agents/skills/herdr/SKILL.md expected.md
+                diff -u ${source}/agents/skills/herdr/SKILL.md ${herdrSkill}
                 touch "$out"
               '';
           nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''

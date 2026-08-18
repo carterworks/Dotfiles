@@ -228,12 +228,16 @@ apply_update() {
   printf '%s\n' "${content}" >"${file}"
 }
 
-regenerate_herdr_skill() {
+regenerate_skill() {
+  local package="$1"
+  local name="$2"
   local generated
-  local skill="${BASEDIR}/agents/skills/herdr/SKILL.md"
+  local generated_source
+  local skill="${BASEDIR}/agents/skills/${name}/SKILL.md"
 
   generated="$(mktemp "${skill}.XXXXXX")"
-  if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#herdr" -- --skill >"${generated}"; then
+  if generated_source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link --print-out-paths ".#${package}")" \
+    && cp "${generated_source}" "${generated}"; then
     mv "${generated}" "${skill}"
   else
     rm -f "${generated}"
@@ -282,7 +286,8 @@ section "Update flake inputs"
 run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
 section "Update generated files"
-run_quiet_step "Updating Herdr skill" regenerate_herdr_skill
+run_quiet_step "Updating Herdr skill" regenerate_skill herdr-skill herdr
+run_quiet_step "Updating Hunk skill" regenerate_skill hunk-skill hunk-review
 
 section "Check packaged binaries"
 
