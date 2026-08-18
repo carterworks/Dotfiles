@@ -228,6 +228,19 @@ apply_update() {
   printf '%s\n' "${content}" >"${file}"
 }
 
+regenerate_herdr_skill() {
+  local generated
+  local skill="${BASEDIR}/agents/skills/herdr/SKILL.md"
+
+  generated="$(mktemp "${skill}.XXXXXX")"
+  if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#herdr" -- --skill >"${generated}"; then
+    mv "${generated}" "${skill}"
+  else
+    rm -f "${generated}"
+    return 1
+  fi
+}
+
 usage() {
   cat <<EOF
 Update flake inputs and manually packaged binaries.
@@ -267,6 +280,9 @@ warn_if_git_dirty
 
 section "Update flake inputs"
 run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
+
+section "Update generated files"
+run_quiet_step "Updating Herdr skill" regenerate_herdr_skill
 
 section "Check packaged binaries"
 

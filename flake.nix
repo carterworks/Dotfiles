@@ -74,6 +74,7 @@
         in
         {
           dotbot = pkgs.dotbot;
+          herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
           nub = mkNub {
             inherit pkgs;
             lib = nixpkgs.lib;
@@ -97,6 +98,7 @@
       repositoryChecks = nixpkgs.lib.genAttrs systems (
         system:
         let
+          herdr = packageSets.${system}.herdr;
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
@@ -110,6 +112,13 @@
               --config-file ${source}/install.conf.yaml
             touch "$out"
           '';
+          herdr-skill =
+            pkgs.runCommandLocal "herdr-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
+              ''
+                ${herdr}/bin/herdr --skill > expected.md
+                diff -u ${source}/agents/skills/herdr/SKILL.md expected.md
+                touch "$out"
+              '';
           nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
             nixfmt --check ${nixpkgs.lib.escapeShellArgs nixFiles}
             touch "$out"
