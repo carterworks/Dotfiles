@@ -128,6 +128,7 @@ in
           fish_add_path ~/.lmstudio/bin
       end
       fish_add_path ~/.local/bin
+      fish_add_path ~/.opencode/bin
       if set -q XDG_CONFIG_HOME
           set -gx PI_CODING_AGENT_DIR "$XDG_CONFIG_HOME/pi/agent"
       else
