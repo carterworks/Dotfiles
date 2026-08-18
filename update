@@ -277,7 +277,8 @@ for file in "${BASEDIR}"/nix/packages/*.nix; do
   pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
   [[ -n "${pkg}" ]] || continue
 
-  package_system="$(package_systems "${pkg}" | head -n1)"
+  mapfile -t supported_systems < <(package_systems "${pkg}")
+  package_system="${supported_systems[0]:-}"
   if [[ -z "${package_system}" ]]; then
     log_message warn "${pkg}: not exposed through flake packages; skipping"
     continue
