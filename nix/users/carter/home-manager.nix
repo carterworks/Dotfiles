@@ -27,7 +27,7 @@ in
     enableFishIntegration = true;
     enableZshIntegration = true;
   };
-  gtk = lib.mkIf pkgs.stdenv.isLinux {
+  gtk = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     enable = true;
     font = {
       name = theme.fonts.sansSerif;
@@ -59,7 +59,7 @@ in
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
   xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
-  xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
       [Desktop Entry]
@@ -71,7 +71,7 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
-  xdg.configFile."autostart/Handy.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."autostart/Handy.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
       [Desktop Entry]
@@ -82,7 +82,7 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
-  xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
       [Desktop Entry]
@@ -196,7 +196,7 @@ in
       sync.records = true;
     };
   };
-  programs.man.generateCaches = pkgs.stdenv.isLinux;
+  programs.man.generateCaches = pkgs.stdenv.hostPlatform.isLinux;
   programs.zsh.enable = true;
 
   programs.bat.enable = true;
@@ -255,7 +255,7 @@ in
   };
 
   programs.zed-editor = {
-    package = if pkgs.stdenv.isLinux then pkgs.zed-editor-fhs else null;
+    package = if pkgs.stdenv.hostPlatform.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
     userKeymaps = [
       {
@@ -435,7 +435,7 @@ in
 
   programs.ghostty = {
     enable = true;
-    package = if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
+    package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
       window-theme = "auto";
       command = "fish";

@@ -110,6 +110,6 @@ in
 {
   environment.systemPackages =
     commonPackages
-    ++ lib.optionals pkgs.stdenv.isDarwin darwinPackages
-    ++ lib.optionals pkgs.stdenv.isLinux nixosPackages;
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin darwinPackages
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux nixosPackages;
 }
