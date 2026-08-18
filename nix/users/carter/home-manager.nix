@@ -54,8 +54,7 @@ in
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
-    complete -c oc -f
-    complete -c oc -n 'not __fish_seen_subcommand_from acp agent attach completion db debug export github import mcp models plugin pr providers run serve session stats uninstall upgrade web' -a 'acp agent attach completion db debug export github import mcp models plugin pr providers run serve session stats uninstall upgrade web'
+    complete -c oc -w opencode2
   '';
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
@@ -111,10 +110,44 @@ in
         src = pkgs.fishPlugins.fzf-fish.src;
       }
     ];
-    shellAliases = {
-      cc = "claude --model opus --effort high";
-    };
     shellInit = ''
+      function __herdr_agent_tab
+          set -l herdr_args
+          set -l workspace_args
+          set -l attach_to_herdr false
+
+          if not set -q HERDR_ENV
+              set herdr_args --session default
+              set attach_to_herdr true
+          end
+
+          set -l workspace_json (command herdr $herdr_args workspace list)
+          or return
+          set -l workspace_id (printf '%s\n' $workspace_json | ${lib.getExe pkgs.jq} -er '.result.workspaces[] | select(.focused) | .workspace_id')
+          or return
+          set workspace_args --workspace "$workspace_id"
+
+          set -l tab_json (command herdr $herdr_args tab create $workspace_args --cwd "$PWD" --focus)
+          or return
+          set -l pane_id (printf '%s\n' $tab_json | ${lib.getExe pkgs.jq} -er '.result.root_pane.pane_id')
+          or return
+          set -l command_line (string join ' ' (string escape -- $argv))
+          command herdr $herdr_args pane run "$pane_id" "$command_line"
+          or return
+
+          if test "$attach_to_herdr" = true
+              command herdr session attach default
+          end
+      end
+
+      function cc --wraps='claude --model opus --effort high' --description 'Launch Claude Code in a new Herdr tab'
+          __herdr_agent_tab claude --model opus --effort high $argv
+      end
+
+      function oc --wraps=opencode2 --description 'Launch OpenCode in a new Herdr tab'
+          __herdr_agent_tab opencode2 $argv
+      end
+
       if test -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" && command -qs babelfish
           cat "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" | babelfish | source
       end
