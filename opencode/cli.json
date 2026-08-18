@@ -13,6 +13,7 @@
   },
   "animations": true,
   "tabs": {
+    "enabled": false,
     "layout": "vertical"
   },
   "prompt": {
