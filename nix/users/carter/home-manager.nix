@@ -6,6 +6,20 @@
 }:
 
 let
+  agentInhibitor =
+    if pkgs.stdenv.hostPlatform.isDarwin then
+      [
+        "/usr/bin/caffeinate"
+        "-is"
+      ]
+    else
+      [
+        (lib.getExe' pkgs.systemd "systemd-inhibit")
+        "--what=idle:sleep"
+        "--who=coding-agent"
+        "--why=Coding agent is running"
+        "--mode=block"
+      ];
   theme = {
     fonts = {
       monospace = "Iosevka";
@@ -115,11 +129,15 @@ in
           set -l herdr_args
           set -l workspace_args
           set -l attach_to_herdr false
+          set -l agent_command ${lib.escapeShellArgs agentInhibitor} $argv
 
-          if not set -q HERDR_ENV
-              set herdr_args --session default
-              set attach_to_herdr true
+          if set -q HERDR_ENV
+              command $agent_command
+              return
           end
+
+          set herdr_args --session default
+          set attach_to_herdr true
 
           set -l workspace_json (command herdr $herdr_args workspace list)
           or return
@@ -131,7 +149,7 @@ in
           or return
           set -l pane_id (printf '%s\n' $tab_json | ${lib.getExe pkgs.jq} -er '.result.root_pane.pane_id')
           or return
-          set -l command_line (string join ' ' (string escape -- $argv))
+          set -l command_line (string join ' ' (string escape -- $agent_command))
           command herdr $herdr_args pane run "$pane_id" "$command_line"
           or return
 
