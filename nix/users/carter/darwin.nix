@@ -113,6 +113,8 @@ in
       AppleShowAllExtensions = true;
       AppleShowAllFiles = true;
       AppleShowScrollBars = "Always";
+      NSStatusItemSelectionPadding = 8;
+      NSStatusItemSpacing = 8;
       "com.apple.mouse.tapBehavior" = 1;
       "com.apple.swipescrolldirection" = false;
     };
