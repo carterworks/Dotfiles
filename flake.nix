@@ -52,6 +52,7 @@
       };
       mkNub = import ./nix/packages/nub.nix;
       mkFffMcp = import ./nix/packages/fff-mcp.nix;
+      mkOpencode2 = import ./nix/packages/opencode2.nix;
       systems = [
         "aarch64-darwin"
         "x86_64-linux"
@@ -72,6 +73,10 @@
             lib = nixpkgs.lib;
           };
           fff-mcp = mkFffMcp {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+          };
+          opencode2 = mkOpencode2 {
             inherit pkgs;
             lib = nixpkgs.lib;
           };
@@ -133,11 +138,21 @@
       };
 
       checks.aarch64-darwin = repositoryChecks.aarch64-darwin // {
-        inherit (packageSets.aarch64-darwin) dotbot nub fff-mcp;
+        inherit (packageSets.aarch64-darwin)
+          dotbot
+          nub
+          fff-mcp
+          opencode2
+          ;
         carters-macbook-pro = carters-macbook-pro.system;
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
-        inherit (packageSets.x86_64-linux) dotbot nub fff-mcp;
+        inherit (packageSets.x86_64-linux)
+          dotbot
+          nub
+          fff-mcp
+          opencode2
+          ;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
       };

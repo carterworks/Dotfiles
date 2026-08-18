@@ -16,6 +16,7 @@ let
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
+  opencode2 = self.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
@@ -54,6 +55,7 @@ let
     nub
     obsidian
     inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode
+    opencode2
     ouch
     pi-coding-agent
     pnpm
