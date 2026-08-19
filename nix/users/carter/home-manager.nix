@@ -143,8 +143,32 @@ in
           set herdr_args --session default
           set attach_to_herdr true
 
-          set -l workspace_json (command herdr $herdr_args workspace list)
-          or return
+          set -l workspace_json (command herdr $herdr_args workspace list 2>&1)
+          set -l workspace_status $status
+
+          if test $workspace_status -ne 0
+              set -l error_code (printf '%s\n' $workspace_json | ${lib.getExe pkgs.jq} -r '.error.code // empty')
+              if test "$error_code" != server_not_running
+                  printf '%s\n' $workspace_json >&2
+                  return $workspace_status
+              end
+
+              command herdr $herdr_args server </dev/null >/dev/null 2>&1 &
+              disown $last_pid 2>/dev/null
+
+              for attempt in (seq 1 100)
+                  set workspace_json (command herdr $herdr_args workspace list 2>&1)
+                  set workspace_status $status
+                  test $workspace_status -eq 0; and break
+                  sleep 0.05
+              end
+
+              if test $workspace_status -ne 0
+                  printf '%s\n' $workspace_json >&2
+                  return $workspace_status
+              end
+          end
+
           set -l workspace_id (printf '%s\n' $workspace_json | ${lib.getExe pkgs.jq} -er '.result.workspaces[] | select(.focused) | .workspace_id')
           or return
           set workspace_args --workspace "$workspace_id"
