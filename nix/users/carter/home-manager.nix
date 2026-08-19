@@ -303,6 +303,21 @@ in
   programs.zed-editor = {
     package = if pkgs.stdenv.hostPlatform.isLinux then pkgs.zed-editor-fhs else null;
     enable = true;
+    mutableUserSettings = false;
+    mutableUserKeymaps = false;
+    mutableUserTasks = false;
+    mutableUserDebug = false;
+    extensions = [
+      "astro"
+      "base16"
+      "colored-zed-icons-theme"
+      "dockerfile"
+      "emmet"
+      "markdown-oxide"
+      "nix"
+      "svelte"
+      "toml"
+    ];
     userKeymaps = [
       {
         context = "Terminal";
@@ -369,7 +384,18 @@ in
       buffer_font_features = {
         calt = true;
       };
-      file_scan_exclusions = [ ".claude/worktrees" ];
+      file_scan_exclusions = [
+        "**/.git"
+        "**/.svn"
+        "**/.hg"
+        "**/.jj"
+        "**/CVS"
+        "**/.DS_Store"
+        "**/Thumbs.db"
+        "**/.classpath"
+        "**/.settings"
+        "**/.claude/worktrees"
+      ];
       show_edit_predictions = true;
       minimap = {
         show = "auto";
