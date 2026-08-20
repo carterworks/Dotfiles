@@ -177,7 +177,7 @@ in
           or return
           set -l pane_id (printf '%s\n' $tab_json | ${lib.getExe pkgs.jq} -er '.result.root_pane.pane_id')
           or return
-          set -l command_line (string join ' ' (string escape -- $agent_command))
+          set -l command_line (string join ' ' -- (string escape -- $agent_command))
           command herdr $herdr_args pane run "$pane_id" "$command_line"
           or return
 
