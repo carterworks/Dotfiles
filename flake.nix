@@ -70,13 +70,17 @@
       packageSets = nixpkgs.lib.genAttrs systems (
         system:
         let
+          agent-browser = inputs.numtide-llm-agents.packages.${system}.agent-browser;
           herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
           hunk = inputs.hunk.packages.${system}.default;
           pkgs = import nixpkgs { inherit system; };
         in
         {
           dotbot = pkgs.dotbot;
-          inherit herdr hunk;
+          inherit agent-browser herdr hunk;
+          agent-browser-skill = pkgs.runCommand "agent-browser-skill-${agent-browser.version}.md" { } ''
+            cp "$(${agent-browser}/bin/agent-browser skills path agent-browser)/SKILL.md" "$out"
+          '';
           herdr-skill = pkgs.runCommand "herdr-skill-${herdr.version}.md" { } ''
             ${herdr}/bin/herdr --skill > "$out"
           '';
@@ -106,6 +110,7 @@
       repositoryChecks = nixpkgs.lib.genAttrs systems (
         system:
         let
+          browserSkill = packageSets.${system}.agent-browser-skill;
           herdrSkill = packageSets.${system}.herdr-skill;
           hunkSkill = packageSets.${system}.hunk-skill;
           pkgs = nixpkgs.legacyPackages.${system};
@@ -121,6 +126,12 @@
               --config-file ${source}/install.conf.yaml
             touch "$out"
           '';
+          agent-browser-skill =
+            pkgs.runCommandLocal "agent-browser-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
+              ''
+                diff -u ${source}/agents/skills/agent-browser/SKILL.md ${browserSkill}
+                touch "$out"
+              '';
           hunk-skill = pkgs.runCommandLocal "hunk-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
             diff -u ${source}/agents/skills/hunk-review/SKILL.md ${hunkSkill}
             touch "$out"

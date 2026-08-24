@@ -286,6 +286,7 @@ section "Update flake inputs"
 run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
 section "Update generated files"
+run_quiet_step "Updating Browser skill" regenerate_skill agent-browser-skill agent-browser
 run_quiet_step "Updating Herdr skill" regenerate_skill herdr-skill herdr
 run_quiet_step "Updating Hunk skill" regenerate_skill hunk-skill hunk-review
 
