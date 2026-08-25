@@ -186,8 +186,8 @@ in
           end
       end
 
-      function cc --wraps='claude --model opus --effort high' --description 'Launch Claude Code in a new Herdr tab'
-          __herdr_agent_tab claude --model opus --effort high $argv
+      function cc --wraps='claude --model claude-opus-4-8[1m] --effort high' --description 'Launch Claude Code in a new Herdr tab'
+          __herdr_agent_tab claude --model 'claude-opus-4-8[1m]' --effort high $argv
       end
 
       function oc --wraps=opencode2 --description 'Launch OpenCode in a new Herdr tab'
