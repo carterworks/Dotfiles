@@ -8,9 +8,68 @@
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  stableDiffusionCpp = pkgs.stable-diffusion-cpp-vulkan;
+  stableDiffusionWebui = pkgs.callPackage ../../packages/sdcpp-webui.nix { };
+  stableDiffusionModels = "${config.xdg.dataHome}/stable-diffusion.cpp/models";
+  fetchStableDiffusionModels = pkgs.writeShellApplication {
+    name = "fetch-stable-diffusion-models";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.python3Packages.huggingface-hub
+    ];
+    text = ''
+      install -d -m 0755 \
+        "${stableDiffusionModels}" \
+        "${stableDiffusionModels}/loras" \
+        "${stableDiffusionModels}/upscalers"
+
+      hf download leejet/FLUX.2-klein-9B-GGUF \
+        flux-2-klein-9b-Q4_0.gguf \
+        --revision cc588497a95ffc2937ebbd6b9b3916a11ada6e5b \
+        --local-dir "${stableDiffusionModels}"
+
+      hf download unsloth/Qwen3-8B-GGUF \
+        Qwen3-8B-Q4_K_M.gguf \
+        --revision a6adef130ffb23ddaf1a62fec9dced968c9bc482 \
+        --local-dir "${stableDiffusionModels}"
+
+      hf download Comfy-Org/vae-text-encorder-for-flux-klein-4b \
+        split_files/vae/flux2-vae.safetensors \
+        --revision a9e4ca87c16db4c4e1a16406a9ddb300ab0ae246 \
+        --local-dir "${stableDiffusionModels}"
+
+      test -s "${stableDiffusionModels}/flux-2-klein-9b-Q4_0.gguf"
+      test -s "${stableDiffusionModels}/Qwen3-8B-Q4_K_M.gguf"
+      test -s "${stableDiffusionModels}/split_files/vae/flux2-vae.safetensors"
+    '';
+  };
+  runStableDiffusion = pkgs.writeShellApplication {
+    name = "run-stable-diffusion-cpp";
+    text = ''
+      ${lib.getExe fetchStableDiffusionModels}
+      exec ${lib.getExe' stableDiffusionCpp "sd-server"} \
+        --diffusion-model "${stableDiffusionModels}/flux-2-klein-9b-Q4_0.gguf" \
+        --llm "${stableDiffusionModels}/Qwen3-8B-Q4_K_M.gguf" \
+        --vae "${stableDiffusionModels}/split_files/vae/flux2-vae.safetensors" \
+        --serve-html-path "${stableDiffusionWebui}/index.html" \
+        --listen-ip 0.0.0.0 \
+        --listen-port 7860 \
+        --auto-fit \
+        --max-vram -1 \
+        --vae-tiling \
+        --width 1024 \
+        --height 1024 \
+        --steps 4 \
+        --cfg-scale 1.0 \
+        --sampling-method euler
+    '';
+  };
 in
 {
-  home.packages = [ hermes ];
+  home.packages = [
+    hermes
+    stableDiffusionCpp
+  ];
 
   programs.mangohud = {
     enable = true;
@@ -62,6 +121,35 @@ in
     Categories=Network;WebBrowser;
     MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
   '';
+
+  xdg.dataFile."applications/stable-diffusion-cpp.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Version=1.0
+    Name=stable-diffusion.cpp
+    GenericName=AI Image Generator
+    Exec=brave http://127.0.0.1:7860/
+    Terminal=false
+    Categories=Graphics;2DGraphics;
+  '';
+
+  systemd.user.services.stable-diffusion-cpp = {
+    Unit = {
+      Description = "stable-diffusion.cpp Vulkan server";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      ExecStart = "${lib.getExe' pkgs.fnox "fnox"} exec --non-interactive -- ${lib.getExe runStableDiffusion}";
+      Environment = [
+        "HOME=${config.home.homeDirectory}"
+        "HF_HOME=${config.xdg.cacheHome}/huggingface"
+      ];
+      Restart = "on-failure";
+      RestartSec = "10s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 
   systemd.user.services.hermes-agent = {
     Unit = {
