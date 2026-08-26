@@ -11,10 +11,11 @@ let
       target = "darwin-arm64";
       hash = "sha256-A7yOErS3BHPVHKdsBuR5r1AEiIajhN1UPeHmQHbNQGY=";
     };
-    # musl (static) so the binary runs on NixOS without autoPatchelf.
+    # The musl artifact is dynamically linked and requires GNU libstdc++.
+    # Use the glibc artifact and patch its loader/RPATH for NixOS.
     x86_64-linux = {
-      target = "linux-x64-musl";
-      hash = "sha256-pvfz/9hIWfshhmaHaSNu3cb6EkmI0TU42m0Mlws3kqk=";
+      target = "linux-x64";
+      hash = "sha256-1Bf8t3ay5Nj5m53ZlEWNK2Mk8BAI8FsfC37pqsRkzlc=";
     };
   };
 
@@ -30,6 +31,8 @@ pkgs.stdenvNoCC.mkDerivation {
     url = "https://registry.npmjs.org/@opencode-ai/cli-${platformPackage.target}/-/cli-${platformPackage.target}-${version}.tgz";
     inherit (platformPackage) hash;
   };
+
+  nativeBuildInputs = [ pkgs.autoPatchelfHook ];
 
   installPhase = ''
     runHook preInstall
