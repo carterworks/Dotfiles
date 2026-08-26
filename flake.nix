@@ -58,7 +58,9 @@
       mkBambuStudio = import ./nix/packages/bambu-studio.nix;
       mkNub = import ./nix/packages/nub.nix;
       mkFffMcp = import ./nix/packages/fff-mcp.nix;
+      mkObsidianHeadless = import ./nix/packages/obsidian-headless.nix;
       mkOpencode2 = import ./nix/packages/opencode2.nix;
+      mkSdcppWebui = import ./nix/packages/sdcpp-webui.nix;
       systems = [
         "aarch64-darwin"
         "x86_64-linux"
@@ -73,7 +75,10 @@
           agent-browser = inputs.numtide-llm-agents.packages.${system}.agent-browser;
           herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
           hunk = inputs.hunk.packages.${system}.default;
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
         in
         {
           dotbot = pkgs.dotbot;
@@ -99,9 +104,17 @@
             inherit pkgs;
             lib = nixpkgs.lib;
           };
+          sdcpp-webui = mkSdcppWebui {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+          };
         }
         // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
           bambu-studio = mkBambuStudio {
+            inherit pkgs;
+            lib = nixpkgs.lib;
+          };
+          obsidian-headless = mkObsidianHeadless {
             inherit pkgs;
             lib = nixpkgs.lib;
           };
@@ -185,6 +198,7 @@
         inherit (packageSets.aarch64-darwin)
           dotbot
           nub
+          sdcpp-webui
           fff-mcp
           opencode2
           ;
@@ -195,8 +209,10 @@
           bambu-studio
           dotbot
           nub
+          obsidian-headless
           fff-mcp
           opencode2
+          sdcpp-webui
           ;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;

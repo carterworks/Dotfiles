@@ -1,26 +1,22 @@
 {
+  pkgs,
   lib,
-  buildNpmPackage,
-  fetchurl,
-  runCommand,
-  gnutar,
-  gzip,
 }:
 
 let
   version = "0.0.14";
-  sourceArchive = fetchurl {
+  sourceArchive = pkgs.fetchurl {
     url = "https://registry.npmjs.org/obsidian-headless/-/obsidian-headless-${version}.tgz";
     hash = "sha256-73UpjtOjVtyypN6Yxu/hCyrGSwBVYAcRi2rHBTXnMVY=";
   };
-  source = runCommand "obsidian-headless-source-${version}" { } ''
+  source = pkgs.runCommand "obsidian-headless-source-${version}" { } ''
     mkdir -p "$out"
-    ${gnutar}/bin/tar -xzf ${sourceArchive} --strip-components=1 -C "$out"
+    ${pkgs.gnutar}/bin/tar -xzf ${sourceArchive} --strip-components=1 -C "$out"
     cp ${./obsidian-headless/package.json} "$out/package.json"
     cp ${./obsidian-headless/package-lock.json} "$out/package-lock.json"
   '';
 in
-buildNpmPackage {
+pkgs.buildNpmPackage {
   pname = "obsidian-headless";
   inherit version;
   src = source;

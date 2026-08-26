@@ -1,28 +1,23 @@
 {
-  fetchFromGitHub,
-  fetchPnpmDeps,
+  pkgs,
   lib,
-  nodejs,
-  pnpmConfigHook,
-  pnpm_10,
-  stdenvNoCC,
 }:
 
 let
-  pnpm = pnpm_10;
+  pnpm = pkgs.pnpm_10;
 in
-stdenvNoCC.mkDerivation (finalAttrs: {
+pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "sdcpp-webui";
   version = "0-unstable-2026-08-24";
 
-  src = fetchFromGitHub {
+  src = pkgs.fetchFromGitHub {
     owner = "leejet";
     repo = "sdcpp-webui";
     rev = "c4bce3d6b3f236614cca21014f076083b7270ba8";
     hash = "sha256-vBb6uXZGRKu8CcECZeMXvPBuLeJ7dtCNll3Yvhq4hBY=";
   };
 
-  pnpmDeps = fetchPnpmDeps {
+  pnpmDeps = pkgs.fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     inherit pnpm;
     fetcherVersion = 3;
@@ -30,9 +25,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   };
 
   nativeBuildInputs = [
-    nodejs
+    pkgs.nodejs
     pnpm
-    pnpmConfigHook
+    pkgs.pnpmConfigHook
   ];
 
   buildPhase = ''

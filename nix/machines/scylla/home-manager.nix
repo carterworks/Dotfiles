@@ -3,13 +3,14 @@
   inputs,
   lib,
   pkgs,
+  self,
   ...
 }:
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
   stableDiffusionCpp = pkgs.stable-diffusion-cpp-vulkan;
-  stableDiffusionWebui = pkgs.callPackage ../../packages/sdcpp-webui.nix { };
+  stableDiffusionWebui = self.packages.${pkgs.stdenv.hostPlatform.system}.sdcpp-webui;
   stableDiffusionModels = "${config.xdg.dataHome}/stable-diffusion.cpp/models";
   fetchStableDiffusionModels = pkgs.writeShellApplication {
     name = "fetch-stable-diffusion-models";

@@ -3,12 +3,13 @@
   inputs,
   lib,
   pkgs,
+  self,
   ...
 }:
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  obsidian-headless = pkgs.callPackage ../../packages/obsidian-headless.nix { };
+  obsidian-headless = self.packages.${pkgs.stdenv.hostPlatform.system}.obsidian-headless;
 in
 {
   home = {
