@@ -143,7 +143,6 @@
         inherit (packageSets.aarch64-darwin)
           dotbot
           nub
-          sdcpp-webui
           fff-mcp
           opencode2
           ;
@@ -157,7 +156,6 @@
           obsidian-headless
           fff-mcp
           opencode2
-          sdcpp-webui
           ;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;

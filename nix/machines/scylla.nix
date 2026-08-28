@@ -107,7 +107,6 @@ let
             <ul>
               <li><a href="http://cups.scylla.localhost/">CUPS</a></li>
               <li><a href="http://hermes.scylla.localhost/">Hermes Web UI</a></li>
-              <li><a href="http://diffusion.scylla.localhost/">stable-diffusion.cpp</a></li>
               <li><a href="http://sunshine.scylla.localhost/">Sunshine</a></li>
               <li><a href="http://syncthing.scylla.localhost/">Syncthing</a></li>
             </ul>
@@ -163,11 +162,6 @@ in
         reverse_proxy 127.0.0.1:631 {
           header_up Host 127.0.0.1:631
         }
-      '';
-
-      "http://diffusion.scylla.localhost".extraConfig = ''
-        bind 127.0.0.1 ::1
-        reverse_proxy 127.0.0.1:7860
       '';
 
       "http://scylla.localhost".extraConfig = ''
