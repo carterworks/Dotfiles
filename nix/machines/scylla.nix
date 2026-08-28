@@ -48,6 +48,48 @@ let
     };
   };
 
+  systemMetricsLogScript = pkgs.writeShellScript "system-metrics-log" ''
+    set -euo pipefail
+
+    log_dir=/var/lib/system-metrics
+    log_file="$log_dir/$(date +%F).tsv"
+    state_file="$log_dir/.cpu-stat"
+    mkdir -p "$log_dir"
+
+    if [[ ! -e "$log_file" ]]; then
+      printf 'timestamp\tcpu_temp_c\tload_1\tload_5\tload_15\tcpu_util_pct\ttop_cpu\ttop_memory\n' > "$log_file"
+    fi
+
+    cpu_temp_millic=$(for hwmon in /sys/class/hwmon/hwmon*; do
+      [[ "$(<"$hwmon/name")" == coretemp && -r "$hwmon/temp1_input" ]] || continue
+      cat "$hwmon/temp1_input"
+      break
+    done)
+    cpu_temp_c=$(awk -v temp="$cpu_temp_millic" 'BEGIN { printf "%.1f", temp / 1000 }')
+
+    read -r _ user nice system idle iowait irq softirq steal _ < /proc/stat
+    total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+    idle_total=$((idle + iowait))
+    cpu_util_pct=0.0
+    if [[ -r "$state_file" ]]; then
+      read -r old_total old_idle < "$state_file"
+      total_delta=$((total - old_total))
+      idle_delta=$((idle_total - old_idle))
+      if (( total_delta > 0 )); then
+        cpu_util_pct=$(awk -v total="$total_delta" -v idle="$idle_delta" 'BEGIN { printf "%.1f", 100 * (total - idle) / total }')
+      fi
+    fi
+    printf '%s %s\n' "$total" "$idle_total" > "$state_file"
+
+    read -r load_1 load_5 load_15 _ < /proc/loadavg
+    top_cpu=$(ps -eo pid=,etimes=,pcpu=,comm= --sort=-pcpu | awk '$2 >= 60 && count < 5 { pid = $1; cpu = $3; $1 = ""; $2 = ""; $3 = ""; sub(/^ +/, ""); gsub(/[;\t\r\n]/, "_"); printf "%s%s:%s:%s%%", (count ? ";" : ""), pid, $0, cpu; count++ }')
+    top_memory=$(ps -eo pid=,rss=,comm= --sort=-rss | awk 'count < 5 { pid = $1; rss = $2; $1 = ""; $2 = ""; sub(/^ +/, ""); gsub(/[;\t\r\n]/, "_"); printf "%s%s:%s:%sKiB", (count ? ";" : ""), pid, $0, rss; count++ }')
+
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$(date --iso-8601=seconds)" "$cpu_temp_c" "$load_1" "$load_5" "$load_15" \
+      "$cpu_util_pct" "$top_cpu" "$top_memory" >> "$log_file"
+  '';
+
   scyllaLocalhostDirectory = pkgs.writeTextDir "index.html" ''
     <!doctype html>
     <html lang="en">
@@ -198,6 +240,31 @@ in
   services.resolved.enable = true;
   networking.networkmanager.dns = "systemd-resolved";
 
+  systemd.services.system-metrics-log = {
+    description = "Log CPU temperature, load, and top processes";
+    path = with pkgs; [
+      coreutils
+      gawk
+      procps
+    ];
+    serviceConfig = {
+      Type = "oneshot";
+      StateDirectory = "system-metrics";
+      StateDirectoryMode = "0755";
+    };
+    script = "${systemMetricsLogScript}";
+  };
+
+  systemd.timers.system-metrics-log = {
+    description = "Sample CPU metrics every 10 seconds";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "*-*-* *:*:00/10";
+      Persistent = true;
+      AccuracySec = "1s";
+    };
+  };
+
   systemd.mounts = [
     (mkTruenasMount "media")
     (mkTruenasMount "users")
@@ -287,6 +354,7 @@ in
 
   systemd.tmpfiles.rules = [
     "d /games 2775 root games -"
+    "d /var/lib/system-metrics 0755 root root 14d"
   ];
 
   system.stateVersion = "25.11";
