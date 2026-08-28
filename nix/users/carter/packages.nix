@@ -92,7 +92,6 @@ let
     dolphin-emu
     google-chrome
     heroic
-    libreoffice-fresh
     lmstudio
     papirus-icon-theme
     playerctl
