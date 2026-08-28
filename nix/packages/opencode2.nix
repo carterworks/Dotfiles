@@ -5,19 +5,19 @@
 
 let
   pname = "opencode2";
-  version = "0.0.0-beta-18155";
+  version = "0.0.0-beta-18414";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
       target = "darwin-arm64";
-      hash = "sha256-A7yOErS3BHPVHKdsBuR5r1AEiIajhN1UPeHmQHbNQGY=";
+      hash = "sha256-uNQdXEoKTrxyOk4Sw5TcO2mBuh8EqkKe/uZ1uFK+w3w=";
     };
     # The musl artifact is dynamically linked and requires GNU libstdc++.
     # Use the glibc artifact and patch its loader/RPATH for NixOS.
     x86_64-linux = {
       target = "linux-x64";
-      hash = "sha256-1Bf8t3ay5Nj5m53ZlEWNK2Mk8BAI8FsfC37pqsRkzlc=";
+      hash = "sha256-CF56/bFAM+ZzaNFpo+L6RgYzrgyMBqRsX73PMzQ+LoU=";
     };
   };
 
