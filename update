@@ -134,28 +134,38 @@ github_api() {
   fi
 }
 
-# Latest upstream version for a manually packaged binary. Each package tracks a
-# different release channel, so the lookup is per-package and cannot be derived
-# from the pinned expression.
-latest_version() {
-  local pkg="$1"
+latest_update() {
+  local update_info="$1"
+  local source
 
-  case "${pkg}" in
-    bambu-studio)
-      github_api 'repos/bambulab/BambuStudio/releases/latest' \
-        | jq -r '.tag_name' | sed 's/^v//'
+  source="$(jq -r '.source' <<<"${update_info}")"
+  case "${source}" in
+    github-release)
+      local owner repo prefix tag version
+      owner="$(jq -r '.owner' <<<"${update_info}")"
+      repo="$(jq -r '.repo' <<<"${update_info}")"
+      prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
+      tag="$(github_api "repos/${owner}/${repo}/releases/latest" | jq -r '.tag_name')"
+      version="${tag#"${prefix}"}"
+      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
-    nub)
-      curl -fsSL 'https://registry.npmjs.org/@nubjs/nub-darwin-arm64' \
-        | jq -r '.["dist-tags"].latest'
+    npm)
+      local package channel version
+      package="$(jq -r '.package' <<<"${update_info}")"
+      channel="$(jq -r '.channel // "latest"' <<<"${update_info}")"
+      version="$(curl -fsSL "https://registry.npmjs.org/${package}" | jq -r --arg channel "${channel}" '.["dist-tags"][$channel]')"
+      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
-    fff-mcp)
-      github_api 'repos/dmtrKovalenko/fff/releases/latest' \
-        | jq -r '.tag_name' | sed 's/^v//'
-      ;;
-    opencode2)
-      curl -fsSL 'https://registry.npmjs.org/@opencode-ai/cli' \
-        | jq -r '.["dist-tags"].beta'
+    github-branch)
+      local owner repo branch commit
+      owner="$(jq -r '.owner' <<<"${update_info}")"
+      repo="$(jq -r '.repo' <<<"${update_info}")"
+      branch="$(jq -r '.branch' <<<"${update_info}")"
+      commit="$(github_api "repos/${owner}/${repo}/commits/${branch}")"
+      jq -cn \
+        --arg revision "$(jq -r '.sha' <<<"${commit}")" \
+        --arg version "0-unstable-$(jq -r '.commit.committer.date | split("T")[0]' <<<"${commit}")" \
+        '{ revision: $revision, version: $version }'
       ;;
     *)
       return 1
@@ -163,12 +173,19 @@ latest_version() {
   esac
 }
 
-bambu_asset_url() {
-  local version="$1"
+release_asset_url() {
+  local update_info="$1"
+  local version="$2"
+  local owner repo prefix pattern
 
-  github_api "repos/bambulab/BambuStudio/releases/tags/v${version}" \
-    | jq -er '[.assets[] | select(.name | test("^BambuStudio_ubuntu-?24\\.04.*\\.AppImage$")) | .browser_download_url]
-      | if length == 1 then .[0] else error("expected exactly one Ubuntu 24.04 AppImage") end'
+  owner="$(jq -r '.owner' <<<"${update_info}")"
+  repo="$(jq -r '.repo' <<<"${update_info}")"
+  prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
+  pattern="$(jq -r '.assetPattern' <<<"${update_info}")"
+  github_api "repos/${owner}/${repo}/releases/tags/${prefix}${version}" \
+    | jq -er --arg pattern "${pattern}" \
+      '[.assets[] | select(.name | test($pattern)) | .browser_download_url]
+      | if length == 1 then .[0] else error("expected exactly one matching release asset") end'
 }
 
 package_systems() {
@@ -189,6 +206,7 @@ apply_update() {
   local file="$2"
   local current="$3"
   local latest="$4"
+  local update_info="$5"
 
   local system oldurl oldhash newurl newhash content i old_asset new_asset
   local -a pkg_systems=()
@@ -200,14 +218,14 @@ apply_update() {
     return 1
   fi
 
-  if [[ "${pkg}" == bambu-studio ]]; then
-    newurl="$(bambu_asset_url "${latest}")" || return 1
+  if jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
+    newurl="$(release_asset_url "${update_info}" "${latest}")" || return 1
   fi
 
   for system in "${pkg_systems[@]}"; do
     oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.url")"
     oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
-    if [[ "${pkg}" != bambu-studio ]]; then
+    if ! jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
       newurl="${oldurl//${current}/${latest}}"
     fi
     newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
@@ -219,13 +237,127 @@ apply_update() {
   for i in "${!old_hashes[@]}"; do
     content="${content//${old_hashes[$i]}/${new_hashes[$i]}}"
   done
-  if [[ "${pkg}" == bambu-studio ]]; then
+  if jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
     old_asset="${oldurl##*/}"
     new_asset="${newurl##*/}"
     content="${content//${old_asset}/${new_asset}}"
   fi
   content="${content//version = \"${current}\"/version = \"${latest}\"}"
   printf '%s\n' "${content}" >"${file}"
+}
+
+nixpkgs_tool() {
+  local tool="$1"
+  local flake_ref expression
+
+  flake_ref="$(jq -Rn --arg value "path:${BASEDIR}" '$value')"
+  expression="let flake = builtins.getFlake ${flake_ref}; in flake.inputs.nixpkgs.legacyPackages.${CURRENT_SYSTEM}.${tool}"
+  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --impure --no-link --print-out-paths --expr "${expression}"
+}
+
+apply_npm_lock_update() {
+  local pkg="$1"
+  local file="$2"
+  local current="$3"
+  local latest="$4"
+  local system="$5"
+  local update_info="$6"
+  local oldurl oldhash old_deps_hash newurl newhash npm_package npm_path prefetch_path new_deps_hash content tempdir
+
+  oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.url")"
+  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.outputHash")"
+  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.npmDeps.outputHash")"
+  newurl="${oldurl//${current}/${latest}}"
+  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
+  npm_package="$(jq -r '.package' <<<"${update_info}")"
+
+  tempdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-npm-update.XXXXXX")"
+  if ! curl -fsSL "https://registry.npmjs.org/${npm_package}/${latest}" \
+    | jq '{ name, version, main, bin, engines, dependencies }' >"${tempdir}/package.json"; then
+    rm -rf "${tempdir}"
+    return 1
+  fi
+
+  npm_path="$(nixpkgs_tool nodejs)" || {
+    rm -rf "${tempdir}"
+    return 1
+  }
+  if ! (cd "${tempdir}" && "${npm_path}/bin/npm" install --package-lock-only --ignore-scripts --no-audit --no-fund >/dev/null); then
+    rm -rf "${tempdir}"
+    return 1
+  fi
+
+  prefetch_path="$(nixpkgs_tool prefetch-npm-deps)" || {
+    rm -rf "${tempdir}"
+    return 1
+  }
+  new_deps_hash="$("${prefetch_path}/bin/prefetch-npm-deps" "${tempdir}/package-lock.json")" || {
+    rm -rf "${tempdir}"
+    return 1
+  }
+
+  content="$(cat "${file}")"
+  content="${content//${oldhash}/${newhash}}"
+  content="${content//${old_deps_hash}/${new_deps_hash}}"
+  content="${content//version = \"${current}\"/version = \"${latest}\"}"
+  printf '%s\n' "${content}" >"${file}"
+  mv "${tempdir}/package.json" "${BASEDIR}/nix/packages/${pkg}/package.json"
+  mv "${tempdir}/package-lock.json" "${BASEDIR}/nix/packages/${pkg}/package-lock.json"
+  rm -rf "${tempdir}"
+}
+
+apply_pnpm_git_update() {
+  local pkg="$1"
+  local file="$2"
+  local current_revision="$3"
+  local latest_revision="$4"
+  local current_version="$5"
+  local latest_version="$6"
+  local system="$7"
+  local update_info="$8"
+  local owner repo oldhash old_deps_hash newhash content backup logfile new_deps_hash
+  local fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+
+  owner="$(jq -r '.owner' <<<"${update_info}")"
+  repo="$(jq -r '.repo' <<<"${update_info}")"
+  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
+  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.pnpmDeps.outputHash")"
+  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --unpack --json \
+    "https://github.com/${owner}/${repo}/archive/${latest_revision}.tar.gz" | jq -r '.hash')" || return 1
+
+  backup="$(mktemp "${file}.XXXXXX")"
+  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-pnpm-update.XXXXXX")"
+  cp "${file}" "${backup}"
+  content="$(cat "${file}")"
+  content="${content//${current_revision}/${latest_revision}}"
+  content="${content//${oldhash}/${newhash}}"
+  content="${content//${old_deps_hash}/${fake_hash}}"
+  content="${content//version = \"${current_version}\"/version = \"${latest_version}\"}"
+  printf '%s\n' "${content}" >"${file}"
+
+  if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
+    cp "${backup}" "${file}"
+    rm -f "${backup}" "${logfile}"
+    return 1
+  fi
+  new_deps_hash="$(sed -n 's/^[[:space:]]*got:[[:space:]]*//p' "${logfile}" | tail -n1)"
+  if [[ "${new_deps_hash}" != sha256-* ]]; then
+    show_log "${logfile}"
+    cp "${backup}" "${file}"
+    rm -f "${backup}" "${logfile}"
+    return 1
+  fi
+
+  content="$(cat "${file}")"
+  content="${content//${fake_hash}/${new_deps_hash}}"
+  printf '%s\n' "${content}" >"${file}"
+  if ! nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
+    show_log "${logfile}"
+    cp "${backup}" "${file}"
+    rm -f "${backup}" "${logfile}"
+    return 1
+  fi
+  rm -f "${backup}" "${logfile}"
 }
 
 regenerate_skill() {
@@ -277,18 +409,21 @@ done
 require_tool nix
 require_tool curl
 require_tool jq
+CURRENT_SYSTEM="$(nix eval --impure --raw --expr builtins.currentSystem)"
 
 cd "${BASEDIR}"
 section "Dotfiles update"
 warn_if_git_dirty
 
-section "Update flake inputs"
-run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
+if [[ "${APPLY}" == true ]]; then
+  section "Update flake inputs"
+  run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
-section "Update generated files"
-run_quiet_step "Updating Browser skill" regenerate_skill agent-browser-skill agent-browser
-run_quiet_step "Updating Herdr skill" regenerate_skill herdr-skill herdr
-run_quiet_step "Updating Hunk skill" regenerate_skill hunk-skill hunk-review
+  section "Update generated files"
+  run_quiet_step "Updating Browser skill" regenerate_skill agent-browser-skill agent-browser
+  run_quiet_step "Updating Herdr skill" regenerate_skill herdr-skill herdr
+  run_quiet_step "Updating Hunk skill" regenerate_skill hunk-skill hunk-review
+fi
 
 section "Check packaged binaries"
 
@@ -306,23 +441,38 @@ for file in "${BASEDIR}"/nix/packages/*.nix; do
     continue
   fi
 
-  current="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.version" 2>/dev/null || true)"
-  if [[ -z "${current}" ]]; then
+  current_version="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.version" 2>/dev/null || true)"
+  if [[ -z "${current_version}" ]]; then
     log_message warn "${pkg}: no version attribute; skipping"
     continue
   fi
 
-  latest="$(latest_version "${pkg}" 2>/dev/null || true)"
-  if [[ -z "${latest}" ]]; then
-    log_message warn "${pkg}: no update source configured; skipping"
+  update_info="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages.${package_system}.${pkg}.updateInfo" 2>/dev/null || true)"
+  if [[ -z "${update_info}" || "${update_info}" == null ]]; then
+    log_message warn "${pkg}: no update metadata; skipping"
     continue
   fi
 
-  if [[ "${current}" == "${latest}" ]]; then
-    log_message info "${pkg}: up to date (${current})"
+  source="$(jq -r '.source' <<<"${update_info}")"
+  if [[ "${source}" == github-branch ]]; then
+    current_revision="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.src.rev" 2>/dev/null || true)"
   else
-    log_message warn "${pkg}: update available (${current} -> ${latest})"
-    updates+=("${pkg}|${file}|${current}|${latest}")
+    current_revision="${current_version}"
+  fi
+  latest_update_info="$(latest_update "${update_info}" 2>/dev/null || true)"
+  latest_revision="$(jq -r '.revision // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
+  latest_version="$(jq -r '.version // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
+  if [[ -z "${latest_revision}" || -z "${latest_version}" ]]; then
+    log_message warn "${pkg}: failed to discover latest upstream version; skipping"
+    continue
+  fi
+
+  if [[ "${current_revision}" == "${latest_revision}" ]]; then
+    log_message info "${pkg}: up to date (${current_version})"
+  else
+    log_message warn "${pkg}: update available (${current_version} -> ${latest_version})"
+    encoded_update_info="$(printf '%s' "${update_info}" | base64)"
+    updates+=("${pkg}|${file}|${current_revision}|${latest_revision}|${current_version}|${latest_version}|${package_system}|${encoded_update_info}")
   fi
 done
 
@@ -337,8 +487,25 @@ fi
 
 section "Apply updates"
 for entry in "${updates[@]}"; do
-  IFS='|' read -r pkg file current latest <<<"${entry}"
-  if ! run_quiet_step "Bumping ${pkg} to ${latest}" apply_update "${pkg}" "${file}" "${current}" "${latest}"; then
+  IFS='|' read -r pkg file current_revision latest_revision current_version latest_version package_system encoded_update_info <<<"${entry}"
+  update_info="$(printf '%s' "${encoded_update_info}" | base64 --decode)"
+  strategy="$(jq -r '.strategy // "archive"' <<<"${update_info}")"
+  case "${strategy}" in
+    archive)
+      update_command=(apply_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${update_info}")
+      ;;
+    npm-lock)
+      update_command=(apply_npm_lock_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
+      ;;
+    pnpm-git)
+      update_command=(apply_pnpm_git_update "${pkg}" "${file}" "${current_revision}" "${latest_revision}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
+      ;;
+    *)
+      log_message error "${pkg}: unknown update strategy ${strategy}"
+      continue
+      ;;
+  esac
+  if ! run_quiet_step "Bumping ${pkg} to ${latest_version}" "${update_command[@]}"; then
     log_message error "${pkg}: failed to bump; left unchanged"
   fi
 done

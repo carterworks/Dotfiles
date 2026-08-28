@@ -55,12 +55,7 @@
       mkSystem = import ./nix/lib/mksystem.nix {
         inherit inputs nixpkgs self;
       };
-      mkBambuStudio = import ./nix/packages/bambu-studio.nix;
-      mkNub = import ./nix/packages/nub.nix;
-      mkFffMcp = import ./nix/packages/fff-mcp.nix;
-      mkObsidianHeadless = import ./nix/packages/obsidian-headless.nix;
-      mkOpencode2 = import ./nix/packages/opencode2.nix;
-      mkSdcppWebui = import ./nix/packages/sdcpp-webui.nix;
+      mkPackages = import ./nix/packages { inherit inputs nixpkgs; };
       systems = [
         "aarch64-darwin"
         "x86_64-linux"
@@ -69,57 +64,7 @@
       nixFiles = nixpkgs.lib.filter (nixpkgs.lib.hasSuffix ".nix") (
         nixpkgs.lib.filesystem.listFilesRecursive source
       );
-      packageSets = nixpkgs.lib.genAttrs systems (
-        system:
-        let
-          agent-browser = inputs.numtide-llm-agents.packages.${system}.agent-browser;
-          herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
-          hunk = inputs.hunk.packages.${system}.default;
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-        in
-        {
-          dotbot = pkgs.dotbot;
-          inherit agent-browser herdr hunk;
-          agent-browser-skill = pkgs.runCommand "agent-browser-skill-${agent-browser.version}.md" { } ''
-            cp "$(${agent-browser}/bin/agent-browser skills path agent-browser)/SKILL.md" "$out"
-          '';
-          herdr-skill = pkgs.runCommand "herdr-skill-${herdr.version}.md" { } ''
-            ${herdr}/bin/herdr --skill > "$out"
-          '';
-          hunk-skill = pkgs.runCommand "hunk-review-skill-${hunk.version}.md" { } ''
-            cp "$(${hunk}/bin/hunk skill path)" "$out"
-          '';
-          nub = mkNub {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-          fff-mcp = mkFffMcp {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-          opencode2 = mkOpencode2 {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-          sdcpp-webui = mkSdcppWebui {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-        }
-        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
-          bambu-studio = mkBambuStudio {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-          obsidian-headless = mkObsidianHeadless {
-            inherit pkgs;
-            lib = nixpkgs.lib;
-          };
-        }
-      );
+      packageSets = nixpkgs.lib.genAttrs systems mkPackages;
       repositoryChecks = nixpkgs.lib.genAttrs systems (
         system:
         let

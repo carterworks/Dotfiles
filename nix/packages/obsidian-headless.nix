@@ -5,8 +5,10 @@
 
 let
   version = "0.0.14";
-  sourceArchive = pkgs.fetchurl {
-    url = "https://registry.npmjs.org/obsidian-headless/-/obsidian-headless-${version}.tgz";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
+  sourceArchive = packageUtils.fetchNpmTarball {
+    name = "obsidian-headless";
+    inherit version;
     hash = "sha256-73UpjtOjVtyypN6Yxu/hCyrGSwBVYAcRi2rHBTXnMVY=";
   };
   source = pkgs.runCommand "obsidian-headless-source-${version}" { } ''
@@ -20,6 +22,16 @@ pkgs.buildNpmPackage {
   pname = "obsidian-headless";
   inherit version;
   src = source;
+
+  passthru = {
+    updateSource = sourceArchive;
+    updateInfo = {
+      source = "npm";
+      package = "obsidian-headless";
+      channel = "latest";
+      strategy = "npm-lock";
+    };
+  };
 
   npmDepsHash = "sha256-AI9Jlr0Zy3rEoBsa6k8xGhK4u/XutLaEm5BKeubl3PI=";
   dontNpmBuild = true;

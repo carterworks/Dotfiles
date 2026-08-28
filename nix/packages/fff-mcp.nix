@@ -4,7 +4,9 @@
 }:
 
 let
+  pname = "fff-mcp";
   version = "0.10.5";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
@@ -18,17 +20,25 @@ let
     };
   };
 
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for fff-mcp: ${pkgs.stdenv.hostPlatform.system}");
 in
-pkgs.stdenvNoCC.mkDerivation {
-  pname = "fff-mcp";
-  inherit version;
+packageUtils.mkPlatformBinary {
+  inherit pname version platformPackages;
 
-  src = pkgs.fetchurl {
-    url = "https://github.com/dmtrKovalenko/fff/releases/download/v${version}/${platformPackage.assetName}";
-    inherit (platformPackage) hash;
+  src =
+    platformPackage:
+    packageUtils.fetchGitHubRelease {
+      owner = "dmtrKovalenko";
+      repo = "fff";
+      asset = platformPackage.assetName;
+      inherit version;
+      inherit (platformPackage) hash;
+    };
+
+  updateInfo = {
+    source = "github-release";
+    owner = "dmtrKovalenko";
+    repo = "fff";
+    tagPrefix = "v";
   };
 
   dontUnpack = true;
@@ -46,7 +56,5 @@ pkgs.stdenvNoCC.mkDerivation {
     homepage = "https://github.com/dmtrKovalenko/fff";
     license = lib.licenses.mit;
     mainProgram = "fff-mcp";
-    platforms = builtins.attrNames platformPackages;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
 }

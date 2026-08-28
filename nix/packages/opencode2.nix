@@ -4,7 +4,9 @@
 }:
 
 let
+  pname = "opencode2";
   version = "0.0.0-beta-18155";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
@@ -19,20 +21,25 @@ let
     };
   };
 
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for opencode2: ${pkgs.stdenv.hostPlatform.system}");
 in
-pkgs.stdenvNoCC.mkDerivation {
-  pname = "opencode2";
-  inherit version;
+packageUtils.mkPlatformBinary {
+  inherit pname version platformPackages;
 
-  src = pkgs.fetchurl {
-    url = "https://registry.npmjs.org/@opencode-ai/cli-${platformPackage.target}/-/cli-${platformPackage.target}-${version}.tgz";
-    inherit (platformPackage) hash;
+  src =
+    platformPackage:
+    packageUtils.fetchNpmTarball {
+      name = "@opencode-ai/cli-${platformPackage.target}";
+      inherit version;
+      inherit (platformPackage) hash;
+    };
+
+  updateInfo = {
+    source = "npm";
+    package = "@opencode-ai/cli";
+    channel = "beta";
   };
 
-  nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+  nativeBuildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.autoPatchelfHook ];
 
   installPhase = ''
     runHook preInstall
@@ -47,7 +54,5 @@ pkgs.stdenvNoCC.mkDerivation {
     homepage = "https://opencode.ai";
     license = lib.licenses.mit;
     mainProgram = "opencode2";
-    platforms = builtins.attrNames platformPackages;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
 }

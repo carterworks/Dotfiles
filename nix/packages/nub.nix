@@ -4,7 +4,9 @@
 }:
 
 let
+  pname = "nub";
   version = "0.7.5";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
@@ -17,17 +19,22 @@ let
     };
   };
 
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for nub: ${pkgs.stdenv.hostPlatform.system}");
 in
-pkgs.stdenvNoCC.mkDerivation {
-  pname = "nub";
-  inherit version;
+packageUtils.mkPlatformBinary {
+  inherit pname version platformPackages;
 
-  src = pkgs.fetchurl {
-    url = "https://registry.npmjs.org/@nubjs/${platformPackage.packageName}/-/${platformPackage.packageName}-${version}.tgz";
-    inherit (platformPackage) hash;
+  src =
+    platformPackage:
+    packageUtils.fetchNpmTarball {
+      name = "@nubjs/${platformPackage.packageName}";
+      inherit version;
+      inherit (platformPackage) hash;
+    };
+
+  updateInfo = {
+    source = "npm";
+    package = "@nubjs/nub-darwin-arm64";
+    channel = "latest";
   };
 
   installPhase = ''
@@ -48,7 +55,5 @@ pkgs.stdenvNoCC.mkDerivation {
     homepage = "https://nubjs.com";
     license = lib.licenses.mit;
     mainProgram = "nub";
-    platforms = builtins.attrNames platformPackages;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
 }

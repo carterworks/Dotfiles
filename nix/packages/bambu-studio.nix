@@ -6,10 +6,14 @@
 let
   version = "02.08.02.61";
   assetName = "BambuStudio_ubuntu24.04-v02.08.02.61-20260820225108.AppImage";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # The Ubuntu AppImage has better compatibility than the Fedora build on NixOS.
-  appimageSource = pkgs.fetchurl {
-    url = "https://github.com/bambulab/BambuStudio/releases/download/v${version}/${assetName}";
+  appimageSource = packageUtils.fetchGitHubRelease {
+    owner = "bambulab";
+    repo = "BambuStudio";
+    asset = assetName;
+    inherit version;
     hash = "sha256-1QGxA/rFQkUT7A6Na8FF+zBxneLH2U1zINcjdAyBp/0=";
   };
 
@@ -18,6 +22,14 @@ let
     inherit version;
 
     src = appimageSource;
+
+    passthru.updateInfo = {
+      source = "github-release";
+      owner = "bambulab";
+      repo = "BambuStudio";
+      tagPrefix = "v";
+      assetPattern = "^BambuStudio_ubuntu-?24\\.04.*\\.AppImage$";
+    };
 
     profile = ''
       export SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"

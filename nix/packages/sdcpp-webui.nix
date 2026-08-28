@@ -17,6 +17,14 @@ pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
     hash = "sha256-vBb6uXZGRKu8CcECZeMXvPBuLeJ7dtCNll3Yvhq4hBY=";
   };
 
+  passthru.updateInfo = {
+    source = "github-branch";
+    owner = "leejet";
+    repo = "sdcpp-webui";
+    branch = "master";
+    strategy = "pnpm-git";
+  };
+
   pnpmDeps = pkgs.fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     inherit pnpm;
