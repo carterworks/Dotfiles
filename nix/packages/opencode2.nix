@@ -13,8 +13,8 @@ let
       target = "darwin-arm64";
       hash = "sha256-uNQdXEoKTrxyOk4Sw5TcO2mBuh8EqkKe/uZ1uFK+w3w=";
     };
-    # The musl artifact is dynamically linked and requires GNU libstdc++.
-    # Use the glibc artifact and patch its loader/RPATH for NixOS.
+    # Patchelf invalidates Bun's embedded standalone-program metadata.
+    # Use the glibc artifact unchanged and start it with Nix's loader.
     x86_64-linux = {
       target = "linux-x64";
       hash = "sha256-CF56/bFAM+ZzaNFpo+L6RgYzrgyMBqRsX73PMzQ+LoU=";
@@ -39,12 +39,23 @@ packageUtils.mkPlatformBinary {
     channel = "beta";
   };
 
-  nativeBuildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.autoPatchelfHook ];
+  nativeBuildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.makeWrapper ];
 
   installPhase = ''
     runHook preInstall
 
-    install -Dm755 bin/opencode2 $out/bin/opencode2
+    ${
+      if pkgs.stdenv.hostPlatform.isLinux then
+        ''
+          install -Dm755 bin/opencode2 $out/libexec/opencode2
+          makeWrapper ${pkgs.stdenv.cc.bintools.dynamicLinker} $out/bin/opencode2 \
+            --add-flags $out/libexec/opencode2
+        ''
+      else
+        ''
+          install -Dm755 bin/opencode2 $out/bin/opencode2
+        ''
+    }
 
     runHook postInstall
   '';
