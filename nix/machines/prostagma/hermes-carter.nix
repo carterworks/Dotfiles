@@ -12,6 +12,8 @@ let
   obsidian-headless = self.packages.${pkgs.stdenv.hostPlatform.system}.obsidian-headless;
 in
 {
+  imports = [ ../../users/carter/opencode2-server.nix ];
+
   home = {
     username = "carter";
     homeDirectory = "/home/carter";

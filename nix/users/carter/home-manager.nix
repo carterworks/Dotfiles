@@ -29,7 +29,10 @@ let
   };
 in
 {
-  imports = [ inputs.hunk.homeManagerModules.default ];
+  imports = [
+    inputs.hunk.homeManagerModules.default
+    ./opencode2-server.nix
+  ];
 
   home.packages = [
     pkgs.inter

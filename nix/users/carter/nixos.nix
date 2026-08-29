@@ -81,6 +81,7 @@ in
   users.groups.games = { };
   users.users.carter = {
     isNormalUser = true;
+    linger = true;
     extraGroups = [
       "wheel"
       "games"
