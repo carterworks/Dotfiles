@@ -385,6 +385,8 @@ in
   services.fstrim.enable = false;
   services.dbus.implementation = "dbus";
 
+  programs.nix-ld.enable = true;
+
   services.openssh = {
     enable = true;
     openFirewall = true;
