@@ -270,6 +270,7 @@ in
     "d /mnt/truenas/vm-data 0755 root root -"
     "d /mnt/truenas/photos 0755 root root -"
     "d /mnt/truenas/immich 0755 root root -"
+    "A+ /home/carter - - - - u:apps:rx"
   ];
 
   fileSystems."/mnt/truenas/media" = {
@@ -523,6 +524,12 @@ in
         path = "/mnt/truenas/media/photos";
         access = {
           A = [ "@admins" ];
+        };
+      };
+      "/users/carter" = {
+        path = "/home/carter";
+        access = {
+          A = [ "carter" ];
         };
       };
     };
