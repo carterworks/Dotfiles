@@ -25,7 +25,6 @@ let
     "prowlarr"
     "sonarr"
     "radarr"
-    "komga"
     "syncthing"
     "backrest"
     "koreader-sync-server"
@@ -201,7 +200,7 @@ in
       name = mkOption {
         type = types.str;
         default = "prostagma-media";
-        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, Radarr, Komga, and Syncthing.";
+        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, Radarr, and Syncthing.";
       };
 
       subnet = mkOption {
@@ -314,24 +313,6 @@ in
             "${appRoot}/radarr/config:/config"
             "${mediaRoot}/movies:/movies"
           ];
-        };
-      }
-      // optionalAttrs cfg.apps.komga.enable {
-        komga = {
-          image = "gotson/komga:1.24.1@sha256:a84a0424e2f8235ba9373ed10b9b903e0feecdbb500a1b4aebac01f08e9e57db";
-          autoStart = true;
-          ports = [ "127.0.0.1:30048:30048/tcp" ];
-          environment = appEnvironment // {
-            KOMGA_CONFIGDIR = "/config";
-            KOMGA_DATABASE_FILE = "/config/database.sqlite";
-            SERVER_PORT = "30048";
-            SERVER_SERVLET_CONTEXT_PATH = "/";
-          };
-          volumes = [
-            "${appRoot}/komga:/config"
-            "${mediaRoot}/comics:/data/comics"
-          ];
-          extraOptions = appExtraOptions ++ dockerNetworkOptions;
         };
       }
       // optionalAttrs cfg.apps.syncthing.enable {
@@ -586,17 +567,7 @@ in
             requires = dockerNetworkDependencies;
           };
       }
-      // optionalAttrs cfg.apps.komga.enable {
-        docker-komga =
-          mkPathCheckService [
-            "${appRoot}/komga"
-            "${mediaRoot}/comics"
-          ]
-          // {
-            after = dockerNetworkDependencies;
-            requires = dockerNetworkDependencies;
-          };
-      }
+
       // optionalAttrs cfg.apps.syncthing.enable {
         docker-syncthing =
           mkPathCheckService [

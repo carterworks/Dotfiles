@@ -72,7 +72,6 @@ let
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
-              <li><a href="https://komga.${tailnetDomain}/">Komga</a></li>
               <li><a href="https://litellm.${tailnetDomain}/">LiteLLM</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
               <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
@@ -219,7 +218,6 @@ in
     apps.prowlarr.enable = true;
     apps.sonarr.enable = true;
     apps.radarr.enable = true;
-    apps.komga.enable = true;
     apps.syncthing.enable = true;
     apps.backrest.enable = true;
     apps."koreader-sync-server".enable = true;
@@ -440,7 +438,6 @@ in
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
       "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025
       "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
-      "$tailscale" serve --service=svc:komga --https=443 http://127.0.0.1:30048
       "$tailscale" serve --service=svc:litellm --https=443 http://127.0.0.1:4000
       "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
       "$tailscale" serve --service=svc:koreader-sync --https=443 http://127.0.0.1:17200
