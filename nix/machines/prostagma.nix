@@ -8,7 +8,7 @@
 
 let
   copypartyPort = 3210;
-  koreaderSyncPort = 17200;
+
   tailnetDomain = "dropbear-tortoise.ts.net";
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
@@ -89,10 +89,7 @@ let
                 Immich Machine Learning:
                 <output class="status" data-health-url="/health/immich-ml" data-state="checking" aria-live="polite">Checking…</output>
               </li>
-              <li>
-                KOReader Sync:
-                <output class="status" data-health-url="/health/koreader-sync" data-state="checking" aria-live="polite">Checking…</output>
-              </li>
+
             </ul>
           </section>
         </main>
@@ -145,12 +142,6 @@ let
       reverse_proxy 127.0.0.1:3003
     }
 
-    handle /health/koreader-sync {
-      rewrite * /healthcheck
-      reverse_proxy 127.0.0.1:${toString koreaderSyncPort} {
-        header_up Accept application/vnd.koreader.v1+json
-      }
-    }
 
     handle {
       root * ${prostagmaDirectory}
@@ -220,7 +211,7 @@ in
     apps.radarr.enable = true;
     apps.syncthing.enable = true;
     apps.backrest.enable = true;
-    apps."koreader-sync-server".enable = true;
+
   };
 
   virtualisation.docker = {
@@ -440,7 +431,7 @@ in
       "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
       "$tailscale" serve --service=svc:litellm --https=443 http://127.0.0.1:4000
       "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
-      "$tailscale" serve --service=svc:koreader-sync --https=443 http://127.0.0.1:17200
+
     '';
   };
 

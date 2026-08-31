@@ -27,7 +27,6 @@ let
     "radarr"
     "syncthing"
     "backrest"
-    "koreader-sync-server"
   ];
 
   appRoot = cfg.appRoot;
@@ -378,33 +377,11 @@ in
           ];
           extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
         };
-      }
-      // optionalAttrs cfg.apps."koreader-sync-server".enable {
-        "koreader-sync-server" = {
-          image = "koreader/kosync:latest@sha256:bb3f13615365703315a43b9059f65e71e876440f867e23a42bf27f2fa18264e1";
-          autoStart = true;
-          ports = [ "127.0.0.1:17200:17200/tcp" ];
-          volumes = [
-            "${appRoot}/koreader-sync-server/logs/app:/app/koreader-sync-server/logs"
-            "${appRoot}/koreader-sync-server/logs/redis:/var/log/redis"
-            "${appRoot}/koreader-sync-server/data/redis:/var/lib/redis"
-          ];
-          extraOptions = rootExtraOptions ++ dockerNetworkOptions;
-        };
       };
 
     systemd.tmpfiles.rules =
       optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
-      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -")
-      ++ optional cfg.apps."koreader-sync-server".enable (
-        "d ${appRoot}/koreader-sync-server/logs/app 0755 root root -"
-      )
-      ++ optional cfg.apps."koreader-sync-server".enable (
-        "d ${appRoot}/koreader-sync-server/logs/redis 0755 root root -"
-      )
-      ++ optional cfg.apps."koreader-sync-server".enable (
-        "d ${appRoot}/koreader-sync-server/data/redis 0755 root root -"
-      );
+      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -");
 
     systemd.services =
       optionalAttrs cfg.dockerNetwork.enable {
@@ -594,18 +571,6 @@ in
             "${cfg.syncthingDataRoot}/media/games"
             "/mnt/truenas/photos"
             "${cfg.syncthingDataRoot}/users/carter"
-          ]
-          // {
-            after = dockerNetworkDependencies;
-            requires = dockerNetworkDependencies;
-          };
-      }
-      // optionalAttrs cfg.apps."koreader-sync-server".enable {
-        "docker-koreader-sync-server" =
-          mkPathCheckService [
-            "${appRoot}/koreader-sync-server/logs/app"
-            "${appRoot}/koreader-sync-server/logs/redis"
-            "${appRoot}/koreader-sync-server/data/redis"
           ]
           // {
             after = dockerNetworkDependencies;
