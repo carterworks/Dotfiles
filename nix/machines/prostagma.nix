@@ -270,7 +270,7 @@ in
     "d /mnt/truenas/vm-data 0755 root root -"
     "d /mnt/truenas/photos 0755 root root -"
     "d /mnt/truenas/immich 0755 root root -"
-    "A+ /home/carter - - - - u:apps:rx"
+    "A+ /mnt/truenas/syncthing-root/users/carter - - - - u:apps:rx"
   ];
 
   fileSystems."/mnt/truenas/media" = {
@@ -527,14 +527,17 @@ in
         };
       };
       "/users/carter" = {
-        path = "/home/carter";
+        path = "/mnt/truenas/syncthing-root/users/carter";
         access = {
           A = [ "carter" ];
         };
       };
     };
   };
-  systemd.services.copyparty.unitConfig.RequiresMountsFor = [ "/mnt/truenas/media" ];
+  systemd.services.copyparty.unitConfig.RequiresMountsFor = [
+    "/mnt/truenas/media"
+    "/mnt/truenas/syncthing-root/users/carter"
+  ];
 
   users.groups.video.gid = lib.mkForce 44;
   users.groups.render.gid = lib.mkForce 993;
