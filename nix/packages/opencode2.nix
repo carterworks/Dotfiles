@@ -5,19 +5,19 @@
 
 let
   pname = "opencode2";
-  version = "0.0.0-beta-18414";
+  version = "0.0.0-beta-18721";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
       target = "darwin-arm64";
-      hash = "sha256-uNQdXEoKTrxyOk4Sw5TcO2mBuh8EqkKe/uZ1uFK+w3w=";
+      hash = "sha256-A85PGrpmDZpL/W6H98QQc+tSlV24aHdK4Aog6lxi2EI=";
     };
     # Patchelf invalidates Bun's embedded standalone-program metadata.
     # Keep the glibc artifact unchanged; NixOS provides its loader via nix-ld.
     x86_64-linux = {
       target = "linux-x64";
-      hash = "sha256-CF56/bFAM+ZzaNFpo+L6RgYzrgyMBqRsX73PMzQ+LoU=";
+      hash = "sha256-JXmtpZwumn19HWd5h51l8kNYj+9XDYHiCGjYhZbTzGw=";
     };
   };
 
