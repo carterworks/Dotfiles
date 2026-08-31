@@ -97,6 +97,7 @@ let
     playerctl
     protonplus
     sgdboop
+    stable-diffusion-cpp-rocm
     systemd-lsp
     telegram-desktop
     trayscale
