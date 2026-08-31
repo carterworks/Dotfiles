@@ -25,7 +25,7 @@ let
     "prowlarr"
     "sonarr"
     "radarr"
-    "syncthing"
+
     "backrest"
   ];
 
@@ -165,10 +165,10 @@ in
       };
     };
 
-    syncthingDataRoot = mkOption {
+    sharedDataRoot = mkOption {
       type = types.str;
       default = "/mnt/truenas/reservoir";
-      description = "Host path mounted into Syncthing as /data.";
+      description = "Shared host data path used by backup and file-sharing applications.";
     };
 
     qbittorrentEnvFile = mkOption {
@@ -199,7 +199,7 @@ in
       name = mkOption {
         type = types.str;
         default = "prostagma-media";
-        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, Radarr, and Syncthing.";
+        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, and Radarr.";
       };
 
       subnet = mkOption {
@@ -314,41 +314,7 @@ in
           ];
         };
       }
-      // optionalAttrs cfg.apps.syncthing.enable {
-        syncthing = {
-          image = "syncthing/syncthing:2.0.15@sha256:37c0e031d9f5559dfa416f0f9157509277d97a24abd0ad27590bd92a91616ecc";
-          autoStart = true;
-          cmd = [ "--allow-newer-config" ];
-          ports = [
-            "127.0.0.1:20910:8384/tcp"
-            "20978:22000/tcp"
-            "20979:22000/udp"
-          ];
-          environment = appEnvironment // {
-            PCAP = "cap_sys_admin,cap_chown,cap_dac_override,cap_fowner+ep";
-            STGUIADDRESS = "0.0.0.0:8384";
-            STNOUPGRADE = "true";
-          };
-          volumes = [
-            "${cfg.syncthingDataRoot}:/data"
-            "${appRoot}/syncthing/config:/var/syncthing"
-          ];
-          extraOptions =
-            rootExtraOptions
-            ++ dockerNetworkOptions
-            ++ [
-              "--cap-drop=ALL"
-              "--cap-add=CHOWN"
-              "--cap-add=DAC_OVERRIDE"
-              "--cap-add=FOWNER"
-              "--cap-add=SETFCAP"
-              "--cap-add=SETGID"
-              "--cap-add=SETPCAP"
-              "--cap-add=SETUID"
-              "--cap-add=SYS_ADMIN"
-            ];
-        };
-      }
+
       // optionalAttrs cfg.apps.backrest.enable {
         backrest = {
           image = "garethgeorge/backrest:latest@sha256:9c9966b5c285ec791a6b06cb4545fa0247424d05442e12f9558b4322d9f8a15f";
@@ -370,10 +336,10 @@ in
             "${mediaRoot}/comics:/userdata/reservoir/media/comics:ro"
             "${mediaRoot}/tvshows:/userdata/reservoir/media/tvshows:ro"
             "${mediaRoot}/movies:/userdata/reservoir/media/movies:ro"
-            "${cfg.syncthingDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
-            "${cfg.syncthingDataRoot}/media/games:/userdata/reservoir/media/games:ro"
+            "${cfg.sharedDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
+            "${cfg.sharedDataRoot}/media/games:/userdata/reservoir/media/games:ro"
             "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
-            "${cfg.syncthingDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
+            "${cfg.sharedDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
           ];
           extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
         };
@@ -545,17 +511,6 @@ in
           };
       }
 
-      // optionalAttrs cfg.apps.syncthing.enable {
-        docker-syncthing =
-          mkPathCheckService [
-            "${appRoot}/syncthing/config"
-            cfg.syncthingDataRoot
-          ]
-          // {
-            after = dockerNetworkDependencies;
-            requires = dockerNetworkDependencies;
-          };
-      }
       // optionalAttrs cfg.apps.backrest.enable {
         docker-backrest =
           mkPathCheckService [
@@ -567,10 +522,10 @@ in
             "${mediaRoot}/comics"
             "${mediaRoot}/tvshows"
             "${mediaRoot}/movies"
-            "${cfg.syncthingDataRoot}/media/ebooks"
-            "${cfg.syncthingDataRoot}/media/games"
+            "${cfg.sharedDataRoot}/media/ebooks"
+            "${cfg.sharedDataRoot}/media/games"
             "/mnt/truenas/photos"
-            "${cfg.syncthingDataRoot}/users/carter"
+            "${cfg.sharedDataRoot}/users/carter"
           ]
           // {
             after = dockerNetworkDependencies;

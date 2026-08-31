@@ -78,7 +78,7 @@ let
               <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
               <li><a href="https://radarr.${tailnetDomain}/">Radarr</a></li>
               <li><a href="https://sonarr.${tailnetDomain}/">Sonarr</a></li>
-              <li><a href="https://syncthing.${tailnetDomain}/">Syncthing</a></li>
+
             </ul>
           </nav>
 
@@ -204,12 +204,12 @@ in
     mediaRoot = "/mnt/truenas/media-direct";
     torrentDataRoot = "/mnt/truenas/vm-data/qbittorrent-downloads";
     torrentDataMountSource = "192.168.5.252:/mnt/river-rapid/vm-data";
-    syncthingDataRoot = "/mnt/truenas/syncthing-root";
+    sharedDataRoot = "/mnt/truenas/syncthing-root";
     apps."qbittorrent-vpn".enable = true;
     apps.prowlarr.enable = true;
     apps.sonarr.enable = true;
     apps.radarr.enable = true;
-    apps.syncthing.enable = true;
+
     apps.backrest.enable = true;
 
   };
@@ -430,7 +430,7 @@ in
       "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025
       "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
 
-      "$tailscale" serve --service=svc:syncthing --https=443 http://127.0.0.1:20910
+
 
     '';
   };
