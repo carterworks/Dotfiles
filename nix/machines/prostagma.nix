@@ -423,6 +423,7 @@ in
     script = ''
       tailscale=${pkgs.tailscale}/bin/tailscale
 
+      "$tailscale" serve reset
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
