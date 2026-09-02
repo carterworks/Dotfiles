@@ -518,7 +518,50 @@ in
     };
   };
 
-  programs.starship.enable = true;
+  programs.starship = {
+    enable = true;
+    # Claude Code statusline profile, rendered by `starship statusline claude-code`.
+    # claude/statusline.mjs pipes the session JSON here, then appends version/clock/effort.
+    # starship names bright magenta "purple" (not "magenta").
+    settings = {
+      profiles.claude-code = "$directory$git_branch$git_status$claude_model$claude_context$claude_cost";
+
+      claude_model = {
+        format = "[$model]($style) ";
+        symbol = "";
+        style = "bold purple";
+      };
+
+      claude_context = {
+        format = "[$percentage]($style) ";
+        display = [
+          {
+            threshold = 0.0;
+            style = "bold green";
+          }
+          {
+            threshold = 50.0;
+            style = "bold yellow";
+          }
+          {
+            threshold = 75.0;
+            style = "bold red";
+          }
+        ];
+      };
+
+      claude_cost = {
+        format = "[\\$$cost]($style) ";
+        symbol = "";
+        display = [
+          {
+            threshold = 0.0;
+            style = "bold green";
+          }
+        ];
+      };
+    };
+  };
 
   programs.zellij = {
     enable = true;
