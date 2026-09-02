@@ -365,7 +365,7 @@ regenerate_skill() {
   local name="$2"
   local generated
   local generated_source
-  local skill="${BASEDIR}/agents/skills/${name}/SKILL.md"
+  local skill="${BASEDIR}/agents/skills/generated/${name}/SKILL.md"
 
   generated="$(mktemp "${skill}.XXXXXX")"
   if generated_source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link --print-out-paths ".#${package}")" \

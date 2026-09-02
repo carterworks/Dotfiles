@@ -12,14 +12,28 @@
     ~/.config/herdr/config.toml: herdr/config.toml
     ~/.config/opencode/skills/:
       glob: true
-      path: agents/skills/*
+      path: agents/skills/personal/*
     ~/.claude/CLAUDE.md: agents/AGENTS.md
     ~/.claude/skills/:
       glob: true
-      path: agents/skills/*
+      path: agents/skills/personal/*
     ~/.local/bin/:
       glob: true
       path: bin/*
     ~/.config/git-quick-commit/config.json: git-quick-commit/config.json
     ~/.config/git-quick-commit/PROMPT.md: git-quick-commit/PROMPT.md
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
+- link:
+    ~/.config/opencode/skills/:
+      glob: true
+      path: agents/skills/generated/*
+    ~/.claude/skills/:
+      glob: true
+      path: agents/skills/generated/*
+- link:
+    ~/.config/opencode/skills/:
+      glob: true
+      path: agents/skills/mattpocock/*
+    ~/.claude/skills/:
+      glob: true
+      path: agents/skills/mattpocock/*

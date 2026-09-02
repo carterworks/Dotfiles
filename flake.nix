@@ -87,17 +87,17 @@
           agent-browser-skill =
             pkgs.runCommandLocal "agent-browser-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
               ''
-                diff -u ${source}/agents/skills/agent-browser/SKILL.md ${browserSkill}
+                diff -u ${source}/agents/skills/generated/agent-browser/SKILL.md ${browserSkill}
                 touch "$out"
               '';
           hunk-skill = pkgs.runCommandLocal "hunk-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
-            diff -u ${source}/agents/skills/hunk-review/SKILL.md ${hunkSkill}
+            diff -u ${source}/agents/skills/generated/hunk-review/SKILL.md ${hunkSkill}
             touch "$out"
           '';
           herdr-skill =
             pkgs.runCommandLocal "herdr-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
               ''
-                diff -u ${source}/agents/skills/herdr/SKILL.md ${herdrSkill}
+                diff -u ${source}/agents/skills/generated/herdr/SKILL.md ${herdrSkill}
                 touch "$out"
               '';
           nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
