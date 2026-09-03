@@ -80,9 +80,7 @@ let
     claude
     kubectl
     fff-mcp
-    litellm
     openspec
-    tinty
     vault
   ];
 
