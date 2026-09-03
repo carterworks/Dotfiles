@@ -78,6 +78,7 @@ let
   darwinPackages = with pkgs; [
     awscli2
     claude
+    kubectl
     fff-mcp
     litellm
     openspec
