@@ -5,17 +5,17 @@
 
 let
   pname = "nub";
-  version = "0.8.3";
+  version = "0.9.0";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
       packageName = "nub-darwin-arm64";
-      hash = "sha256-RDHYvy6SzY1/n/iZsQ3H56GRwaAmyCOhtyQu1+j5xMU=";
+      hash = "sha256-VurO7jA5cclvN4zOVdq79lrRYF4D9/aU5Bc5YpwCxfY=";
     };
     x86_64-linux = {
       packageName = "nub-linux-x64";
-      hash = "sha256-K9FhPdDDnJOyXlrXCH2aD4yq4nhBSdjt2iBfKBtZ4Uc=";
+      hash = "sha256-U6ltfZmI2YQvRNERAbxuS/u/STcx9kLlgwljlO49WLQ=";
     };
   };
 
