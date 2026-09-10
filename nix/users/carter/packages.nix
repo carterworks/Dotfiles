@@ -20,6 +20,25 @@ let
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
+  # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
+  # token, so every kubectl call re-prompts a browser login. 0.1.9 caches it.
+  # https://wiki.corp.adobe.com/spaces/ethos/pages/1710311412 (section 2.1.1)
+  kubelogin = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "kubelogin";
+    version = "0.1.9";
+    src = pkgs.fetchurl {
+      url = "https://github.com/Azure/kubelogin/releases/download/v${version}/kubelogin-darwin-arm64.zip";
+      hash = "sha256-lNmnm72mLKZWgiIN4mI6r/XM7MCe1rkT6E4Dd/7hBZw=";
+    };
+    nativeBuildInputs = [ pkgs.unzip ];
+    sourceRoot = ".";
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 bin/darwin_arm64/kubelogin $out/bin/kubelogin
+      runHook postInstall
+    '';
+  };
+
   commonPackages = with pkgs; [
     age
     agent-browser
@@ -79,6 +98,7 @@ let
     awscli2
     claude
     kubectl
+    kubelogin
     fff-mcp
     openspec
     vault
