@@ -7,6 +7,7 @@ delivery = "system"
 show_agent_labels_on_pane_borders = true
 
 agent_panel_sort = "spaces"
+status_indicators = "symbols"
 [terminal]
 default_shell = "fish"
 
