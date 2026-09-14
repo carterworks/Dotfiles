@@ -471,7 +471,7 @@ for file in "${BASEDIR}"/nix/packages/*.nix; do
     log_message info "${pkg}: up to date (${current_version})"
   else
     log_message warn "${pkg}: update available (${current_version} -> ${latest_version})"
-    encoded_update_info="$(printf '%s' "${update_info}" | base64)"
+    encoded_update_info="$(printf '%s' "${update_info}" | base64 --wrap=0)"
     updates+=("${pkg}|${file}|${current_revision}|${latest_revision}|${current_version}|${latest_version}|${package_system}|${encoded_update_info}")
   fi
 done
