@@ -42,6 +42,7 @@ let
   commonPackages = with pkgs; [
     age
     agent-browser
+    aria2
     astro-language-server
     ast-grep
     bash-language-server
