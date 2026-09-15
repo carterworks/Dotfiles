@@ -59,5 +59,6 @@
   "preferredNotifChannel": "auto",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "feedbackDrafts": "off"
 }
