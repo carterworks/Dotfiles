@@ -197,6 +197,52 @@ in
           __herdr_agent_tab opencode2 $argv
       end
 
+      function ocpw --description 'Print and copy the OpenCode pairing password'
+          set -l pair_output (command opencode2 pair)
+          or return
+
+          set -l password (string match --regex --groups-only '^  Password[[:space:]]+(.+)$' -- $pair_output)
+          if test (count $password) -ne 1
+              echo 'ocpw: could not find the password in opencode2 pair output' >&2
+              return 1
+          end
+
+          # Native clipboard fallback, disabled while validating OSC 52:
+          # set -l clipboard_command
+          # if command -qs pbcopy
+          #     set clipboard_command pbcopy
+          # else if command -qs wl-copy
+          #     set clipboard_command wl-copy
+          # end
+
+          echo "$password"
+
+          set -l osc52_copied false
+          if test -w /dev/tty
+              if command -qs base64; and command -qs awk
+                  set -l osc52_payload (printf '%s' "$password" | command base64 | string collect)
+                  printf '%s' "$osc52_payload" | command awk '{ payload = payload $0 } END { printf "%c]52;c;%s%c", 27, payload, 7 }' > /dev/tty
+                  set osc52_copied true
+              end
+          end
+
+          # Native clipboard copy, disabled while validating OSC 52:
+          # if test (count $clipboard_command) -eq 1
+          #     printf '%s' "$password" | command $clipboard_command
+          #     if test $status -ne 0
+          #         echo "ocpw: $clipboard_command failed to copy the password" >&2
+          #         return 1
+          #     end
+          # else if test "$osc52_copied" != true
+          #     echo 'ocpw: neither pbcopy nor wl-copy is available; password was not copied' >&2
+          #     return 1
+          # end
+          if test "$osc52_copied" != true
+              echo 'ocpw: OSC 52 clipboard copy is unavailable; password was not copied' >&2
+              return 1
+          end
+      end
+
       if test -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" && command -qs babelfish
           cat "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" | babelfish | source
       end
