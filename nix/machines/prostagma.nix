@@ -73,7 +73,7 @@ let
               <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
 
-              <li><a href="http://prostagma.${tailnetDomain}:8096/">Jellyfin</a></li>
+              <li><a href="https://jellyfin.${tailnetDomain}/">Jellyfin</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
               <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
               <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
@@ -426,6 +426,7 @@ in
 
       "$tailscale" serve reset
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
+      "$tailscale" serve --service=svc:jellyfin --https=443 http://127.0.0.1:8096
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
