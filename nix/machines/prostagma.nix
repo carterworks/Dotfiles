@@ -73,6 +73,7 @@ let
               <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
 
+              <li><a href="http://prostagma.${tailnetDomain}:8096/">Jellyfin</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
               <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
               <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
@@ -179,10 +180,10 @@ in
     };
   };
 
-  services.journald.extraConfig = ''
-    SystemMaxUse=1G
-    SystemKeepFree=5G
-  '';
+  services.journald.settings.Journal = {
+    SystemMaxUse = "1G";
+    SystemKeepFree = "5G";
+  };
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [ inputs.copyparty.overlays.default ];
@@ -458,6 +459,46 @@ in
     accelerationDevices = [ "/dev/dri/renderD128" ];
   };
   systemd.services.plex.unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/plex/config" ];
+
+  services.jellyfin = {
+    enable = true;
+    openFirewall = true;
+    user = "apps";
+    group = "apps";
+    dataDir = "/mnt/truenas/vm-data/jellyfin";
+    cacheDir = "/mnt/truenas/vm-data/jellyfin/cache";
+    hardwareAcceleration = {
+      enable = true;
+      type = "qsv";
+      device = "/dev/dri/renderD128";
+    };
+  };
+  systemd.services.jellyfin.unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/jellyfin" ];
+  # The module's tmpfiles rules run before the NFS mounts are up at boot, and
+  # the service's WorkingDirectory must exist before preStart runs, so create
+  # the data directories in a dedicated oneshot (same reason plex does).
+  systemd.services.jellyfin-dirs = {
+    description = "Create Jellyfin data directories on NFS storage";
+    unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data" ];
+    # The vm-data NFS export root-squashes, but the parent directory is
+    # group-writable by apps, so create the directories as that user.
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "apps";
+      Group = "apps";
+    };
+    script = ''
+      install -d -m 0700 \
+        /mnt/truenas/vm-data/jellyfin/config \
+        /mnt/truenas/vm-data/jellyfin/log \
+        /mnt/truenas/vm-data/jellyfin/cache
+    '';
+  };
+  systemd.services.jellyfin = {
+    after = [ "jellyfin-dirs.service" ];
+    requires = [ "jellyfin-dirs.service" ];
+  };
 
   services.cloudflared = {
     enable = true;
