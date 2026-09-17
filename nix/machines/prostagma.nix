@@ -450,6 +450,18 @@ in
   };
   systemd.services.immich-server.unitConfig.RequiresMountsFor = [ "/mnt/truenas/immich" ];
 
+  # Intel iGPU drivers for jellyfin QSV transcodes (and immich machine learning).
+  # libva and libvpl find these via /run/opengl-driver, which hardware.graphics
+  # creates; it must come from the module system, not from plex's bundled libs.
+  hardware.graphics = {
+    enable = true;
+    extraPackages = with pkgs; [
+      intel-media-driver
+      vpl-gpu-rt
+      intel-compute-runtime
+    ];
+  };
+
   services.plex = {
     enable = true;
     openFirewall = true;
@@ -471,6 +483,27 @@ in
       enable = true;
       type = "qsv";
       device = "/dev/dri/renderD128";
+    };
+    # Transcoding options below were applied via forceEncodingConfig once;
+    # Jellyfin 12 rewrites encoding.xml on every start, so with the flag left
+    # on it churns out a new backup file on each restart. The settings also
+    # re-apply on fresh installs because the module seeds encoding.xml from
+    # these options; after that the dashboard owns the file.
+    # forceEncodingConfig = true;
+    transcoding = {
+      hardwareDecodingCodecs = {
+        h264 = true;
+        hevc = true;
+        mpeg2 = true;
+        vc1 = true;
+        vp8 = true;
+        vp9 = true;
+        av1 = true;
+        hevc10bit = true;
+      };
+      enableHardwareEncoding = true;
+      hardwareEncodingCodecs.hevc = true;
+      enableIntelLowPowerEncoding = true;
     };
   };
   systemd.services.jellyfin.unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/jellyfin" ];
