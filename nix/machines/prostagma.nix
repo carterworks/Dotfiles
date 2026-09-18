@@ -174,6 +174,7 @@ in
       options = "--delete-older-than 7d";
     };
     settings = {
+      auto-optimise-store = true;
       sandbox = false;
       min-free = 5 * 1024 * 1024 * 1024;
       max-free = 10 * 1024 * 1024 * 1024;
