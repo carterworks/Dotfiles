@@ -145,11 +145,11 @@ in
   systemd.user.services.carter-nix-profile-prune = {
     Unit = {
       Description = "Prune old Carter Nix profile generations";
-      ConditionPathExists = config.home.profileDirectory;
+      ConditionPathExists = "${config.home.homeDirectory}/.local/state/nix/profiles/profile";
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.nix}/bin/nix profile wipe-history --profile ${config.home.profileDirectory} --older-than 30d";
+      ExecStart = "${pkgs.nix}/bin/nix profile wipe-history --profile ${config.home.homeDirectory}/.local/state/nix/profiles/profile --older-than 30d";
     };
   };
 
