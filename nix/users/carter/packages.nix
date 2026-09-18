@@ -68,7 +68,7 @@ let
     hyperfine
     jq
     markdown-oxide
-    nodejs_latest
+    nodejs_24
     neovim
     nixd
     nub
