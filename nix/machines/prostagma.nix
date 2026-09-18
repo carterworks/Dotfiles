@@ -247,6 +247,7 @@ in
   ];
 
   systemd.tmpfiles.rules = [
+    "d /var/lib/secrets/bazarr 0700 root root -"
     "d /mnt/truenas 0755 root root -"
     "d /mnt/truenas/media 0755 root root -"
     "d /mnt/truenas/media-direct 0755 root root -"
