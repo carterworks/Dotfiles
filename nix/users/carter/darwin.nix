@@ -42,7 +42,7 @@
       "bitwarden"
       "lunar"
       "podman-desktop"
-      "t3-code"
+      "t3-code@nightly"
       "zed"
     ];
   };
