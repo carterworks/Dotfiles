@@ -438,7 +438,15 @@ in
     '';
   };
 
-  services.postgresql.package = pkgs.postgresql_18;
+  services.postgresql = {
+    package = pkgs.postgresql_18;
+    dataDir = "/srv/apps/postgresql/18";
+  };
+  systemd.services.postgresql = {
+    after = [ "prostagma-app-storage.service" ];
+    requires = [ "prostagma-app-storage.service" ];
+    unitConfig.RequiresMountsFor = [ "/srv/apps/postgresql/18" ];
+  };
 
   services.immich = {
     enable = true;
