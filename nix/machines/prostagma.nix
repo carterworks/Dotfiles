@@ -261,6 +261,7 @@ in
     "d /mnt/truenas/vm-data 0755 root root -"
     "d /mnt/truenas/photos 0755 root root -"
     "d /mnt/truenas/immich 0755 root root -"
+    "d /srv/apps/immich-cache 0750 immich apps -"
     "A+ /mnt/truenas/syncthing-root/users/carter - - - - u:apps:rx"
   ];
 
@@ -456,7 +457,16 @@ in
     mediaLocation = "/mnt/truenas/immich";
     group = "apps";
     accelerationDevices = [ "/dev/dri/renderD128" ];
-    machine-learning.environment.MPLCONFIGDIR = "/var/cache/immich/matplotlib";
+    machine-learning.environment = {
+      MACHINE_LEARNING_CACHE_FOLDER = lib.mkForce "/srv/apps/immich-cache";
+      XDG_CACHE_HOME = lib.mkForce "/srv/apps/immich-cache";
+      MPLCONFIGDIR = lib.mkForce "/srv/apps/immich-cache/matplotlib";
+    };
+  };
+  systemd.services.immich-machine-learning = {
+    after = [ "prostagma-app-storage.service" ];
+    requires = [ "prostagma-app-storage.service" ];
+    unitConfig.RequiresMountsFor = [ "/srv/apps/immich-cache" ];
   };
   systemd.services.immich-server.unitConfig.RequiresMountsFor = [ "/mnt/truenas/immich" ];
 
