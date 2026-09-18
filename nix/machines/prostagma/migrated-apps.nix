@@ -25,6 +25,7 @@ let
     "prowlarr"
     "sonarr"
     "radarr"
+    "bazarr"
 
     "backrest"
   ];
@@ -199,7 +200,7 @@ in
       name = mkOption {
         type = types.str;
         default = "prostagma-media";
-        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, and Radarr.";
+        description = "Docker network used by qBittorrent, Prowlarr, Sonarr, Radarr, and Bazarr.";
       };
 
       subnet = mkOption {
@@ -314,6 +315,23 @@ in
           ];
         };
       }
+      // optionalAttrs cfg.apps.bazarr.enable {
+        bazarr = {
+          image = "ghcr.io/home-operations/bazarr:1.6.0@sha256:133a3064b0b9ea18ad66cc88b6863f91b9c05dc32212805843fcfce4c4b8eb05";
+          autoStart = true;
+          ports = [ "127.0.0.1:6767:6767/tcp" ];
+          environment = appEnvironment // {
+            BAZARR__INSTANCE_NAME = "Bazarr";
+            BAZARR__PORT = "6767";
+          };
+          volumes = [
+            "${appRoot}/bazarr/config:/config"
+            "${mediaRoot}/movies:/movies"
+            "${mediaRoot}/tvshows:/tvshows"
+          ];
+          extraOptions = appExtraOptions ++ dockerNetworkOptions;
+        };
+      }
 
       // optionalAttrs cfg.apps.backrest.enable {
         backrest = {
@@ -346,7 +364,8 @@ in
       };
 
     systemd.tmpfiles.rules =
-      optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
+      optional cfg.apps.bazarr.enable ("d ${appRoot}/bazarr/config 0775 ${uid} ${gid} -")
+      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
       ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -");
 
     systemd.services =
@@ -507,6 +526,21 @@ in
           ]
           // {
             after = dockerNetworkDependencies;
+            requires = dockerNetworkDependencies;
+          };
+      }
+      // optionalAttrs cfg.apps.bazarr.enable {
+        docker-bazarr =
+          mkPathCheckService [
+            "${appRoot}/bazarr/config"
+            "${mediaRoot}/movies"
+            "${mediaRoot}/tvshows"
+          ]
+          // {
+            after = dockerNetworkDependencies ++ [
+              "docker-radarr.service"
+              "docker-sonarr.service"
+            ];
             requires = dockerNetworkDependencies;
           };
       }
