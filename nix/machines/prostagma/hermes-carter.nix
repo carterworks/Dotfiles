@@ -141,4 +141,28 @@ in
     };
     Install.WantedBy = [ "default.target" ];
   };
+
+  systemd.user.services.carter-nix-profile-prune = {
+    Unit = {
+      Description = "Prune old Carter Nix profile generations";
+      ConditionPathExists = config.home.profileDirectory;
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix profile wipe-history --profile ${config.home.profileDirectory} --older-than 30d";
+    };
+  };
+
+  systemd.user.timers.carter-nix-profile-prune = {
+    Unit = {
+      Description = "Weekly pruning of old Carter Nix profile generations";
+    };
+    Timer = {
+      OnCalendar = "weekly";
+      Persistent = true;
+      RandomizedDelaySec = "1h";
+      Unit = "carter-nix-profile-prune.service";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 }
