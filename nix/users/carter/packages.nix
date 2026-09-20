@@ -29,6 +29,17 @@ let
       {
         inherit t3code;
       };
+  # Qwen Image 2.1 support landed upstream after the current nixpkgs package.
+  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan.overrideAttrs {
+    version = "master-137f740";
+    src = pkgs.fetchFromGitHub {
+      owner = "leejet";
+      repo = "stable-diffusion.cpp";
+      rev = "137f7409bbfb98c70a350a57d6a135487080db96";
+      hash = "sha256-3Bk1LnymmC+tIybCt7TuR0vFy4SyCA1fWIrLWKQKAX8=";
+      fetchSubmodules = true;
+    };
+  };
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
@@ -128,7 +139,7 @@ let
     playerctl
     protonplus
     sgdboop
-    stable-diffusion-cpp-vulkan
+    stableDiffusionCppVulkan
     systemd-lsp
     telegram-desktop
     trayscale
