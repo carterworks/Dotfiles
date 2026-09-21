@@ -5,18 +5,18 @@
 
 let
   pname = "fff-mcp";
-  version = "0.10.6";
+  version = "0.11.0";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   platformPackages = {
     aarch64-darwin = {
       assetName = "fff-mcp-aarch64-apple-darwin";
-      hash = "sha256-AuD1f1uI+mmElPMQ2ABaDDTVvaWh/NBpUgs1+OIxmJI=";
+      hash = "sha256-zGBtlBjPp3ZDdtzXsyoz5kWabLmkcYvjZrAk3Kbp/q0=";
     };
     # musl (static) so the binary runs on NixOS without autoPatchelf.
     x86_64-linux = {
       assetName = "fff-mcp-x86_64-unknown-linux-musl";
-      hash = "sha256-pE72QBXxdUqmO2kMJNmnSO0WKY8FNQ2nsJVUxMmN+w8=";
+      hash = "sha256-0ehnH0DInERaqhcooh7AS3S+Ll+ZCRSFyuq8yX+ZrOs=";
     };
   };
 
