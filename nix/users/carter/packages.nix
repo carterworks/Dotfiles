@@ -18,6 +18,18 @@ let
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
+  t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
+    providerPackages = [
+      claude
+      codex
+      opencode2
+    ];
+  };
+  t3code-desktop =
+    inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code-desktop.override
+      {
+        inherit t3code;
+      };
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
   # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
@@ -102,6 +114,7 @@ let
     kubelogin
     fff-mcp
     openspec
+    t3code-desktop
     vault
   ];
 
