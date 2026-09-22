@@ -30,7 +30,6 @@ in
   '';
   fff-mcp = localPackage ./fff-mcp.nix;
   nub = localPackage ./nub.nix;
-  opencode2 = localPackage ./opencode2.nix;
 }
 // lib.optionalAttrs (system == "x86_64-linux") {
   bambu-studio = localPackage ./bambu-studio.nix;

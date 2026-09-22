@@ -144,7 +144,6 @@
           dotbot
           nub
           fff-mcp
-          opencode2
           ;
         carters-macbook-pro = carters-macbook-pro.system;
       };
@@ -155,7 +154,6 @@
           nub
           obsidian-headless
           fff-mcp
-          opencode2
           ;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;

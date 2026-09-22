@@ -31,7 +31,6 @@ in
 {
   imports = [
     inputs.hunk.homeManagerModules.default
-    ./opencode2-server.nix
   ];
 
   home.packages = [
