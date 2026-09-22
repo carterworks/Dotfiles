@@ -17,7 +17,6 @@ let
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
-  pi-coding-agent = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi;
   t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
     providerPackages = [
       claude
@@ -87,7 +86,6 @@ let
     obsidian
     opencode2
     ouch
-    pi-coding-agent
     pnpm
     rclone
     ripgrep
