@@ -68,6 +68,7 @@ let
         <main>
           <nav aria-label="Prostagma services">
             <ul>
+              <li><a href="https://audiobookshelf.${tailnetDomain}/">Audiobookshelf</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:9898/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
@@ -213,6 +214,7 @@ in
     apps.sonarr.enable = true;
     apps.radarr.enable = true;
     apps.bazarr.enable = true;
+    apps.audiobookshelf.enable = true;
 
     apps.backrest.enable = true;
 
@@ -434,6 +436,7 @@ in
       "$tailscale" serve --service=svc:jellyfin --https=443 http://127.0.0.1:8096
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
       "$tailscale" serve --service=svc:bazarr --https=443 http://127.0.0.1:6767
+      "$tailscale" serve --service=svc:audiobookshelf --https=443 http://127.0.0.1:13378
       "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
       "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025

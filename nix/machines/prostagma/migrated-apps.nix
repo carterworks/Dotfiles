@@ -26,6 +26,7 @@ let
     "sonarr"
     "radarr"
     "bazarr"
+    "audiobookshelf"
 
     "backrest"
   ];
@@ -332,6 +333,27 @@ in
           extraOptions = appExtraOptions ++ dockerNetworkOptions;
         };
       }
+      // optionalAttrs cfg.apps.audiobookshelf.enable {
+        audiobookshelf = {
+          # The official image has no PUID/PGID init, so identity comes from
+          # --user in appExtraOptions and the media group comes from
+          # --group-add, which is what grants read/write on the library.
+          image = "ghcr.io/advplyr/audiobookshelf:2.36.1@sha256:3528a93b6442ffe54bd46771bbbab7c97084e1101071586d9dc2254f30bb4358";
+          autoStart = true;
+          ports = [ "127.0.0.1:13378:13378/tcp" ];
+          environment = appEnvironment // {
+            # The image defaults to PORT=80, which a non-root process cannot
+            # bind, so the listener must be moved to the unprivileged port.
+            PORT = "13378";
+          };
+          volumes = [
+            "${appRoot}/audiobookshelf/config:/config"
+            "${appRoot}/audiobookshelf/metadata:/metadata"
+            "${mediaRoot}/audiobooks:/audiobooks"
+          ];
+          extraOptions = appExtraOptions ++ dockerNetworkOptions;
+        };
+      }
 
       // optionalAttrs cfg.apps.backrest.enable {
         backrest = {
@@ -365,6 +387,12 @@ in
 
     systemd.tmpfiles.rules =
       optional cfg.apps.bazarr.enable ("d ${appRoot}/bazarr/config 0775 ${uid} ${gid} -")
+      ++ optional cfg.apps.audiobookshelf.enable (
+        "d ${appRoot}/audiobookshelf/config 0775 ${uid} ${gid} -"
+      )
+      ++ optional cfg.apps.audiobookshelf.enable (
+        "d ${appRoot}/audiobookshelf/metadata 0775 ${uid} ${gid} -"
+      )
       ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
       ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -");
 
@@ -541,6 +569,19 @@ in
               "docker-radarr.service"
               "docker-sonarr.service"
             ];
+            requires = dockerNetworkDependencies;
+          };
+      }
+
+      // optionalAttrs cfg.apps.audiobookshelf.enable {
+        docker-audiobookshelf =
+          mkPathCheckService [
+            "${appRoot}/audiobookshelf/config"
+            "${appRoot}/audiobookshelf/metadata"
+            "${mediaRoot}/audiobooks"
+          ]
+          // {
+            after = dockerNetworkDependencies;
             requires = dockerNetworkDependencies;
           };
       }
