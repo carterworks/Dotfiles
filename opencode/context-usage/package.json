@@ -1,0 +1,10 @@
+{
+  "name": "context-usage",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./server.ts",
+    "./tui": "./tui.tsx",
+    "./rpc": "./rpc.ts"
+  }
+}
