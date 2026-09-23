@@ -19,6 +19,24 @@ const COMPACTION_OUTPUT_MAX = 32_000
 
 export const tokens = (chars) => Math.ceil(chars / CHARS_PER_TOKEN)
 
+// Everything a client needs to render /context. Built on the server for the
+// `breakdown` RPC, and in the TUI only as a fallback when that RPC is missing.
+export function sessionReport({ messages = [], snapshot, session, models = [], mcpServers = [], compaction }) {
+  const selected =
+    messages.findLast((item) => item.type === "assistant" && item.tokens)?.model ?? snapshot?.model ?? session?.model
+  const model = models.find((item) => item.providerID === selected?.providerID && item.id === selected?.id)
+  const mcpNamespaces = mcpServers.map((server) => server.name.replace(/[^a-zA-Z0-9_-]/g, "_"))
+  return {
+    version: 1,
+    model: selected ? { providerID: selected.providerID, id: selected.id, name: model?.name } : undefined,
+    messages: messages.length,
+    breakdown: contextBreakdown({ messages, snapshot, model, compaction, mcpNamespaces }),
+  }
+}
+
+// OpenCode APIs return either the payload or `{ data }`, depending on the caller.
+export const unwrap = (value) => (Array.isArray(value) || !value || !("data" in value) ? value : value.data)
+
 export function contextBreakdown({ messages = [], snapshot, model, compaction, mcpNamespaces = [] }) {
   const limit = model?.limit?.context ?? 0
   const reserve = reserveTokens(model?.limit, compaction)

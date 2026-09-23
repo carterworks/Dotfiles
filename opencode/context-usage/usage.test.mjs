@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { contextBreakdown, gridCells, reserveTokens } from "./usage.mjs"
+import { contextBreakdown, gridCells, reserveTokens, sessionReport, unwrap } from "./usage.mjs"
 
 const text = (length) => "x".repeat(length)
 const tokens = (input, output = 0, read = 0, write = 0) => ({ input, output, reasoning: 0, cache: { read, write } })
@@ -63,6 +63,33 @@ test("empty sessions report free space without a last request", () => {
   assert.deepEqual(result.categories, [])
   assert.equal(result.last, undefined)
   assert.equal(result.free, 1_000 - result.reserve)
+})
+
+test("a session report resolves the model the last request used and MCP namespaces", () => {
+  const models = [
+    { providerID: "p", id: "old", name: "Old", limit: { context: 10, output: 1 } },
+    { providerID: "p", id: "m", name: "Model M", limit: model.limit },
+  ]
+  const history = messages.map((message) => (message.type === "assistant" ? { ...message, model: { providerID: "p", id: "m" } } : message))
+  const report = sessionReport({
+    messages: history,
+    snapshot,
+    session: { model: { providerID: "p", id: "old" } },
+    models,
+    mcpServers: [{ name: "context7" }, { name: "scout" }],
+  })
+  assert.deepEqual(report.model, { providerID: "p", id: "m", name: "Model M" })
+  assert.equal(report.messages, messages.length)
+  assert.equal(report.breakdown.limit, 1_000)
+  assert.ok(report.breakdown.categories.find((item) => item.id === "mcp").details.some((item) => item.label === "scout · search"))
+  assert.equal(sessionReport({ session: { model: { providerID: "p", id: "old" } }, models }).model.name, "Old")
+})
+
+test("unwrap accepts payloads with or without a data envelope", () => {
+  assert.deepEqual(unwrap({ data: [1] }), [1])
+  assert.deepEqual(unwrap({ location: {}, data: [2] }), [2])
+  assert.deepEqual(unwrap([3]), [3])
+  assert.equal(unwrap(undefined), undefined)
 })
 
 test("the compaction reserve mirrors OpenCode's automatic threshold", () => {

@@ -5,7 +5,7 @@ import type { ScrollBoxRenderable } from "@opentui/core"
 import { useTerminalDimensions } from "@opentui/solid"
 import { createEffect, createMemo, createResource, For, on, onCleanup, Show } from "solid-js"
 import { ContextUsageRpc } from "./rpc.ts"
-import { compact, contextBreakdown, gridCells } from "./usage.mjs"
+import { compact, gridCells, sessionReport, unwrap } from "./usage.mjs"
 
 const DIALOG_WIDTH = 116
 const COLUMNS = 20
@@ -19,41 +19,33 @@ async function load(ctx: Context, sessionID: string) {
   await ctx.data.session.sync(sessionID)
   const session = ctx.data.session.get(sessionID)
   if (!session) throw new Error("Session unavailable")
-  const location = session.location as Location
-  const [context, snapshot, compaction] = await Promise.all([
+  const location = { directory: (session.location as Location).directory }
+  const compaction = await loadCompaction(ctx, location)
+  try {
+    const text = await ctx.client.rpc(ContextUsageRpc).breakdown({ sessionID, compaction }, { location })
+    return { ...JSON.parse(text), snapshotError: undefined as string | undefined }
+  } catch (error: any) {
+    if (error?.type !== "rpc.unavailable") throw error
+  }
+  // Without the server half there is no snapshot, so only history is itemized.
+  const [context] = await Promise.all([
     ctx.client.session.context({ sessionID }),
-    loadSnapshot(ctx, sessionID, location),
-    loadCompaction(ctx, location),
     ctx.data.location.model.sync(location),
     ctx.data.location.mcp.server.sync(location).catch(() => undefined),
   ])
-  // Promise clients resolve to the payload itself; older ones wrapped it in `data`.
-  const messages: any[] = Array.isArray(context) ? context : ((context as any)?.data ?? [])
-  const lastModel = messages.findLast((item) => item.type === "assistant" && item.tokens)?.model
-  const selected = lastModel ?? snapshot.value?.model ?? session.model
-  const model = ctx.data.location.model
-    .list(location)
-    ?.find((item) => item.providerID === selected?.providerID && item.id === selected?.id)
-  const mcpNamespaces = (ctx.data.location.mcp.server.list(location) ?? []).map((server) =>
-    server.name.replace(/[^a-zA-Z0-9_-]/g, "_"),
-  )
-  const breakdown = contextBreakdown({ messages, snapshot: snapshot.value, model, compaction, mcpNamespaces })
-  return { selected, model, breakdown, messages: messages.length, snapshotError: snapshot.error }
-}
-
-async function loadSnapshot(ctx: Context, sessionID: string, location: Location) {
-  try {
-    const text = await ctx.client.rpc(ContextUsageRpc).snapshot({ sessionID }, { location: { directory: location.directory } })
-    return { value: typeof text === "string" && text ? JSON.parse(text) : undefined }
-  } catch (error: any) {
-    return { error: error?.type === "rpc.unavailable" ? "server plugin not loaded" : String(error?.message ?? error) }
-  }
+  const report = sessionReport({
+    messages: unwrap(context) ?? [],
+    session,
+    models: ctx.data.location.model.list(location) ?? [],
+    mcpServers: ctx.data.location.mcp.server.list(location) ?? [],
+    compaction,
+  })
+  return { ...report, snapshotError: "server plugin not loaded" }
 }
 
 async function loadCompaction(ctx: Context, location: Location) {
   try {
-    const result: any = await ctx.client.config.get({ location: { directory: location.directory } })
-    const entries: any[] = Array.isArray(result) ? result : (result?.data ?? [])
+    const entries: any[] = unwrap(await ctx.client.config.get({ location })) ?? []
     return entries.reduce((merged, entry) => (entry?.info?.compaction ? { ...merged, ...entry.info.compaction } : merged), {})
   } catch {
     return undefined
@@ -144,9 +136,9 @@ function ContextDialog(props: { sessionID: string }) {
 
   const legend = () => (
     <box flexDirection="column" flexShrink={0}>
-      <text fg={base()}>{data()!.model?.name ?? data()!.selected?.id ?? "Model unknown"}</text>
+      <text fg={base()}>{data()!.model?.name ?? data()!.model?.id ?? "Model unknown"}</text>
       <text fg={muted()}>
-        {data()!.selected ? `${data()!.selected.providerID}/${data()!.selected.id}` : "No model selected"}
+        {data()!.model ? `${data()!.model.providerID}/${data()!.model.id}` : "No model selected"}
       </text>
       <text fg={base()}>
         {breakdown().limit
