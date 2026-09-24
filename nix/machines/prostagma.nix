@@ -166,6 +166,7 @@ in
     ./prostagma/app-storage.nix
 
     ./prostagma/migrated-apps.nix
+    ./prostagma/sso.nix
   ];
 
   home-manager.users.carter = import ./prostagma/hermes-carter.nix;
@@ -459,6 +460,11 @@ in
       "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
       "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025
       "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
+
+      # Authelia portal and OpenID Connect issuer. Applications in
+      # containers call the token endpoint server-side over the tailnet
+      # address, which is why 8443 is also allowed through the firewall.
+      "$tailscale" serve --bg --https=8443 http://127.0.0.1:9091
 
 
 
