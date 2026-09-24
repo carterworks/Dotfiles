@@ -17,6 +17,7 @@ let
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
+  opencode2-desktop  = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
   t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
     providerPackages = [
       claude
@@ -96,6 +97,7 @@ let
     nub
     obsidian
     opencode2
+    opencode2-desktop
     ouch
     pnpm
     rclone
