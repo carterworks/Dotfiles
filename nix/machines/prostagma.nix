@@ -473,6 +473,10 @@ in
       # address, which is why 8443 is also allowed through the firewall.
       "$tailscale" serve --bg --https=8443 http://127.0.0.1:9091
 
+      # Authelia as a Tailscale Service: the MagicDNS name without a port,
+      # which is the issuer prefix for OpenID Connect clients.
+      "$tailscale" serve --service=svc:authelia --https=443 http://127.0.0.1:9091
+
 
 
     '';

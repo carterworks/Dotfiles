@@ -25,6 +25,11 @@ let
   authPortalPort = 8443;
   authPortalUrl = "https://prostagma.${tailnetDomain}:${toString authPortalPort}";
 
+  # The portal also has its own Tailscale Service, and this is the URL
+  # clients should use: a MagicDNS name with no port is a valid OpenID
+  # Connect issuer, whereas host:port is awkward to register everywhere.
+  authServiceUrl = "https://authelia.${tailnetDomain}";
+
   secretsDir = "/var/lib/secrets/authelia";
 
   # State directory that systemd creates for the service (0700, owned by it).
@@ -78,9 +83,14 @@ in
 
       authentication_backend.file.path = usersFile;
 
-      # One cookie domain for now, the portal host itself. Application hosts
-      # get their own entry when the forward-auth gate is introduced.
+      # Authelia refuses any host without a matching entry here, so both the
+      # Service name and the old host-and-port URL are declared. The second
+      # entry is removed once nothing points at the host-and-port URL.
       session.cookies = [
+        {
+          domain = "authelia.${tailnetDomain}";
+          authelia_url = authServiceUrl;
+        }
         {
           domain = "prostagma.${tailnetDomain}";
           authelia_url = authPortalUrl;
