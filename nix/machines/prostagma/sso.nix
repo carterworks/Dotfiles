@@ -202,10 +202,25 @@ in
     map (app: {
       name = "http://${app.name}.${tailnetDomain}";
       value.extraConfig = ''
+        # Serve connects to Caddy over loopback, and the directory sites are
+        # bound to loopback explicitly. A site without a matching bind lands in
+        # a separate wildcard listener, and the kernel prefers the specific
+        # bind, so Serve's connection would be answered by the directory server
+        # and never reach this site.
+        bind 127.0.0.1 ::1
+
         ${lib.optionalString (app.apiBypass or false) "@notapi not path /api/*\n"}
         forward_auth ${lib.optionalString (app.apiBypass or false) "@notapi "}127.0.0.1:9091 {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+
+          # Serve terminates TLS, so the browser is on https while this hop is
+          # plain http. Authelia derives the target URL from the request scheme
+          # and refuses anything that is not https or wss, so state the
+          # external scheme explicitly or every request fails with "has an
+          # insecure scheme 'http'".
+          header_up X-Original-URL "https://{host}{uri}"
+          header_up X-Forwarded-Proto https
         }
         reverse_proxy 127.0.0.1:${toString app.port}
       '';
