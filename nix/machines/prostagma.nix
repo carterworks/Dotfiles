@@ -248,26 +248,41 @@ in
     9119
   ];
 
+  # The /mnt/truenas exports root-squash root and do not support POSIX ACLs,
+  # so tmpfiles must never create, chmod, chown or setfacl anything there: a
+  # single failure makes systemd-tmpfiles exit non-zero, which aborts
+  # switch-to-configuration *after* it has already stopped changed units,
+  # leaving them stopped. Type `e` only verifies existing paths and is a no-op
+  # when one is absent. Mountpoints come from the fileSystems declarations.
+  #
+  # Do not reintroduce an "A+" rule here: a recursive ACL over users/carter
+  # walks ~500k NFS entries on every activation and fails with EOPNOTSUPP.
+  # The copyparty service user can already read that export.
   systemd.tmpfiles.rules = [
     "d /var/lib/secrets/bazarr 0700 root root -"
+
+    # Local directories on the container root filesystem (mountpoint parents).
     "d /mnt/truenas 0755 root root -"
-    "d /mnt/truenas/media 0755 root root -"
     "d /mnt/truenas/media-direct 0755 root root -"
-    "d /mnt/truenas/media-direct/tvshows 0755 root root -"
-    "d /mnt/truenas/media-direct/movies 0755 root root -"
-    "d /mnt/truenas/media-direct/comics 0755 root root -"
-    "d /mnt/truenas/media-direct/audiobooks 0755 root root -"
     "d /mnt/truenas/syncthing-root 0755 root root -"
     "d /mnt/truenas/syncthing-root/media 0755 root root -"
-    "d /mnt/truenas/syncthing-root/media/games 0755 root root -"
-    "d /mnt/truenas/syncthing-root/media/ebooks 0755 root root -"
     "d /mnt/truenas/syncthing-root/users 0755 root root -"
-    "d /mnt/truenas/syncthing-root/users/carter 0755 root root -"
-    "d /mnt/truenas/vm-data 0755 root root -"
-    "d /mnt/truenas/photos 0755 root root -"
-    "d /mnt/truenas/immich 0755 root root -"
     "d /srv/apps/immich-cache 0750 immich apps -"
-    "A+ /mnt/truenas/syncthing-root/users/carter - - - - u:apps:rx"
+
+    # NFS-backed paths and the directories inside them: verify only.
+    "e /mnt/truenas/media - - - -"
+    "e /mnt/truenas/media/photos - - - -"
+    "e /mnt/truenas/media-direct/tvshows - - - -"
+    "e /mnt/truenas/media-direct/movies - - - -"
+    "e /mnt/truenas/media-direct/comics - - - -"
+    "e /mnt/truenas/media-direct/audiobooks - - - -"
+    "e /mnt/truenas/syncthing-root/media/games - - - -"
+    "e /mnt/truenas/syncthing-root/media/ebooks - - - -"
+    "e /mnt/truenas/syncthing-root/users/carter - - - -"
+    "e /mnt/truenas/vm-data - - - -"
+    "e /mnt/truenas/vm-data/jellyfin - - - -"
+    "e /mnt/truenas/photos - - - -"
+    "e /mnt/truenas/immich - - - -"
   ];
 
   fileSystems."/mnt/truenas/media" = {
@@ -459,8 +474,10 @@ in
 
   services.immich = {
     enable = true;
-    host = "0.0.0.0";
-    openFirewall = true;
+    # Reached through Tailscale Serve on loopback, so keep the listener off
+    # every other interface: a LAN- or tailnet-reachable port would bypass any
+    # authentication layer placed in front of the proxy.
+    host = "127.0.0.1";
     mediaLocation = "/mnt/truenas/immich";
     group = "apps";
     accelerationDevices = [ "/dev/dri/renderD128" ];
@@ -501,7 +518,9 @@ in
 
   services.jellyfin = {
     enable = true;
-    openFirewall = true;
+    # Jellyfin 12 has no bind-address option, so it still listens on 0.0.0.0;
+    # keeping the port closed at the firewall is what makes the Tailscale
+    # route the only way in.
     user = "apps";
     group = "apps";
     dataDir = "/mnt/truenas/vm-data/jellyfin";
