@@ -248,16 +248,20 @@ in
     9119
   ];
 
-  # The /mnt/truenas exports root-squash root and do not support POSIX ACLs,
-  # so tmpfiles must never create, chmod, chown or setfacl anything there: a
-  # single failure makes systemd-tmpfiles exit non-zero, which aborts
-  # switch-to-configuration *after* it has already stopped changed units,
-  # leaving them stopped. Type `e` only verifies existing paths and is a no-op
-  # when one is absent. Mountpoints come from the fileSystems declarations.
+  # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
+  # chmod or chown anything there: a single failure makes systemd-tmpfiles
+  # exit non-zero, which aborts switch-to-configuration *after* it has already
+  # stopped changed units, leaving them stopped.
   #
-  # Do not reintroduce an "A+" rule here: a recursive ACL over users/carter
-  # walks ~500k NFS entries on every activation and fails with EOPNOTSUPP.
-  # The copyparty service user can already read that export.
+  # Rules here exist mainly to neutralise rules that app modules generate from
+  # their own options. systemd-tmpfiles deduplicates per path *and* type, with
+  # the first (highest-precedence) file winning, so an override must repeat the
+  # module's own type or both will run. `d` with "-" metadata only ever changes
+  # what is missing, which is a no-op when the directory already exists.
+  #
+  # Do not reintroduce an "A+" rule here: this export does not support POSIX
+  # ACLs, so setfacl fails with EOPNOTSUPP after walking ~500k entries on every
+  # activation. The copyparty service user can already read that directory.
   systemd.tmpfiles.rules = [
     "d /var/lib/secrets/bazarr 0700 root root -"
 
@@ -270,17 +274,16 @@ in
     "d /srv/apps/immich-cache 0750 immich apps -"
 
     # NFS-backed paths and the directories inside them: verify only.
-    "e /mnt/truenas/media - - - -"
-    "e /mnt/truenas/media/photos - - - -"
+    "d /mnt/truenas/media - - - -"
     "e /mnt/truenas/media-direct/tvshows - - - -"
     "e /mnt/truenas/media-direct/movies - - - -"
     "e /mnt/truenas/media-direct/comics - - - -"
     "e /mnt/truenas/media-direct/audiobooks - - - -"
     "e /mnt/truenas/syncthing-root/media/games - - - -"
     "e /mnt/truenas/syncthing-root/media/ebooks - - - -"
-    "e /mnt/truenas/syncthing-root/users/carter - - - -"
+    "d /mnt/truenas/syncthing-root/users/carter - - - -"
     "e /mnt/truenas/vm-data - - - -"
-    "e /mnt/truenas/vm-data/jellyfin - - - -"
+    "d /mnt/truenas/vm-data/jellyfin - - - -"
     "e /mnt/truenas/photos - - - -"
     "e /mnt/truenas/immich - - - -"
   ];
@@ -629,12 +632,11 @@ in
           A = [ "@admins" ];
         };
       };
-      "/media/photos" = {
-        path = "/mnt/truenas/media/photos";
-        access = {
-          A = [ "@admins" ];
-        };
-      };
+      # A "/media/photos" volume pointing at /mnt/truenas/media/photos was
+      # removed: that path cannot exist (the media export is root-squashed, so
+      # nothing here can create directories inside it) and no client ever used
+      # it. Point a volume at /mnt/truenas/photos instead if the photos export
+      # should be served, and provision that directory as the service user.
       "/users/carter" = {
         path = "/mnt/truenas/syncthing-root/users/carter";
         access = {
