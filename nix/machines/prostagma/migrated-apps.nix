@@ -363,7 +363,11 @@ in
           environment = appEnvironment // {
             BACKREST_CONFIG = "/config/config.json";
             BACKREST_DATA = "/data";
-            BACKREST_PORT = "127.0.0.1:9898";
+            # This is the bind *inside* the container's own network
+            # namespace, so it must accept the docker proxy's connection.
+            # Exposure is restricted by the published port below, which is
+            # bound to the host's loopback.
+            BACKREST_PORT = "0.0.0.0:9898";
             XDG_CACHE_HOME = "/cache";
             TMPDIR = "/tmp";
           };
