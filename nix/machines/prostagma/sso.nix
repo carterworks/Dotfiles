@@ -52,7 +52,11 @@ let
       carter:
         displayname: Carter McBride
         password: "$argon2id$v=19$m=65536,t=3,p=4$8628xF5AF1yqFebLh5VQzA$qtAtz8zzEkgI/ofo/M9XTw2/YM7g/XwUr/L8VuL8/wI"
-        email: 18412686+carterworks@users.noreply.github.com
+        # Immich matches an OIDC login to an existing account by email, so this
+        # has to be the address on the Immich account itself. It is also a real
+        # inbox, which the filesystem notifier could reach if it were ever
+        # pointed at SMTP.
+        email: carter@carter.works
         groups:
           - admins
   '';
@@ -61,6 +65,11 @@ let
   # ${secretsDir}/audiobookshelf_client_secret and is the value to configure on
   # the application side.
   audiobookshelfClientSecret = "$pbkdf2-sha512$310000$8OycXiZhi8uctR/XEvRd5A$lE.elcaNRZ7.bhELA8dcYlsvur.ZmAFnu8zTL6DlJVQxhn25hjqLGAmVUvAKkb9WQakxFiWNgl9q0mn2vlS6gQ";
+
+  # Digest of the Immich client secret, same pattern. The plaintext is in
+  # ${secretsDir}/immich_client_secret and is the value to paste into Immich's
+  # own OAuth settings.
+  immichClientSecret = "$pbkdf2-sha512$310000$vub0ivsDB5zuFb2XCW5YCA$M2lxXuPv4070S3/uDqNos5yLS8jvAlTy/p/PyGBj76N/kgHB6EvAeFeLrXwHHk4ljKeu01VelJoU4yCs.XnNpA";
 
   # Applications with no OIDC support, gated at the reverse proxy instead.
   #
@@ -96,6 +105,13 @@ let
       name = "bazarr";
       port = 6767;
       apiBypass = true;
+    }
+
+    # Backrest has no OIDC and no header auth, and its own authentication is
+    # disabled in its config, so this gate is its only lock.
+    {
+      name = "backrest";
+      port = 9898;
     }
   ];
 in
@@ -188,6 +204,38 @@ in
           # Implicit consent skips the consent mechanism entirely, which is
           # acceptable for a confidential, single-user client; Authelia only
           # discourages it for public clients whose secrets are exposed.
+          consent_mode = "implicit";
+        }
+
+        {
+          client_id = "immich";
+          client_name = "Immich";
+          client_secret = immichClientSecret;
+          public = false;
+          authorization_policy = "one_factor";
+
+          # Immich matches an OIDC login to an existing account by email, which
+          # is why the user above carries the Immich account's address.
+          redirect_uris = [
+            "https://immich.${tailnetDomain}/auth/login"
+            "https://immich.${tailnetDomain}/user-settings"
+
+            # Immich forwards this to app.immich:///oauth-callback, so the
+            # mobile app works without registering a custom scheme here.
+            "https://immich.${tailnetDomain}/api/oauth/mobile-redirect"
+          ];
+
+          scopes = [
+            "openid"
+            "profile"
+            "email"
+          ];
+
+          # Immich sends its credentials in the request body by default, while
+          # Authelia expects them in the Authorization header. Without this the
+          # token exchange fails in a way that looks like a wrong secret.
+          token_endpoint_auth_method = "client_secret_post";
+
           consent_mode = "implicit";
         }
       ];
