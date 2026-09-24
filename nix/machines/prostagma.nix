@@ -68,7 +68,14 @@ let
         <main>
           <nav aria-label="Prostagma services">
             <ul>
-              <li><a href="https://audiobookshelf.${tailnetDomain}/">Audiobookshelf</a></li>
+              <!--
+                Audiobookshelf bakes /audiobookshelf into its client bundle
+                (<base href> and asset paths), so that prefix is the canonical
+                URL. The bare host still renders, but its login callback is
+                rejected as being outside the router base path, which breaks
+                the SSO button.
+              -->
+              <li><a href="https://audiobookshelf.${tailnetDomain}/audiobookshelf/">Audiobookshelf</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:9898/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
