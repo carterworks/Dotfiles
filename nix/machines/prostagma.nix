@@ -461,12 +461,20 @@ in
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
       "$tailscale" serve --service=svc:jellyfin --https=443 http://127.0.0.1:8096
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
-      "$tailscale" serve --service=svc:bazarr --https=443 http://127.0.0.1:6767
+      # These five are gated: Caddy on 127.0.0.1:80 performs the Authelia
+      # forward-auth check and then proxies to the application's own loopback
+      # port. Pointing Serve at the application directly would bypass the
+      # gate, and every application port is loopback-only with no firewall
+      # allowance, so Serve is the sole ingress.
+      "$tailscale" serve --service=svc:bazarr --https=443 http://127.0.0.1:80
+      "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:80
+      "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:80
+      "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:80
+      "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:80
+
+      # Not gated: Audiobookshelf authenticates with OIDC instead, and the
+      # media servers have no proxy-auth mode.
       "$tailscale" serve --service=svc:audiobookshelf --https=443 http://127.0.0.1:13378
-      "$tailscale" serve --service=svc:qbittorrent --https=443 http://127.0.0.1:38080
-      "$tailscale" serve --service=svc:sonarr --https=443 http://127.0.0.1:30113
-      "$tailscale" serve --service=svc:radarr --https=443 http://127.0.0.1:30025
-      "$tailscale" serve --service=svc:prowlarr --https=443 http://127.0.0.1:30050
 
       # Authelia portal and OpenID Connect issuer. Applications in
       # containers call the token endpoint server-side over the tailnet
