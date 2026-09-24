@@ -135,8 +135,13 @@ in
             "email"
           ];
 
-          # Without this the portal asks for consent on every single login.
-          pre_configured_consent_duration = "1 month";
+          # Authelia 4.39.22 cannot save the consent session for this flow:
+          # the client gets "Error in callback" and the server logs
+          # "error updating oauth2 consent session ... no rows affected".
+          # Implicit consent skips the consent mechanism entirely, which is
+          # acceptable for a confidential, single-user client; Authelia only
+          # discourages it for public clients whose secrets are exposed.
+          consent_mode = "implicit";
         }
       ];
     };
