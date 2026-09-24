@@ -359,11 +359,11 @@ in
         backrest = {
           image = "garethgeorge/backrest:latest@sha256:9c9966b5c285ec791a6b06cb4545fa0247424d05442e12f9558b4322d9f8a15f";
           autoStart = true;
-          ports = [ "9898:9898/tcp" ];
+          ports = [ "127.0.0.1:9898:9898/tcp" ];
           environment = appEnvironment // {
             BACKREST_CONFIG = "/config/config.json";
             BACKREST_DATA = "/data";
-            BACKREST_PORT = "0.0.0.0:9898";
+            BACKREST_PORT = "127.0.0.1:9898";
             XDG_CACHE_HOME = "/cache";
             TMPDIR = "/tmp";
           };

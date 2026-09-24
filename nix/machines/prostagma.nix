@@ -76,7 +76,7 @@ let
                 the SSO button.
               -->
               <li><a href="https://audiobookshelf.${tailnetDomain}/audiobookshelf/">Audiobookshelf</a></li>
-              <li><a href="http://prostagma.${tailnetDomain}:9898/">Backrest</a></li>
+              <li><a href="https://backrest.${tailnetDomain}/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
@@ -461,7 +461,7 @@ in
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
       "$tailscale" serve --service=svc:jellyfin --https=443 http://127.0.0.1:8096
       "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
-      # These five are gated: Caddy on 127.0.0.1:80 performs the Authelia
+      # These are gated: Caddy on 127.0.0.1:80 performs the Authelia
       # forward-auth check and then proxies to the application's own loopback
       # port. Pointing Serve at the application directly would bypass the
       # gate, and every application port is loopback-only with no firewall
@@ -484,6 +484,11 @@ in
       # Authelia as a Tailscale Service: the MagicDNS name without a port,
       # which is the issuer prefix for OpenID Connect clients.
       "$tailscale" serve --service=svc:authelia --https=443 http://127.0.0.1:9091
+
+      # Backrest, gated like the others. Kept last because the unit runs under
+      # `set -e` and this Service needs admin approval in the tailnet before the
+      # route is accepted; a failure here must not strand the routes above.
+      "$tailscale" serve --service=svc:backrest --https=443 http://127.0.0.1:80
 
 
 
