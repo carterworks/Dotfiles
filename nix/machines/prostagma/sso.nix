@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   ...
 }:
 
@@ -60,6 +61,43 @@ let
   # ${secretsDir}/audiobookshelf_client_secret and is the value to configure on
   # the application side.
   audiobookshelfClientSecret = "$pbkdf2-sha512$310000$8OycXiZhi8uctR/XEvRd5A$lE.elcaNRZ7.bhELA8dcYlsvur.ZmAFnu8zTL6DlJVQxhn25hjqLGAmVUvAKkb9WQakxFiWNgl9q0mn2vlS6gQ";
+
+  # Applications with no OIDC support, gated at the reverse proxy instead.
+  #
+  # Every listener named here is published on 127.0.0.1 only and is not allowed
+  # through the firewall, so Tailscale Serve is the sole ingress and the gate
+  # cannot be bypassed on another interface. Each application keeps its own
+  # login as well: Servarr's `External` authentication method is a plain auth
+  # disable that reads no proxy header, so an Authelia identity cannot be
+  # mapped onto an application user. The gate protects the network edge, and
+  # the application login remains as the second layer.
+  gatedApps = [
+    {
+      name = "sonarr";
+      port = 30113;
+    }
+    {
+      name = "radarr";
+      port = 30025;
+    }
+    {
+      name = "prowlarr";
+      port = 30050;
+    }
+    {
+      name = "qbittorrent";
+      port = 38080;
+    }
+
+    # Bazarr has no proxy-auth mode and its UI fetches /api/* over XHR, where
+    # the gate's redirect would replace JSON and break the interface, so only
+    # its UI is gated. Its API keeps relying on Bazarr's own API key.
+    {
+      name = "bazarr";
+      port = 6767;
+      apiBypass = true;
+    }
+  ];
 in
 {
   services.authelia.instances.main = {
@@ -83,17 +121,18 @@ in
 
       authentication_backend.file.path = usersFile;
 
-      # Authelia refuses any host without a matching entry here, so both the
-      # Service name and the old host-and-port URL are declared. The second
-      # entry is removed once nothing points at the host-and-port URL.
+      # One cookie for the whole tailnet domain. Authelia refuses any host
+      # without a matching entry, and the forward-auth gate additionally needs
+      # the browser to *send* the session cookie to each gated application,
+      # which only happens if the cookie covers that application's hostname.
+      # A parent domain covers the portal, the retired host-and-port URL and
+      # every application in one entry, and it is a suffix of authelia_url,
+      # which is what Authelia requires. Changing this invalidates existing
+      # sessions, so everyone logs in once more.
       session.cookies = [
         {
-          domain = "authelia.${tailnetDomain}";
+          domain = tailnetDomain;
           authelia_url = authServiceUrl;
-        }
-        {
-          domain = "prostagma.${tailnetDomain}";
-          authelia_url = authPortalUrl;
         }
       ];
 
@@ -104,10 +143,18 @@ in
       # such as a password reset request are simply written to a file.
       notifier.filesystem.filename = "${stateDir}/notification.txt";
 
-      # Nothing is gated yet: rules are added one application at a time as
-      # each is migrated, and they set their own policy. Authelia rejects
-      # "deny" here while the rule list is empty.
-      access_control.default_policy = "one_factor";
+      access_control = {
+        # Authelia rejects "deny" while the rule list is empty, so the default
+        # states the policy that applies to any host without a rule of its own.
+        default_policy = "one_factor";
+
+        # The gate asks Authelia about the *original* URL, so a rule has to
+        # match the application hostname rather than the portal's own.
+        rules = map (app: {
+          domain = "${app.name}.${tailnetDomain}";
+          policy = "one_factor";
+        }) gatedApps;
+      };
 
       identity_providers.oidc.clients = [
         {
@@ -146,6 +193,24 @@ in
       ];
     };
   };
+
+  # The gate itself: one Caddy site per application, on the plain-HTTP
+  # listener the host already runs for the service directory. Serve preserves
+  # the original Host header, so Caddy selects the site by hostname exactly as
+  # it does for the directory.
+  services.caddy.virtualHosts = builtins.listToAttrs (
+    map (app: {
+      name = "http://${app.name}.${tailnetDomain}";
+      value.extraConfig = ''
+        ${lib.optionalString (app.apiBypass or false) "@notapi not path /api/*\n"}
+        forward_auth ${lib.optionalString (app.apiBypass or false) "@notapi "}127.0.0.1:9091 {
+          uri /api/authz/forward-auth
+          copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+        }
+        reverse_proxy 127.0.0.1:${toString app.port}
+      '';
+    }) gatedApps
+  );
 
   # Containers reach the portal through the tailnet address, which means the
   # port has to be accepted from the docker bridge as well as from the tailnet.
