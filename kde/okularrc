@@ -1,0 +1,26 @@
+[Desktop Entry]
+FullScreen=false
+
+[General]
+LockSidebar=true
+ShowSidebar=true
+
+[Recent Files]
+File1[$e]=$HOME/Downloads/thesis_draft_ignore_figs.pdf
+File2[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/EIN Confirmation Letter.pdf
+File3[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/DBA Filing/Online Business Acknowledgement_2606091039564B0609202607584131.pdf
+File4[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/DBA Filing/Receipt_2606091039564B0609202607584032.pdf
+File5[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/DBA Filing/Whittlemud Ceramics - DBA Filing Approved _ Fastmail.pdf
+File6[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/DBA Filing/Stamped File Copy_2606091039564B0609202607584604.pdf
+File7[$e]=$HOME/Documents/Notes/recipes/Feijoada.pdf
+File8[$e]=/mnt/truenas/users/carter/Projects/new-car/mortgage-statement-2026-06-04.pdf
+File9[$e]=/mnt/truenas/users/carter/Projects/whittlemud-ceramics/2026-08-31 - DBA amendment to remove Carter as owner/Online Business Acknowledgement_2608311177722B0831202609385766.pdf
+Name1[$e]=thesis_draft_ignore_figs.pdf
+Name2[$e]=EIN Confirmation Letter.pdf
+Name3[$e]=Online Business Acknowledgement_2606091039564B0609202607584131.pdf
+Name4[$e]=Receipt_2606091039564B0609202607584032.pdf
+Name5[$e]=Whittlemud Ceramics - DBA Filing Approved _ Fastmail.pdf
+Name6[$e]=Stamped File Copy_2606091039564B0609202607584604.pdf
+Name7[$e]=Feijoada.pdf
+Name8[$e]=mortgage-statement-2026-06-04.pdf
+Name9[$e]=Online Business Acknowledgement_2608311177722B0831202609385766.pdf

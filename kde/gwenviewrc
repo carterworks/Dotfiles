@@ -1,0 +1,17 @@
+[General]
+LastUsedVersion=210800
+SideBarPage=operations
+
+[MainWindow]
+MenuBar=Disabled
+
+[Recent Files]
+File1[$e]=$HOME/Downloads/immich-20260603_074744/IMG_2401.HEIC
+File2[$e]=$HOME/Downloads/job_6aa5f0bc_0000005d-1.png
+Name1[$e]=IMG_2401.HEIC
+Name2[$e]=job_6aa5f0bc_0000005d-1.png
+
+[SideBar]
+InformationSplitterSizes=220,255
+IsVisible ViewMode=true
+SideBarSplitterSizes=227,1482
