@@ -16,15 +16,14 @@ immutability=1
 lastScreen=0
 location=0
 plugin=org.kde.plasma.folder
-wallpaperplugin=org.kde.image
+wallpaperplugin=org.kde.color
 
 [Containments][73][ConfigDialog]
 DialogHeight=1206
 DialogWidth=810
 
-[Containments][73][Wallpaper][org.kde.image][General]
-Image=file:///home/carter/.config/dotfiles/assets/wallpapers/01-miasma.jpg
-SlidePaths=/nix/store/scw1habi2r661hn1l04440jg9pz6ghi4-breeze-6.6.5/share/wallpapers/,/run/current-system/sw/share/wallpapers/
+[Containments][73][Wallpaper][org.kde.color][General]
+Color=0,0,0
 
 [Containments][74]
 activityId=

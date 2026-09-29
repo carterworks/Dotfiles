@@ -12,7 +12,26 @@ in
 {
   home.packages = [
     hermes
+    pkgs.wbg
   ];
+
+  # Scylla wallpaper via wbg (Wayland layer-shell). The image lives in
+  # this repo at assets/wallpapers/01-miasma.jpg; Plasma itself is set
+  # to solid black (see kde/plasma-org.kde.plasma.desktop-appletsrc)
+  # so wbg is the only visible background.
+  systemd.user.services.wbg = {
+    Unit = {
+      Description = "Set desktop wallpaper with wbg";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${lib.getExe pkgs.wbg} ${config.home.homeDirectory}/.config/dotfiles/assets/wallpapers/01-miasma.jpg";
+      Restart = "always";
+      RestartSec = "2s";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
 
   programs.mangohud = {
     enable = true;
