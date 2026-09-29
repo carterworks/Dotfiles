@@ -22,3 +22,52 @@
     ~/.agents/skills/:
       glob: true
       path: agents/skills/mattpocock/*
+- link:
+    ~/.config/arkrc: kde/arkrc
+    ~/.config/baloofilerc: kde/baloofilerc
+    ~/.config/baloofileinformationrc: kde/baloofileinformationrc
+    ~/.config/bluedevilglobalrc: kde/bluedevilglobalrc
+    ~/.config/dolphinrc: kde/dolphinrc
+    ~/.config/drkonqirc: kde/drkonqirc
+    ~/.config/gwenviewrc: kde/gwenviewrc
+    ~/.config/kactivitymanagerdrc: kde/kactivitymanagerdrc
+    ~/.config/kactivitymanagerd-statsrc: kde/kactivitymanagerd-statsrc
+    ~/.config/kconf_updaterc: kde/kconf_updaterc
+    ~/.config/kded5rc: kde/kded5rc
+    ~/.config/kded6rc: kde/kded6rc
+    ~/.config/kdeglobals: kde/kdeglobals
+    ~/.config/kglobalshortcutsrc: kde/kglobalshortcutsrc
+    ~/.config/khelpcenterrc: kde/khelpcenterrc
+    ~/.config/kio_fishrc: kde/kio_fishrc
+    ~/.config/kiorc: kde/kiorc
+    ~/.config/kscreenlockerrc: kde/kscreenlockerrc
+    ~/.config/ksmserverrc: kde/ksmserverrc
+    ~/.config/ktimezonedrc: kde/ktimezonedrc
+    ~/.config/kwalletrc: kde/kwalletrc
+    ~/.config/kwinrc: kde/kwinrc
+    ~/.config/kwinrulesrc: kde/kwinrulesrc
+    ~/.config/kwinoutputconfig.json: kde/kwinoutputconfig.json
+    ~/.config/okularpartrc: kde/okularpartrc
+    ~/.config/okularrc: kde/okularrc
+    ~/.config/plasma-localerc: kde/plasma-localerc
+    ~/.config/plasmanotifyrc: kde/plasmanotifyrc
+    ~/.config/plasma-org.kde.plasma.desktop-appletsrc: kde/plasma-org.kde.plasma.desktop-appletsrc
+    ~/.config/plasmaparc: kde/plasmaparc
+    ~/.config/plasmarc: kde/plasmarc
+    ~/.config/plasmashellrc: kde/plasmashellrc
+    ~/.config/powerdevilrc: kde/powerdevilrc
+    ~/.config/powermanagementprofilesrc: kde/powermanagementprofilesrc
+    ~/.config/spectaclerc: kde/spectaclerc
+    ~/.config/systemmonitorrc: kde/systemmonitorrc
+    ~/.config/trashrc: kde/trashrc
+    ~/.config/xdg-desktop-portal-kderc: kde/xdg-desktop-portal-kderc
+    ~/.config/kdedefaults/kcminputrc: kde/kdedefaults/kcminputrc
+    ~/.config/kdedefaults/kdeglobals: kde/kdedefaults/kdeglobals
+    ~/.config/kdedefaults/ksplashrc: kde/kdedefaults/ksplashrc
+    ~/.config/kdedefaults/kwinrc: kde/kdedefaults/kwinrc
+    ~/.config/kdedefaults/package: kde/kdedefaults/package
+    ~/.config/kdedefaults/plasmarc: kde/kdedefaults/plasmarc
+    ~/.config/KDE/UserFeedback.conf: kde/KDE/UserFeedback.conf
+    ~/.local/share/color-schemes/CosmicDark.colors: kde/local-share/color-schemes/CosmicDark.colors
+    ~/.local/share/color-schemes/CosmicLight.colors: kde/local-share/color-schemes/CosmicLight.colors
+    ~/.local/share/user-places.xbel: kde/local-share/user-places.xbel
