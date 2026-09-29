@@ -725,7 +725,8 @@
         "nixpkgs": "nixpkgs_4",
         "numtide-llm-agents": "numtide-llm-agents",
         "systems": "systems",
-        "vicinae": "vicinae"
+        "vicinae": "vicinae",
+        "zen-browser": "zen-browser"
       }
     },
     "soulver-cpp": {
@@ -863,6 +864,29 @@
       "original": {
         "owner": "vicinaehq",
         "repo": "vicinae",
+        "type": "github"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790640826,
+        "narHash": "sha256-bxciMkBWQ+G9EPwRzZkJ/L+cVgCKbgoHfHAVSlXkj7s=",
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "rev": "50e132ab7f46b99cc750a1f04d6857280d61a84e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
         "type": "github"
       }
     }

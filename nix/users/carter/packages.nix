@@ -17,7 +17,8 @@ let
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
-  opencode2-desktop  = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
+  opencode2-desktop =
+    inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
   t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
     providerPackages = [
       claude
@@ -42,6 +43,7 @@ let
     };
   };
   vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
 
   # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
   # token, so every kubectl call re-prompts a browser login. 0.1.9 caches it.
@@ -115,6 +117,7 @@ let
     uv
     wget
     yaml-language-server
+    zen-browser
   ];
 
   darwinPackages = with pkgs; [
