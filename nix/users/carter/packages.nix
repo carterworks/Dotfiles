@@ -15,6 +15,7 @@ let
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
+  orca = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.orca;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   opencode2-desktop =
@@ -140,6 +141,7 @@ let
     google-chrome
     heroic
     lmstudio
+    orca
     papirus-icon-theme
     playerctl
     protonplus
