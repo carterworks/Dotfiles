@@ -74,112 +74,6 @@ gather_atuin() {
   rm -f "$output"
 }
 
-gather_claude() {
-  section 'CLAUDE CODE SESSIONS'
-
-  local projects="$HOME/.claude/projects"
-  if [ ! -d "$projects" ]; then
-    status 'unavailable (Claude Code history was not found)'
-    return
-  fi
-  if ! command -v jq >/dev/null 2>&1; then
-    status 'unavailable (jq is not installed)'
-    return
-  fi
-  if ! command -v fd >/dev/null 2>&1; then
-    status 'unavailable (fd is not installed)'
-    return
-  fi
-
-  local files output
-  files=$(mktemp)
-  output=$(mktemp)
-  if ! fd --hidden --no-ignore --type f --extension jsonl --exclude subagents --print0 . "$projects" >"$files" 2>/dev/null; then
-    status 'failed (Claude Code history could not be listed)'
-    rm -f "$files" "$output"
-    return
-  fi
-
-  local file summary
-  local found=0
-  local failed=0
-  while IFS= read -r -d '' file; do
-    if ! summary=$(jq -sr --arg date "$DATE" '
-      def epoch:
-        .timestamp | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
-      def text:
-        .message.content
-        | if type == "string" then .
-          elif type == "array" then
-            [.[] | select(.type == "text" and (.text | type == "string")) | .text]
-            | join(" ")
-          else ""
-          end;
-      [
-        .[]
-        | select(.timestamp? | type == "string")
-        | (try epoch catch null) as $epoch
-        | select($epoch != null)
-        | select(($epoch | strflocaltime("%Y-%m-%d")) == $date)
-        | {
-            epoch: $epoch,
-            time: ($epoch | strflocaltime("%H:%M")),
-            cwd: (.cwd // "unknown directory"),
-            branch: (.gitBranch // "no branch"),
-            text: (if .type == "user" then text else "" end)
-          }
-        | .text |= (
-            gsub("<system-reminder>[\\s\\S]*?</system-reminder>"; " ")
-            | gsub("[[:space:]]+"; " ")
-            | sub("^[[:space:]]+"; "")
-            | sub("[[:space:]]+$"; "")
-          )
-      ]
-      | sort_by(.epoch)
-      | . as $events
-      | [
-          $events[]
-          | select(.text != "")
-          | select((.text | startswith("Caveat")) | not)
-          | select((.text | startswith("[Request")) | not)
-          | select((.text | startswith("/")) | not)
-        ] as $prompts
-      | if ($events | length) == 0 then empty
-        else [
-            ($events[0].time + "-" + $events[-1].time),
-            $events[0].cwd,
-            $events[0].branch,
-            (($prompts[0].text // "no user prompt found")[0:160])
-          ] | @tsv
-        end
-    ' "$file" 2>/dev/null); then
-      failed=1
-      continue
-    fi
-
-    if [ -n "$summary" ]; then
-      printf '%s\n' "$summary" | sanitize >>"$output"
-      found=1
-    fi
-  done <"$files"
-  rm -f "$files"
-
-  if [ "$found" -eq 1 ] && [ "$failed" -eq 1 ]; then
-    status 'partial (some Claude Code sessions could not be read)'
-  elif [ "$failed" -eq 1 ]; then
-    status 'failed (Claude Code sessions could not be read)'
-  elif [ "$found" -eq 1 ]; then
-    status 'complete'
-  else
-    status 'empty'
-  fi
-
-  if [ -s "$output" ]; then
-    cat "$output"
-  fi
-  rm -f "$output"
-}
-
 gather_opencode() {
   section 'OPENCODE SESSIONS'
 
@@ -331,6 +225,5 @@ gather_chrome() {
 
 printf 'BRIEFING SOURCE DUMP — %s\n' "$DATE"
 gather_atuin
-gather_claude
 gather_opencode
 gather_chrome

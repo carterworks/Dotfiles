@@ -619,7 +619,6 @@ in
     ignores = [
       ".DS_Store"
       "*.local.*"
-      "CLAUDE.md"
       "AGENTS.md"
       ".cursor/"
       ".worktrees/"
