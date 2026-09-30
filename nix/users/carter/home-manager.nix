@@ -197,10 +197,6 @@ in
           end
       end
 
-      function cc --wraps='claude --model claude-opus-4-8[1m] --effort high' --description 'Launch Claude Code in a new Herdr tab'
-          __herdr_agent_tab claude --model 'claude-opus-4-8[1m]' --effort high $argv
-      end
-
       function __oc_copy_osc52 --description 'Copy text through OSC 52'
           set -l text "$argv[1]"
 
@@ -476,7 +472,6 @@ in
         "**/Thumbs.db"
         "**/.classpath"
         "**/.settings"
-        "**/.claude/worktrees"
       ];
       show_edit_predictions = true;
       minimap = {
@@ -518,10 +513,6 @@ in
         show_menus = true;
       };
       agent_servers = {
-        claude-acp = {
-          default_config_options.model = "opus[1m]";
-          type = "registry";
-        };
         cursor.type = "registry";
         opencode = {
           favorite_config_option_values.model = [
@@ -599,46 +590,7 @@ in
 
   programs.starship = {
     enable = true;
-    # Claude Code statusline profile, rendered by `starship statusline claude-code`.
-    # claude/statusline.mjs pipes the session JSON here, then appends version/clock/effort.
-    # starship names bright magenta "purple" (not "magenta").
     settings = {
-      profiles.claude-code = "$directory$git_branch$git_status$claude_model$claude_context$claude_cost";
-
-      claude_model = {
-        format = "[$model]($style) ";
-        symbol = "";
-        style = "bold purple";
-      };
-
-      claude_context = {
-        format = "[$percentage]($style) ";
-        display = [
-          {
-            threshold = 0.0;
-            style = "bold green";
-          }
-          {
-            threshold = 50.0;
-            style = "bold yellow";
-          }
-          {
-            threshold = 75.0;
-            style = "bold red";
-          }
-        ];
-      };
-
-      claude_cost = {
-        format = "[\\$$cost]($style) ";
-        symbol = "";
-        display = [
-          {
-            threshold = 0.0;
-            style = "bold green";
-          }
-        ];
-      };
     };
   };
 

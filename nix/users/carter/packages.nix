@@ -9,7 +9,6 @@
 let
   agent-browser = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser;
   bambu-studio = self.packages.${pkgs.stdenv.hostPlatform.system}.bambu-studio;
-  claude = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
@@ -22,7 +21,6 @@ let
     inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
   t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
     providerPackages = [
-      claude
       codex
       opencode2
     ];
@@ -123,7 +121,6 @@ let
 
   darwinPackages = with pkgs; [
     awscli2
-    claude
     github-copilot-cli
     kubectl
     kubelogin
