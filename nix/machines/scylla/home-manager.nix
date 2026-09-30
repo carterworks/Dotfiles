@@ -8,21 +8,32 @@
 
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  waybarKdeWorkspaces = pkgs.writeShellApplication {
-    name = "waybar-kde-workspaces";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gnused
-      kdePackages.qttools
-    ];
-    text = builtins.readFile ./waybar-kde-workspaces.sh;
-  };
 in
 {
   home.packages = [
     hermes
+    pkgs.quickshell
     pkgs.wbg
   ];
+
+  xdg.configFile."quickshell/arc-nav/shell.qml".source = ./quickshell/shell.qml;
+
+  systemd.user.services.quickshell-arc-nav = {
+    Unit = {
+      Description = "Scylla Arc-style Quickshell navigation bar";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${lib.getExe pkgs.quickshell} -n -c arc-nav";
+      Environment = [
+        "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "always";
+      RestartSec = "2s";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
 
   # Scylla wallpaper via wbg (Wayland layer-shell). The image lives in
   # this repo at assets/wallpapers/01-miasma.jpg; Plasma itself is set
@@ -78,171 +89,6 @@ in
       background_color = lib.mkForce "000000";
       text_outline = lib.mkForce false;
     };
-  };
-
-  programs.waybar = {
-    enable = true;
-    systemd = {
-      enable = true;
-      targets = [ "graphical-session.target" ];
-    };
-    settings = {
-      mainBar = {
-        layer = "top";
-        position = "left";
-        width = 56;
-        exclusive = true;
-        passthrough = false;
-        gtk-layer-shell = true;
-        spacing = 8;
-        margin-top = 8;
-        margin-bottom = 8;
-        margin-left = 8;
-        modules-start = [
-          "custom/launcher"
-          "custom/workspaces"
-        ];
-        modules-center = [ "wlr/taskbar" ];
-        modules-end = [
-          "tray"
-          "wireplumber"
-          "network"
-          "cpu"
-          "memory"
-          "clock"
-          "custom/power"
-        ];
-        "custom/launcher" = {
-          format = "✦";
-          tooltip = true;
-          tooltip-format = "Vicinae launcher";
-          on-click = "vicinae toggle";
-        };
-        "custom/workspaces" = {
-          exec = "${lib.getExe waybarKdeWorkspaces}";
-          return-type = "json";
-          interval = 2;
-          format = "{text}";
-          tooltip = true;
-          on-click = "qdbus org.kde.KWin /KWin nextDesktop";
-          on-click-right = "qdbus org.kde.KWin /KWin previousDesktop";
-        };
-        "wlr/taskbar" = {
-          format = "{icon}";
-          icon-size = 22;
-          spacing = 6;
-          on-click = "activate";
-          on-click-middle = "close";
-          tooltip-format = "{app}: {title}";
-        };
-        tray = {
-          icon-size = 18;
-          spacing = 6;
-          show-passive-items = true;
-        };
-        wireplumber = {
-          format = "{volume}% {icon}";
-          format-muted = " muted";
-          format-icons = [
-            ""
-            ""
-            ""
-          ];
-          on-click = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
-          tooltip-format = "Volume: {volume}%";
-        };
-        network = {
-          format-ethernet = " {ipaddr}";
-          format-wifi = " {essid}";
-          format-disconnected = "⚠ offline";
-          tooltip-format = "{ifname}: {ipaddr}/{cidr}";
-          interval = 10;
-        };
-        cpu = {
-          format = "{usage}% ";
-          interval = 2;
-        };
-        memory = {
-          format = "{}% ";
-          interval = 10;
-        };
-        clock = {
-          format = "{:%H\n%M}";
-          format-alt = "{:%a\n%d}";
-          tooltip-format = "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>";
-          timezone = "America/Denver";
-        };
-        "custom/power" = {
-          format = "⏻";
-          tooltip = true;
-          tooltip-format = "Left: logout dialogue, right: reboot, middle: shutdown";
-          on-click = "qdbus org.kde.Shutdown /Shutdown logout";
-          on-click-right = "qdbus org.kde.Shutdown /Shutdown logoutAndReboot";
-          on-click-middle = "qdbus org.kde.Shutdown /Shutdown logoutAndShutdown";
-        };
-      };
-    };
-    style = ''
-      * {
-        font-family: Inter, "Iosevka Nerd Font", sans-serif;
-        font-size: 12px;
-        border: none;
-        border-radius: 0;
-      }
-      window#waybar {
-        background: rgba(18, 18, 26, 0.78);
-        border: 1px solid rgba(255, 255, 255, 0.09);
-        border-radius: 18px;
-        color: #cdd6f4;
-      }
-      tooltip {
-        background: rgba(18, 18, 26, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-      }
-      #custom-launcher {
-        font-size: 20px;
-        color: #8ab4ff;
-        padding: 10px 0 4px 0;
-      }
-      #custom-workspaces {
-        font-size: 11px;
-        letter-spacing: 1px;
-        color: #cdd6f4;
-        padding: 4px 0;
-      }
-      #wlr-taskbar button {
-        padding: 5px;
-        margin: 2px 6px;
-        border-radius: 12px;
-        background: transparent;
-      }
-      #wlr-taskbar button.active {
-        background: rgba(138, 180, 255, 0.22);
-      }
-      #wlr-taskbar button:hover {
-        background: rgba(255, 255, 255, 0.12);
-      }
-      #tray,
-      #wireplumber,
-      #network,
-      #cpu,
-      #memory,
-      #clock {
-        padding: 4px 0;
-        color: #bac2de;
-      }
-      #clock {
-        font-weight: 600;
-        color: #ffffff;
-        font-size: 13px;
-      }
-      #custom-power {
-        font-size: 16px;
-        color: #f38ba8;
-        padding: 4px 0 10px 0;
-      }
-    '';
   };
 
   xdg.dataFile."applications/brave-agent.desktop".text = ''
