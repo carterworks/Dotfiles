@@ -15,5 +15,5 @@
     },
   },
   "disabled_providers": [],
-  "plugins": ["./context-usage"],
+  "plugins": [],
 }
