@@ -7,7 +7,7 @@
     ~/.config/opencode/cli.json: opencode/cli.json
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
     ~/.config/herdr/config.toml: herdr/config.toml
-    ~/.config/opencode/skills/:
+    ~/.agents/skills/:
       glob: true
       path: agents/skills/personal/*
     ~/.local/bin/:
@@ -15,10 +15,10 @@
       path: bin/*
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
 - link:
-    ~/.config/opencode/skills/:
+    ~/.agents/skills/:
       glob: true
       path: agents/skills/generated/*
 - link:
-    ~/.config/opencode/skills/:
+    ~/.agents/skills/:
       glob: true
       path: agents/skills/mattpocock/*
