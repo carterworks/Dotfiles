@@ -333,6 +333,7 @@ in
   systemd.oomd.enable = true;
 
   environment.systemPackages = with pkgs; [
+    kdePackages.karousel
     cifs-utils
     samba
     vim

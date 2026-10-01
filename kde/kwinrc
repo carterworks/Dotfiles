@@ -17,7 +17,8 @@ OutScale=0.9
 TopLeft=ActivityManager
 
 [Plugins]
-krohnkiteEnabled=true
+karouselEnabled=true
+krohnkiteEnabled=false
 scaleEnabled=false
 
 [Script-krohnkite]
