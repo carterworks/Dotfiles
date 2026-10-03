@@ -40,6 +40,15 @@ PanelWindow {
                 implicitHeight: 28
                 onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kcmshell6", "kcm_pulseaudio"])
             }
+            ShellButton {
+                label: "Clipboard history"
+                iconName: "clipboard-list"
+                iconOnly: true
+                flat: true
+                implicitWidth: 28
+                implicitHeight: 28
+                onClicked: Quickshell.execDetached(["vicinae", "deeplink", "vicinae://launch/clipboard/history"])
+            }
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
