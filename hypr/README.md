@@ -7,8 +7,9 @@ launchers, audio, media controls, system tray, notifications, and the
 
 Lucide icons, compact pinned app buttons, flat window rows, and bottom-centered
 workspace dots follow the Arc sidebar layout. A filled dot marks the active
-space; click any outlined dot to switch to it. The speaker button reveals
-audio controls. Tray icons retain the icons supplied by their applications.
+space; click any outlined dot to switch to it. The speaker button opens KDE's
+standalone audio module for input/output selection and per-application volumes.
+Tray icons retain the icons supplied by their applications.
 
 ## Activate
 
