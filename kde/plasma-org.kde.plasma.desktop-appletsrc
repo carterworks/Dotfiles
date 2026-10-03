@@ -1,5 +1,4 @@
 [ActionPlugins][0]
-MiddleButton;NoModifier=org.kde.paste
 RightButton;NoModifier=org.kde.contextmenu
 
 [ActionPlugins][1]
@@ -28,49 +27,35 @@ SlidePaths=/run/current-system/sw/share/wallpapers/
 
 [Containments][74]
 activityId=
-formfactor=2
+formfactor=3
 immutability=1
 lastScreen=0
-location=3
+location=5
 plugin=org.kde.panel
 wallpaperplugin=org.kde.image
 
-[Containments][74][Applets][101]
+[Containments][74][Applets][104]
 immutability=1
-plugin=org.kde.plasma.pager
+plugin=org.kde.plasma.windowlist
 
-[Containments][74][Applets][101][Configuration][ConfigDialog]
+[Containments][74][Applets][104][Configuration]
+popupHeight=400
+popupWidth=560
+
+[Containments][74][Applets][104][Configuration][ConfigDialog]
 DialogHeight=630
 DialogWidth=810
 
-[Containments][74][Applets][101][Configuration][General]
-currentDesktopSelected=ShowDesktop
-displayedText=Number
-showOnlyCurrentScreen=true
-showWindowIcons=true
-wrapPage=true
-
-[Containments][74][Applets][103]
-immutability=1
-plugin=org.kde.plasma.lock_logout
-
-[Containments][74][Applets][103][Configuration][General]
-actionsOrder=lockScreen,switchUser,requestShutDown,requestReboot,requestLogout,requestLogoutScreen,suspendToRam,suspendToDisk
-
-[Containments][74][Applets][77]
-immutability=1
-plugin=org.kde.plasma.icontasks
-
-[Containments][74][Applets][77][Configuration][ConfigDialog]
-DialogHeight=630
-DialogWidth=810
-
-[Containments][74][Applets][77][Configuration][General]
+[Containments][74][Applets][104][Configuration][General]
 launchers=
 
 [Containments][74][Applets][78]
 immutability=1
 plugin=org.kde.plasma.marginsseparator
+
+[Containments][74][Applets][78][Configuration][ConfigDialog]
+DialogHeight=630
+DialogWidth=810
 
 [Containments][74][Applets][79]
 activityId=
@@ -157,11 +142,11 @@ popupHeight=451
 popupWidth=560
 
 [Containments][74][Applets][92][Configuration][Appearance]
-autoFontAndSize=false
 dateDisplayFormat=BelowTime
 dateFormat=isoDate
 fontFamily=Noto Sans
 fontWeight=400
+showDate=false
 
 [Containments][74][Applets][92][Configuration][ConfigDialog]
 DialogHeight=630
@@ -176,7 +161,7 @@ popupHeight=400
 popupWidth=560
 
 [Containments][74][General]
-AppletOrder=101;77;78;97;79;92;103
+AppletOrder=92;78;97;79;104
 
 [ScreenMapping]
 itemsOnDisabledScreens=
