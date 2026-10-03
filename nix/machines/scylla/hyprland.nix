@@ -43,6 +43,21 @@ in
     pkgs.kdePackages.polkit-kde-agent-1
   ];
 
+  # Sunshine initializes its GTK tray only once. Wait for the session environment
+  # and tray host, but still allow streaming when no tray host is available.
+  systemd.user.services.sunshine = {
+    after = [ "wayland-session-waitenv.service" ];
+    serviceConfig.ExecStartPre = pkgs.writeShellScript "sunshine-wait-for-tray" ''
+      for attempt in $(${pkgs.coreutils}/bin/seq 1 30); do
+        if ${pkgs.systemd}/bin/busctl --user status org.kde.StatusNotifierWatcher >/dev/null 2>&1; then
+          exit 0
+        fi
+        ${pkgs.coreutils}/bin/sleep 1
+      done
+      echo "No tray host available; starting Sunshine without waiting further."
+    '';
+  };
+
   home-manager.users.${systemUsername} = { config, lib, ... }: {
     # Vicinae's Qt OpenGL backend crashes when opening its Wayland window on
     # this host. Keep the workaround local to its existing autostart service.
