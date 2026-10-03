@@ -35,7 +35,11 @@
       url = "github:9001/copyparty";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    vicinae.url = "github:vicinaehq/vicinae";
+    vicinae = {
+      url = "github:vicinaehq/vicinae";
+      # GPU drivers are loaded from the host; keep their libc ABI compatible.
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     numtide-llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";

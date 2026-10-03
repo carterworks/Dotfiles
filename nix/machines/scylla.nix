@@ -120,6 +120,7 @@ in
   imports = [
     ./hardware/scylla.nix
     ./disko/scylla.nix
+    ./scylla/hyprland.nix
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -305,6 +306,7 @@ in
   };
 
   services.displayManager = {
+    defaultSession = "hyprland-uwsm";
     autoLogin.enable = true;
     autoLogin.user = "carter";
     plasma-login-manager.enable = true;
