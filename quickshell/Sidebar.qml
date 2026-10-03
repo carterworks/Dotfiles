@@ -42,15 +42,6 @@ PanelWindow {
                 onClicked: Quickshell.execDetached(["uwsm", "app", "--", "systemsettings"])
             }
             ShellButton {
-                label: "KDE Connect"
-                iconName: "smartphone"
-                iconOnly: true
-                flat: true
-                implicitWidth: 28
-                implicitHeight: 28
-                onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kdeconnect-app"])
-            }
-            ShellButton {
                 label: "Audio controls"
                 iconName: "volume-2"
                 iconOnly: true
