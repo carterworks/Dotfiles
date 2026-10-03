@@ -11,7 +11,6 @@ PanelWindow {
     id: sidebar
     required property var notificationServer
     property bool showNotifications: false
-    property bool showAudio: false
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property var workspace: monitor ? monitor.activeWorkspace : null
     readonly property var windows: Hyprland.toplevels.values.filter(w => w.workspace === workspace)
@@ -46,10 +45,9 @@ PanelWindow {
                 iconName: "volume-2"
                 iconOnly: true
                 flat: true
-                selected: sidebar.showAudio
                 implicitWidth: 28
                 implicitHeight: 28
-                onClicked: sidebar.showAudio = !sidebar.showAudio
+                onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kcmshell6", "kcm_pulseaudio"])
             }
             Text {
                 text: Qt.formatDateTime(clock.date, "hh:mm")
@@ -180,7 +178,6 @@ PanelWindow {
         }
 
         MediaCard { Layout.fillWidth: true }
-        AudioCard { visible: sidebar.showAudio; Layout.fillWidth: true }
 
         Flow {
             Layout.fillWidth: true
