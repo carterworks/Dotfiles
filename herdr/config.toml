@@ -10,7 +10,3 @@ agent_panel_sort = "spaces"
 status_indicators = "symbols"
 [terminal]
 default_shell = "fish"
-
-[theme]
-name = "terminal"
-auto_switch = false

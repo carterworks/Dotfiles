@@ -54,11 +54,14 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 
 Set `dotfiles.desktopTheme.name` in `nix/users/carter/home-manager.nix` to
 select a theme. The initial theme is `everforest-light-medium`. Add other theme
-files under `nix/users/carter/themes/`; each file has named UI colours and
-native Ghostty settings. No Base16 or wallpaper colour generator is used.
+files under `nix/users/carter/themes/`; each file has named UI colours,
+native Ghostty settings, and an `apps` attribute with application theme names
+and pinned upstream downloads. No Base16 or wallpaper colour generator is used.
 
 Run `./install` to apply the selection. Reload Hyprland and Ghostty, restart
-Quickshell, and restart Zen. Switching is declarative, not a live toggle.
+Quickshell, and restart Zen. Reopen editors and terminal applications to load
+their new settings. Close Obsidian before applying so it cannot write stale
+appearance settings back. Switching is declarative, not a live toggle.
 
 Home Manager creates `quickshell/DesktopColors.qml`,
 `hypr/desktop-colors.lua`, and `desktop-theme/zen.css`. The shell and compositor
@@ -71,6 +74,43 @@ machine, or set it to `null` to leave the browser unmanaged. Home Manager manage
 `chrome/userChrome.css` and `user.js` in this profile. It will stop if either file
 already exists with different content; do not remove existing custom settings.
 The CSS changes the browser UI, not website colours. GTK stays on light Breeze.
+
+### Application themes
+
+The same selection configures:
+
+| Application | Theme source |
+| --- | --- |
+| Helix | Built-in `everforest_light` (Light Medium) |
+| OpenCode V2 | Built-in `everforest`, explicitly in light mode |
+| Herdr | Terminal palette inherited from Ghostty; automatic switching disabled |
+| Zed | Pinned upstream Everforest Light Medium (regular) theme |
+| Obsidian | Pinned upstream Everforest theme, in light mode |
+| Zellij | Built-in `everforest-light` |
+| Delta | Light-mode diffs using the terminal palette |
+
+These are existing application ports, not pixel-identical generated themes.
+Zed's theme is installed locally, so theme extension updates cannot change the
+pinned palette. Edit `opencode/cli.json` and `herdr/config.toml` for non-theme
+settings; Home Manager merges in the selected theme. Do not add a `[theme]`
+table to the Herdr base file. Dotbot no longer links these two files directly.
+The Obsidian build fixes one upstream selector so its light palette works
+without Style Settings; no palette colours are changed.
+
+Set `dotfiles.desktopTheme.obsidianVaults` to vault paths relative to your home
+directory (currently `[ "Documents/Notes" ]`). Home Manager installs the theme
+in each listed vault. Activation merges only `cssTheme` and light/dark `theme`
+into `.obsidian/appearance.json`, preserving fonts, snippets, and other settings.
+The first change saves `appearance.json.before-desktop-theme` alongside it.
+An existing theme directory with different contents is not overwritten; Home
+Manager will report the collision. Set the list to `[]` to stop managing vaults;
+this does not restore their previous appearance settings automatically.
+
+Check the selected theme and the vault updater without activating anything:
+
+```sh
+nix build --no-link .#checks.x86_64-linux.desktop-theme
+```
 
 ## Files
 
