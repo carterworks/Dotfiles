@@ -138,6 +138,7 @@ ColorSchemeHash=e848f04e962cfd2c75ca22df63bcc5e89e61604e
 [KDE]
 AnimationDurationFactor=0.25
 AutomaticLookAndFeel=true
+LookAndFeelPackage=org.kde.breeze.desktop
 contrast=4
 frameContrast=0.2
 
@@ -157,6 +158,9 @@ Sort hidden files last=false
 Sort reversed=false
 Speedbar Width=154
 View Style=DetailTree
+
+[QtQuickRendererSettings]
+SceneGraphBackend=software
 
 [Shortcuts]
 KeyBindings=Meta+Alt+,
