@@ -67,24 +67,6 @@ PanelWindow {
                     Layout.fillWidth: true
                 }
             }
-            ShellButton {
-                label: "Previous column"
-                iconName: "chevron-left"
-                iconOnly: true
-                flat: true
-                implicitWidth: 28
-                implicitHeight: 28
-                onClicked: Hyprland.dispatch('hl.dsp.layout("focus l")')
-            }
-            ShellButton {
-                label: "Next column"
-                iconName: "chevron-right"
-                iconOnly: true
-                flat: true
-                implicitWidth: 28
-                implicitHeight: 28
-                onClicked: Hyprland.dispatch('hl.dsp.layout("focus r")')
-            }
         }
 
         ShellButton {
