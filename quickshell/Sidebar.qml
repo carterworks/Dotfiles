@@ -32,6 +32,15 @@ PanelWindow {
             Layout.fillWidth: true
             spacing: 2
             ShellButton {
+                label: "Tailscale"
+                iconSource: Quickshell.iconPath("dev.deedles.Trayscale", "network-vpn")
+                iconOnly: true
+                flat: true
+                implicitWidth: 28
+                implicitHeight: 28
+                onClicked: Quickshell.execDetached(["uwsm", "app", "--", "trayscale"])
+            }
+            ShellButton {
                 label: "Audio controls"
                 iconName: "volume-2"
                 iconOnly: true
