@@ -31,7 +31,13 @@ in
 {
   imports = [
     inputs.hunk.homeManagerModules.default
+    ./desktop-theme.nix
   ];
+
+  dotfiles.desktopTheme = {
+    name = "everforest-light-medium";
+    zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
+  };
 
   home.packages = [
     pkgs.inter
@@ -582,7 +588,6 @@ in
     enable = true;
     package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
-      window-theme = "auto";
       command = lib.getExe pkgs.fish;
       shell-integration-features = "ssh-terminfo,ssh-env";
     };

@@ -50,6 +50,28 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 | Super+Shift+Escape | Log out immediately |
 | Print | Select screenshot region and annotate with Satty |
 
+## Theme
+
+Set `dotfiles.desktopTheme.name` in `nix/users/carter/home-manager.nix` to
+select a theme. The initial theme is `everforest-light-medium`. Add other theme
+files under `nix/users/carter/themes/`; each file has named UI colours and
+native Ghostty settings. No Base16 or wallpaper colour generator is used.
+
+Run `./install` to apply the selection. Reload Hyprland and Ghostty, restart
+Quickshell, and restart Zen. Switching is declarative, not a live toggle.
+
+Home Manager creates `quickshell/DesktopColors.qml`,
+`hypr/desktop-colors.lua`, and `desktop-theme/zen.css`. The shell and compositor
+read these files. Ghostty uses its existing Everforest Light Medium theme.
+The shell and browser use its `#efebd4` background (Everforest's `bg_dim`).
+
+`dotfiles.desktopTheme.zenProfile` points to the existing Zen profile. No new
+profile is created, and `profiles.ini` is not changed. Set this path for a new
+machine, or set it to `null` to leave the browser unmanaged. Home Manager manages
+`chrome/userChrome.css` and `user.js` in this profile. It will stop if either file
+already exists with different content; do not remove existing custom settings.
+The CSS changes the browser UI, not website colours. GTK stays on light Breeze.
+
 ## Files
 
 - `hyprland.lua`: entry point and monitors.

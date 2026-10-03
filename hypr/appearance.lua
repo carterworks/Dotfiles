@@ -1,3 +1,5 @@
+local colors = require("desktop-colors")
+
 hl.config({
     general = {
         layout = "scrolling",
@@ -5,8 +7,8 @@ hl.config({
         gaps_out = 12,
         border_size = 2,
         col = {
-            active_border = "rgba(c4a7e7ff)",
-            inactive_border = "rgba(393244cc)",
+            active_border = colors.active_border,
+            inactive_border = colors.inactive_border,
         },
         resize_on_border = true,
     },
