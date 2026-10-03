@@ -50,7 +50,7 @@ PanelWindow {
                 onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kcmshell6", "kcm_pulseaudio"])
             }
             Text {
-                text: Qt.formatDateTime(clock.date, "hh:mm")
+                text: Qt.formatDateTime(clock.date, "h:mm AP")
                 color: Theme.muted
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignHCenter
