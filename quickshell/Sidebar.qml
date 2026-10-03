@@ -261,14 +261,10 @@ PanelWindow {
                     }
                 }
             }
-            ShellButton {
-                label: "Add an app"
-                iconName: "plus"
-                iconOnly: true
-                flat: true
-                implicitWidth: 28
-                implicitHeight: 28
-                onClicked: Quickshell.execDetached(["vicinae", "toggle"])
+            Item {
+                // Balance the bell so workspace dots stay centered in the sidebar.
+                Layout.preferredWidth: 28
+                Layout.preferredHeight: 28
             }
         }
     }
