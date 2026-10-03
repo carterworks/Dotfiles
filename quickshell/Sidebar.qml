@@ -163,8 +163,8 @@ PanelWindow {
                     }
                 }
                 Text {
-                    visible: sidebar.showNotifications ? sidebar.notifications.length === 0 : sidebar.windows.length === 0
-                    text: sidebar.showNotifications ? "All caught up." : "A little room to think."
+                    visible: sidebar.showNotifications && sidebar.notifications.length === 0
+                    text: "All caught up."
                     color: Theme.muted
                     font.pixelSize: 12
                     Layout.topMargin: 12
