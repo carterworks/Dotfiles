@@ -64,6 +64,8 @@ in
           --zen-dialog-background: ${colors.surface} !important;
           --zen-colors-primary-foreground: ${colors.text} !important;
           --zen-colors-hover-bg: ${colors.hover} !important;
+          --zen-urlbar-background: ${colors.surface} !important;
+          --toolbox-textcolor: ${colors.text} !important;
           --toolbar-bgcolor: ${colors.background} !important;
           --toolbar-color: ${colors.text} !important;
           --toolbar-field-background-color: ${colors.surface} !important;
@@ -80,6 +82,18 @@ in
           --tab-selected-textcolor: ${colors.text} !important;
           --urlbarView-highlight-background: ${colors.selection} !important;
           --urlbarView-highlight-color: ${colors.text} !important;
+        }
+
+        .zen-browser-generic-background {
+          --zen-main-browser-background: ${colors.background} !important;
+          --zen-main-browser-background-toolbar: ${colors.background} !important;
+          --zen-main-browser-background-old: ${colors.background} !important;
+          --zen-main-browser-background-toolbar-old: ${colors.background} !important;
+          --zen-background-opacity: 1 !important;
+        }
+
+        .zen-browser-generic-background .zen-browser-grain {
+          display: none !important;
         }
       '';
     };
