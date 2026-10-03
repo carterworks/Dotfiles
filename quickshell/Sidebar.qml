@@ -127,6 +127,12 @@ PanelWindow {
             }
         }
 
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 1
+            color: Theme.surface
+        }
+
         ScrollView {
             id: windowScroll
             Layout.fillWidth: true
