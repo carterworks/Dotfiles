@@ -6,6 +6,7 @@ AbstractButton {
     id: button
     property string label: ""
     property string iconName: ""
+    property url iconSource: iconName ? Qt.resolvedUrl("icons/" + iconName + ".svg") : ""
     property bool selected: false
     property bool flat: false
     property bool iconOnly: false
@@ -23,8 +24,8 @@ AbstractButton {
     contentItem: RowLayout {
         spacing: 8
         Image {
-            visible: button.iconName !== ""
-            source: button.iconName ? Qt.resolvedUrl("icons/" + button.iconName + ".svg") : ""
+            visible: button.iconSource.toString() !== ""
+            source: button.iconSource
             Layout.preferredWidth: 18
             Layout.preferredHeight: 18
             Layout.alignment: Qt.AlignHCenter

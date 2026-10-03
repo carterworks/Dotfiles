@@ -148,8 +148,10 @@ PanelWindow {
                     model: sidebar.showNotifications ? [] : sidebar.windows
                     ShellButton {
                         required property var modelData
+                        readonly property string appId: modelData.wayland ? modelData.wayland.appId : modelData.lastIpcObject.class || ""
+                        readonly property var desktopEntry: DesktopEntries.heuristicLookup(appId)
                         label: modelData.title || "Untitled window"
-                        iconName: "app-window"
+                        iconSource: desktopEntry && desktopEntry.icon ? Quickshell.iconPath(desktopEntry.icon, "application-x-executable") : Qt.resolvedUrl("icons/app-window.svg")
                         flat: true
                         selected: modelData.activated
                         Layout.fillWidth: true
