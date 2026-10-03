@@ -61,6 +61,19 @@ in
     '';
 
     systemd.user.services = {
+      hyprland-trayscale = {
+        Unit = {
+          Description = "Tailscale system tray for Hyprland";
+          PartOf = [ "graphical-session.target" ];
+          After = [ "wayland-session-waitenv.service" ];
+        };
+        Service = {
+          ExecStart = "${lib.getExe pkgs.trayscale} --hide-window";
+          Restart = "on-failure";
+        };
+        Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
+      };
+
       quickshell = {
         Unit = {
           Description = "Custom Hyprland sidebar and wallpaper";
