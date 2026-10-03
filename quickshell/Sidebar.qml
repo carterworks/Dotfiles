@@ -32,15 +32,6 @@ PanelWindow {
             Layout.fillWidth: true
             spacing: 2
             ShellButton {
-                label: "KDE settings"
-                iconName: "ellipsis"
-                iconOnly: true
-                flat: true
-                implicitWidth: 28
-                implicitHeight: 28
-                onClicked: Quickshell.execDetached(["uwsm", "app", "--", "systemsettings"])
-            }
-            ShellButton {
                 label: "Audio controls"
                 iconName: "volume-2"
                 iconOnly: true
