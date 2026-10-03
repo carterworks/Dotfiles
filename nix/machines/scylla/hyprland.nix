@@ -40,7 +40,6 @@ in
   environment.systemPackages = [
     screenshot
     pkgs.quickshell
-    pkgs.networkmanagerapplet
     pkgs.kdePackages.polkit-kde-agent-1
   ];
 
@@ -92,18 +91,6 @@ in
         Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
       };
 
-      hyprland-network = {
-        Unit = {
-          Description = "NetworkManager tray for Hyprland";
-          PartOf = [ "graphical-session.target" ];
-          After = [ "wayland-session-waitenv.service" ];
-        };
-        Service = {
-          ExecStart = "${pkgs.networkmanagerapplet}/bin/nm-applet --indicator";
-          Restart = "on-failure";
-        };
-        Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
-      };
     };
   };
 }
