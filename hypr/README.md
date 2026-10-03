@@ -60,10 +60,9 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 - `../nix/machines/scylla/hyprland.nix`: packages, portals, UWSM environment,
   and session services.
 
-The sidebar reuses Dolphin, System Settings, KDE Connect, PipeWire, KWallet,
-KDE authentication prompts, and KDE file dialogs. NetworkManager's standalone
-tray applet supplies networking because the Plasma network widget cannot run
-inside Quickshell. Vicinae and other existing XDG autostart apps are started by
+The sidebar reuses Dolphin, KDE's audio settings, PipeWire, KWallet,
+KDE authentication prompts, and KDE file dialogs. No network applet is started
+on this wired desktop. Vicinae and other existing XDG autostart apps are started by
 UWSM. KDE's display/window-management settings do not configure Hyprland; edit
 the Lua configuration instead.
 
@@ -88,7 +87,7 @@ Inside the Hyprland session:
 
 ```sh
 hyprctl configerrors
-systemctl --user status quickshell hyprland-polkit hyprland-network
+systemctl --user status quickshell hyprland-polkit
 journalctl --user -u quickshell -b
 systemctl --user restart quickshell
 ```
