@@ -157,6 +157,24 @@
         carters-macbook-pro = carters-macbook-pro.system;
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
+        sunshine-display =
+          let
+            pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          in
+          pkgs.runCommandLocal "sunshine-display-check"
+            {
+              nativeBuildInputs = [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.jq
+                pkgs.python3
+                pkgs.util-linux
+              ];
+            }
+            ''
+              python3 ${source}/nix/users/carter/test-sunshine-display.py
+              touch "$out"
+            '';
         inherit (packageSets.x86_64-linux)
           bambu-studio
           dotbot

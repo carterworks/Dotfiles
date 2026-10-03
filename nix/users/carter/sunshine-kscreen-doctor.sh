@@ -26,8 +26,52 @@ die() {
   exit 1
 }
 
-kscreen_state() {
-  kscreen-doctor --json
+detect_desktop() {
+  local current_desktop=${XDG_CURRENT_DESKTOP:-}
+  case ":${current_desktop,,}:" in
+    *:hyprland:*) desktop=hyprland ;;
+    *:kde:*|*:plasma:*) desktop=kde ;;
+    ::)
+      if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        desktop=hyprland
+      else
+        die "could not detect Hyprland or KDE from the session environment"
+      fi
+      ;;
+    *) die "unsupported desktop '${XDG_CURRENT_DESKTOP}'" ;;
+  esac
+}
+
+display_command() {
+  timeout --kill-after=1s 5s "$@"
+}
+
+display_state() {
+  if [ "$desktop" = kde ]; then
+    display_command kscreen-doctor --json
+    return
+  fi
+
+  # Normalize Hyprland's output data so mode selection and the restore stack
+  # have the same behavior on both desktops. Keep the precise current refresh
+  # rate: availableModes rounds it to two decimal places.
+  display_command hyprctl -j monitors | jq '
+    {outputs: map(
+      . as $monitor
+      | {id: "current", size: {width: .width, height: .height}, refreshRate: .refreshRate} as $current
+      | {
+          id, name, connected: true, enabled: (.disabled != true),
+          priority: (.id + 1), currentModeId: "current",
+          modes: ([$current] + [.availableModes[]
+            | capture("^(?<width>[0-9]+)x(?<height>[0-9]+)@(?<refresh>[0-9.]+)Hz$")
+            | {id: "\(.width)x\(.height)@\(.refresh)",
+               size: {width: (.width | tonumber), height: (.height | tonumber)},
+               refreshRate: (.refresh | tonumber)}]),
+          position: "\($monitor.x)x\($monitor.y)",
+          scale: .scale, transform: .transform
+        }
+    )}
+  '
 }
 
 state_dir() {
@@ -42,22 +86,31 @@ state_dir() {
 
 stack_file() {
   local output=$1
-  printf '%s/%s.stack\n' "$(state_dir)" "$output"
+  printf '%s/%s.stack\n' "$(desktop_state_dir)" "$output"
 }
 
 lock_file() {
   local output=$1
-  printf '%s/%s.lock\n' "$(state_dir)" "$output"
+  printf '%s/%s.lock\n' "$(desktop_state_dir)" "$output"
+}
+
+desktop_state_dir() {
+  # Preserve existing KDE stacks, but never restore them in a Hyprland session.
+  if [ "$desktop" = kde ]; then
+    state_dir
+  else
+    printf '%s/hyprland\n' "$(state_dir)"
+  fi
 }
 
 init_state_dir() {
-  mkdir -p "$(state_dir)"
+  mkdir -p "$(desktop_state_dir)"
 }
 
 output_modes() {
   local output=$1
 
-  kscreen_state | jq -r --arg output "$output" '
+  display_state | jq -r --arg output "$output" '
     .outputs[]
     | select(.name == $output) as $o
     | $o.modes[]
@@ -66,7 +119,7 @@ output_modes() {
 }
 
 detect_output() {
-  kscreen_state | jq -r '
+  display_state | jq -r '
     [
       .outputs[]
       | select(.connected and .enabled)
@@ -79,7 +132,7 @@ detect_output() {
 canonical_output() {
   local output=${1:-}
 
-  kscreen_state | jq -er --arg output "$output" '
+  display_state | jq -er --arg output "$output" '
     .outputs[]
     | select(.connected and (.name == $output or (.id | tostring) == $output))
     | .name
@@ -107,7 +160,7 @@ resolve_output() {
 current_mode() {
   local output=$1
 
-  kscreen_state | jq -er --arg output "$output" '
+  display_state | jq -er --arg output "$output" '
     .outputs[]
     | select(.name == $output and .connected and .enabled) as $o
     | $o.modes[]
@@ -149,7 +202,7 @@ resolve_mode() {
 
   output=$(require_output "$1")
 
-  kscreen_state | jq -er \
+  display_state | jq -er \
     --arg output "$output" \
     --argjson width "$width" \
     --argjson height "$height" \
@@ -197,7 +250,19 @@ $mode
 EOF
 
   log "applying ${output} -> ${width}x${height}@${refresh}Hz (requested ${requested_fps}Hz)"
-  kscreen-doctor "output.${output}.mode.${mode_id}"
+  if [ "$desktop" = kde ]; then
+    display_command kscreen-doctor "output.${output}.mode.${mode_id}"
+  else
+    local rule
+    # hl.monitor merges an existing output rule. Explicitly preserve geometry
+    # too, including outputs that previously only matched the fallback rule.
+    rule=$(display_state | jq -er --arg output "$output" \
+      --arg mode "${width}x${height}@${refresh}" '
+        .outputs[] | select(.name == $output)
+        | "hl.monitor({ output = \(.name | tojson), mode = \($mode | tojson), position = \(.position | tojson), scale = \(.scale), transform = \(.transform) })"
+      ')
+    display_command hyprctl eval "$rule"
+  fi
 }
 
 push_current_mode() {
@@ -240,16 +305,17 @@ pop_mode() {
   fi
 
   last=$(tail -n 1 "$file")
-  tmp=$(mktemp)
-  sed '$d' "$file" >"$tmp"
-  mv "$tmp" "$file"
-
   read -r width height fps <<EOF
 $last
 EOF
 
   log "popping ${output} state: ${width}x${height}@${fps}Hz"
   apply_mode "$output" "$width" "$height" "$fps"
+
+  # Retain the saved mode when restoration fails so it can be retried.
+  tmp=$(mktemp "${file}.XXXXXX")
+  sed '$d' "$file" >"$tmp"
+  mv "$tmp" "$file"
 }
 
 with_lock() {
@@ -259,7 +325,7 @@ with_lock() {
 
   init_state_dir
   exec 9>"$(lock_file "$output")"
-  flock 9
+  flock -w 5 9 || die "timed out waiting for output '$output'"
   "${@:2}" "$output"
 }
 
@@ -270,6 +336,11 @@ require_client_env() {
 }
 
 command=${1:-}
+
+case "$command" in
+  push-client|pop|mode|resolve) detect_desktop ;;
+  *) usage ;;
+esac
 
 case "$command" in
   push-client)
