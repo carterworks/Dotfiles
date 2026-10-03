@@ -49,12 +49,23 @@ PanelWindow {
                 implicitHeight: 28
                 onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kcmshell6", "kcm_pulseaudio"])
             }
-            Text {
-                text: Qt.formatDateTime(clock.date, "h:mm AP")
-                color: Theme.muted
-                font.pixelSize: 11
-                horizontalAlignment: Text.AlignHCenter
+            ColumnLayout {
                 Layout.fillWidth: true
+                spacing: 2
+                Text {
+                    text: Qt.formatDateTime(clock.date, "h:mm AP")
+                    color: Theme.text
+                    font.pixelSize: 11
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+                }
+                Text {
+                    text: Qt.formatDateTime(clock.date, "yyyy-MM-dd")
+                    color: Theme.muted
+                    font.pixelSize: 10
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+                }
             }
             ShellButton {
                 label: "Previous column"
