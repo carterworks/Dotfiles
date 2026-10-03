@@ -37,6 +37,7 @@ in
   dotfiles.desktopTheme = {
     name = "everforest-light-medium";
     zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
+    obsidianVaults = [ "Documents/Notes" ];
   };
 
   home.packages = [
@@ -451,7 +452,6 @@ in
       ui_font_family = lib.mkForce ".SystemUIFont";
       ui_font_size = 16.0;
       buffer_font_size = 17.333333333333332;
-      theme = "Base16 selenized-light";
       agent = {
         sidebar_side = "right";
         dock = "right";
@@ -603,7 +603,6 @@ in
     enable = true;
     settings = {
       default_shell = "fish";
-      theme = "solarized_light";
       default_mode = "locked";
       show_startup_tips = false;
       show_release_notes = false;

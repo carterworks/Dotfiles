@@ -9,6 +9,25 @@ let
   theme = import (./themes + "/${cfg.name}.nix");
   inherit (theme) colors;
   hex = color: lib.removePrefix "#" color;
+  cliSettings = builtins.fromJSON (builtins.readFile ../../../opencode/cli.json);
+  obsidianSource = pkgs.fetchFromGitHub theme.apps.obsidian.source;
+  obsidianTheme = pkgs.runCommandLocal "obsidian-${cfg.name}" { } ''
+    mkdir -p "$out"
+    cp ${obsidianSource}/manifest.json ${obsidianSource}/theme.css "$out/"
+    ${lib.concatMapStringsSep "\n" (replacement: ''
+      substituteInPlace "$out/theme.css" --replace-fail \
+        ${lib.escapeShellArg replacement.from} ${lib.escapeShellArg replacement.to}
+    '') (theme.apps.obsidian.cssReplacements or [ ])}
+  '';
+  obsidianSettings = pkgs.writeText "obsidian-theme-settings.json" (
+    builtins.toJSON {
+      vaults = map (vault: "${config.home.homeDirectory}/${vault}") cfg.obsidianVaults;
+      appearance = {
+        cssTheme = theme.apps.obsidian.name;
+        theme = if theme.appearance == "light" then "moonstone" else "obsidian";
+      };
+    }
+  );
 in
 {
   options.dotfiles.desktopTheme = {
@@ -19,12 +38,17 @@ in
         )
       );
       default = "everforest-light-medium";
-      description = "Theme shared by the desktop shell, terminal, and browser.";
+      description = "Theme shared by the desktop shell, terminal, browser, and editors.";
     };
     zenProfile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = "Existing Zen profile path, relative to the home directory. Does not change profiles.ini.";
+    };
+    obsidianVaults = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Obsidian vault paths relative to the home directory. Only appearance and theme files are managed.";
     };
   };
 
@@ -32,8 +56,42 @@ in
     programs.ghostty.settings = theme.ghostty // {
       window-theme = theme.appearance;
     };
+    programs.helix.settings.theme = theme.apps.helix;
+    programs.zellij.settings.theme = theme.apps.zellij;
+    programs.delta.options.light = theme.appearance == "light";
+    programs.zed-editor.userSettings.theme = {
+      mode = theme.appearance;
+      light = theme.apps.zed.name;
+      dark = theme.apps.zed.name;
+    };
 
-    xdg.configFile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    xdg.configFile = {
+      "opencode/cli.json" = {
+        force = true;
+        text = builtins.toJSON (
+          cliSettings
+          // {
+            theme = {
+              name = theme.apps.opencode;
+              mode = theme.appearance;
+            };
+          }
+        );
+      };
+      "herdr/config.toml" = {
+        force = true;
+        text = builtins.readFile ../../../herdr/config.toml + ''
+
+          [theme]
+          name = ${builtins.toJSON theme.apps.herdr}
+          auto_switch = false
+        '';
+      };
+      "zed/themes/desktop-theme.json".source = pkgs.fetchurl theme.apps.zed.source;
+      "desktop-theme/obsidian.json".source = obsidianSettings;
+      "desktop-theme/obsidian".source = obsidianTheme;
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
       "quickshell/DesktopColors.qml".text = ''
         pragma Singleton
         import QtQuick
@@ -98,15 +156,26 @@ in
       '';
     };
 
-    home.file = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.zenProfile != null) {
-      "${cfg.zenProfile}/chrome/userChrome.css".text = ''
-        @import url("file://${config.xdg.configHome}/desktop-theme/zen.css");
-      '';
-      "${cfg.zenProfile}/user.js".text = ''
-        user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
-        user_pref("browser.theme.content-theme", 1);
-        user_pref("browser.theme.toolbar-theme", 1);
-      '';
-    };
+    home.file =
+      lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux && cfg.zenProfile != null) {
+        "${cfg.zenProfile}/chrome/userChrome.css".text = ''
+          @import url("file://${config.xdg.configHome}/desktop-theme/zen.css");
+        '';
+        "${cfg.zenProfile}/user.js".text = ''
+          user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
+          user_pref("browser.theme.content-theme", 1);
+          user_pref("browser.theme.toolbar-theme", 1);
+        '';
+      }
+      // lib.listToAttrs (
+        map (vault: {
+          name = "${vault}/.obsidian/themes/${theme.apps.obsidian.name}";
+          value.source = obsidianTheme;
+        }) cfg.obsidianVaults
+      );
+
+    home.activation.desktopThemeObsidian = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      run ${pkgs.python3}/bin/python3 ${./apply-obsidian-theme.py} ${obsidianSettings}
+    '';
   };
 }

@@ -157,6 +157,36 @@
         carters-macbook-pro = carters-macbook-pro.system;
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
+        desktop-theme =
+          let
+            pkgs = nixpkgs.legacyPackages.x86_64-linux;
+            home = scylla.config.home-manager.users.carter;
+            theme = import (./nix/users/carter/themes + "/${home.dotfiles.desktopTheme.name}.nix");
+            obsidian = home.xdg.configFile."desktop-theme/obsidian".source;
+            manifest = pkgs.writeText "desktop-theme-check.json" (
+              builtins.toJSON {
+                inherit (theme) appearance apps;
+                files = {
+                  opencode = home.xdg.configFile."opencode/cli.json".source;
+                  opencodeBase = ./opencode/cli.json;
+                  herdr = home.xdg.configFile."herdr/config.toml".source;
+                  herdrBase = ./herdr/config.toml;
+                  helix = home.xdg.configFile."helix/config.toml".source;
+                  helixBuiltin = "${pkgs.helix-unwrapped.src}/runtime/themes/${theme.apps.helix}.toml";
+                  zellijBuiltin = "${pkgs.zellij-unwrapped.src}/zellij-utils/assets/themes/${theme.apps.zellij}.kdl";
+                  zed = home.xdg.configFile."zed/themes/desktop-theme.json".source;
+                  obsidianSettings = home.xdg.configFile."desktop-theme/obsidian.json".source;
+                  obsidianManifest = "${obsidian}/manifest.json";
+                  obsidianCss = "${obsidian}/theme.css";
+                };
+              }
+            );
+          in
+          pkgs.runCommandLocal "desktop-theme-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+            python3 ${source}/nix/users/carter/test-obsidian-theme.py
+            python3 ${source}/nix/users/carter/test-desktop-theme.py ${manifest}
+            touch "$out"
+          '';
         sunshine-display =
           let
             pkgs = nixpkgs.legacyPackages.x86_64-linux;

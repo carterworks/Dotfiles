@@ -4,9 +4,7 @@
       force: true
 - link:
     ~/.npmrc: npm/npmrc
-    ~/.config/opencode/cli.json: opencode/cli.json
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
-    ~/.config/herdr/config.toml: herdr/config.toml
     ~/.agents/skills/:
       glob: true
       path: agents/skills/personal/*
