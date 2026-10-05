@@ -7,6 +7,7 @@ let
       coreutils
       jq
       kdePackages.libkscreen
+      hyprland
       gnused
       util-linux
     ];

@@ -4,9 +4,7 @@
       force: true
 - link:
     ~/.npmrc: npm/npmrc
-    ~/.config/opencode/cli.json: opencode/cli.json
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
-    ~/.config/herdr/config.toml: herdr/config.toml
     ~/.agents/skills/:
       glob: true
       path: agents/skills/personal/*
@@ -14,6 +12,13 @@
       glob: true
       path: bin/*
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
+    ~/.config/hypr/:
+      glob: true
+      path: hypr/*.lua
+    ~/.config/quickshell/:
+      glob: true
+      path: quickshell/*
+    ~/.config/quickshell/wallpaper.jpg: assets/wallpapers/01-miasma.jpg
 - link:
     ~/.agents/skills/:
       glob: true
@@ -35,7 +40,6 @@
     ~/.config/kconf_updaterc: kde/kconf_updaterc
     ~/.config/kded5rc: kde/kded5rc
     ~/.config/kded6rc: kde/kded6rc
-    ~/.config/kdeglobals: kde/kdeglobals
     ~/.config/kglobalshortcutsrc: kde/kglobalshortcutsrc
     ~/.config/khelpcenterrc: kde/khelpcenterrc
     ~/.config/kio_fishrc: kde/kio_fishrc
