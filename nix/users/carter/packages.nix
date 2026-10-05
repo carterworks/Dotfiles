@@ -41,7 +41,8 @@ let
       fetchSubmodules = true;
     };
   };
-  vicinae = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # Use the host package set for compatibility with its GPU drivers and libc.
+  vicinae = pkgs.vicinae;
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
 
   # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code

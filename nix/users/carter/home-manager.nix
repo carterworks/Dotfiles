@@ -31,7 +31,14 @@ in
 {
   imports = [
     inputs.hunk.homeManagerModules.default
+    ./desktop-theme.nix
   ];
+
+  dotfiles.desktopTheme = {
+    name = "everforest-light-medium";
+    zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
+    obsidianVaults = [ "Documents/Notes" ];
+  };
 
   home.packages = [
     pkgs.inter
@@ -91,6 +98,13 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
+  # This desktop is already configured. Closing Vicinae's welcome window does
+  # not persist completion; seed its mutable state once, without replacing it.
+  home.activation.vicinaeOnboarding = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run ${pkgs.python3}/bin/python3 ${./complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
+    ''
+  );
   xdg.configFile."autostart/Handy.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
@@ -445,7 +459,6 @@ in
       ui_font_family = lib.mkForce ".SystemUIFont";
       ui_font_size = 16.0;
       buffer_font_size = 17.333333333333332;
-      theme = "Base16 selenized-light";
       agent = {
         sidebar_side = "right";
         dock = "right";
@@ -582,7 +595,6 @@ in
     enable = true;
     package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
-      window-theme = "auto";
       command = lib.getExe pkgs.fish;
       shell-integration-features = "ssh-terminfo,ssh-env";
     };
@@ -598,7 +610,6 @@ in
     enable = true;
     settings = {
       default_shell = "fish";
-      theme = "solarized_light";
       default_mode = "locked";
       show_startup_tips = false;
       show_release_notes = false;

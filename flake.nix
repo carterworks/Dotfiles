@@ -35,7 +35,11 @@
       url = "github:9001/copyparty";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    vicinae.url = "github:vicinaehq/vicinae";
+    vicinae = {
+      url = "github:vicinaehq/vicinae";
+      # GPU drivers are loaded from the host; keep their libc ABI compatible.
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     numtide-llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";
@@ -153,6 +157,71 @@
         carters-macbook-pro = carters-macbook-pro.system;
       };
       checks.x86_64-linux = repositoryChecks.x86_64-linux // {
+        desktop-theme =
+          let
+            pkgs = nixpkgs.legacyPackages.x86_64-linux;
+            home = scylla.config.home-manager.users.carter;
+            theme = import (./nix/users/carter/themes + "/${home.dotfiles.desktopTheme.name}.nix");
+            obsidian = home.xdg.configFile."desktop-theme/obsidian".source;
+            manifest = pkgs.writeText "desktop-theme-check.json" (
+              builtins.toJSON {
+                inherit (theme) appearance apps colors;
+                fzfOptions = home.home.sessionVariables.FZF_DEFAULT_OPTS;
+                files = {
+                  opencode = home.xdg.configFile."opencode/cli.json".source;
+                  opencodeBase = ./opencode/cli.json;
+                  herdr = home.xdg.configFile."herdr/config.toml".source;
+                  herdrBase = ./herdr/config.toml;
+                  vicinae = home.xdg.configFile."vicinae/desktop-theme.json".source;
+                  vicinaeTheme = home.xdg.dataFile."vicinae/themes/${home.dotfiles.desktopTheme.name}.toml".source;
+                  helix = home.xdg.configFile."helix/config.toml".source;
+                  helixBuiltin = "${pkgs.helix-unwrapped.src}/runtime/themes/${theme.apps.helix}.toml";
+                  zellijBuiltin = "${pkgs.zellij-unwrapped.src}/zellij-utils/assets/themes/${theme.apps.zellij}.kdl";
+                  zed = home.xdg.configFile."zed/themes/desktop-theme.json".source;
+                  obsidianSettings = home.xdg.configFile."desktop-theme/obsidian.json".source;
+                  obsidianManifest = "${obsidian}/manifest.json";
+                  obsidianCss = "${obsidian}/theme.css";
+                  kde = home.xdg.dataFile."color-schemes/${home.dotfiles.desktopTheme.name}.colors".source;
+                  gtk3 = home.xdg.configFile."gtk-3.0/colors.css".source;
+                  gtk4 = home.xdg.configFile."gtk-4.0/colors.css".source;
+                  gtk4Css = home.xdg.configFile."gtk-4.0/gtk.css".source;
+                  btop = home.xdg.configFile."btop/btop.conf".source;
+                  fish = home.xdg.configFile."fish/config.fish".source;
+                  zedSettings = home.xdg.configFile."zed/settings.json".source;
+                  zellij = home.xdg.configFile."zellij/config.kdl".source;
+                  heroic = home.xdg.configFile."desktop-theme/heroic/${home.dotfiles.desktopTheme.name}.css".source;
+                  telegram =
+                    home.xdg.configFile."desktop-theme/telegram/${home.dotfiles.desktopTheme.name}.tdesktop-theme".source;
+                };
+              }
+            );
+          in
+          pkgs.runCommandLocal "desktop-theme-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+            python3 ${source}/nix/users/carter/test-obsidian-theme.py
+            python3 ${source}/nix/users/carter/test-kde-theme.py
+            python3 ${source}/nix/users/carter/test-live-desktop-theme.py
+            python3 ${source}/nix/users/carter/test-vicinae-onboarding.py
+            python3 ${source}/nix/users/carter/test-desktop-theme.py ${manifest}
+            touch "$out"
+          '';
+        sunshine-display =
+          let
+            pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          in
+          pkgs.runCommandLocal "sunshine-display-check"
+            {
+              nativeBuildInputs = [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.jq
+                pkgs.python3
+                pkgs.util-linux
+              ];
+            }
+            ''
+              python3 ${source}/nix/users/carter/test-sunshine-display.py
+              touch "$out"
+            '';
         inherit (packageSets.x86_64-linux)
           bambu-studio
           dotbot

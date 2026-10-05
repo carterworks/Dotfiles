@@ -1,0 +1,47 @@
+local mod = "SUPER"
+
+hl.bind(mod .. " + SHIFT + Return", hl.dsp.exec_cmd("uwsm app -- ghostty"))
+hl.bind(mod .. " + SHIFT + F", hl.dsp.exec_cmd("uwsm app -- dolphin"))
+hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("uwsm app -- spotify"))
+hl.bind(mod .. " + SHIFT + B", hl.dsp.exec_cmd("uwsm app -- zen-beta"))
+hl.bind("CTRL + Space", hl.dsp.exec_cmd("vicinae toggle"))
+hl.bind(mod .. " + W", hl.dsp.window.close())
+hl.bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mod .. " + CTRL + F", hl.dsp.window.fullscreen())
+hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))
+hl.bind(mod .. " + CTRL + R", hl.dsp.exec_cmd("systemctl --user restart quickshell.service"))
+hl.bind(mod .. " + SHIFT + Escape", hl.dsp.exit())
+
+hl.bind(mod .. " + SHIFT + left", hl.dsp.focus({ workspace = "e-1" }))
+hl.bind(mod .. " + SHIFT + right", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind(mod .. " + CTRL + left", hl.dsp.layout("focus l"))
+hl.bind(mod .. " + CTRL + right", hl.dsp.layout("focus r"))
+hl.bind(mod .. " + up", hl.dsp.focus({ direction = "up" }))
+hl.bind(mod .. " + down", hl.dsp.focus({ direction = "down" }))
+hl.bind(mod .. " + mouse_up", hl.dsp.window.cycle_next({ next = false }))
+hl.bind(mod .. " + mouse_down", hl.dsp.window.cycle_next())
+hl.bind(mod .. " + CTRL + SHIFT + left", hl.dsp.layout("swapcol l"))
+hl.bind(mod .. " + CTRL + SHIFT + right", hl.dsp.layout("swapcol r"))
+hl.bind(mod .. " + C", hl.dsp.layout("center"))
+hl.bind(mod .. " + bracketright", hl.dsp.layout("colresize +conf"))
+hl.bind(mod .. " + bracketleft", hl.dsp.layout("colresize -conf"))
+hl.bind(mod .. " + comma", hl.dsp.layout("consume"))
+hl.bind(mod .. " + period", hl.dsp.layout("expel"))
+
+for workspace = 1, 10 do
+    local key = workspace % 10
+    hl.bind(mod .. " + " .. key, hl.dsp.focus({ workspace = workspace }))
+    hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = workspace }))
+end
+
+hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"))
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"))
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"))
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"))
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"))
+hl.bind("Print", hl.dsp.exec_cmd("uwsm app -- hypr-screenshot"))
