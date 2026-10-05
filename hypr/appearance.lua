@@ -35,3 +35,24 @@ hl.config({
         force_default_wallpaper = -1,
     },
 })
+
+hl.curve("easeOutExpo", { type = "bezier", points = { { 0.19, 1 }, { 0.22, 1 } } })
+hl.curve("ease", { type = "bezier", points = { { 0.25, 0.1 }, { 0.25, 1 } } })
+
+-- Opt in only occasional entrances/exits. Workspace switches, scrolling,
+-- resizing, focus feedback and decorative effects inherit instant updates.
+hl.animation({ leaf = "global", enabled = false })
+
+-- Speeds are deciseconds: 1.8 = 180ms. Large windows barely scale;
+-- exits use the same curve, less movement and a shorter duration.
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 1.8, bezier = "easeOutExpo", style = "popin 95%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.2, bezier = "easeOutExpo", style = "popin 97%" })
+hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.8, bezier = "ease" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 1.2, bezier = "ease" })
+
+-- Shell surfaces fade without sliding or scaling; Vicinae's no_anim rule
+-- keeps the keyboard launcher instant regardless of these settings.
+hl.animation({ leaf = "layersIn", enabled = true, speed = 1.6, bezier = "ease", style = "fade" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 1.2, bezier = "ease", style = "fade" })
+hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 1.6, bezier = "ease" })
+hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.2, bezier = "ease" })
