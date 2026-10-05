@@ -10,6 +10,20 @@ let
   inherit (theme) colors;
   hex = color: lib.removePrefix "#" color;
   cliSettings = builtins.fromJSON (builtins.readFile ../../../opencode/cli.json);
+  herdrColors = theme.apps.herdrColors // {
+    accent = colors.accent;
+    panel_bg = colors.background;
+    sidebar_bg = colors.background;
+    active_row_bg = colors.selection;
+    selection_bg = colors.hover;
+    surface0 = colors.surface;
+    surface1 = colors.hover;
+    surface_dim = colors.border;
+    overlay0 = colors.border;
+    overlay1 = colors.muted;
+    text = colors.text;
+    subtext0 = colors.muted;
+  };
   obsidianSource = pkgs.fetchFromGitHub theme.apps.obsidian.source;
   obsidianTheme = pkgs.runCommandLocal "obsidian-${cfg.name}" { } ''
     mkdir -p "$out"
@@ -85,6 +99,11 @@ in
           [theme]
           name = ${builtins.toJSON theme.apps.herdr}
           auto_switch = false
+
+          [theme.custom]
+          ${lib.concatStringsSep "\n" (
+            lib.mapAttrsToList (name: color: "${name} = ${builtins.toJSON color}") herdrColors
+          )}
         '';
       };
       "zed/themes/desktop-theme.json".source = pkgs.fetchurl theme.apps.zed.source;
@@ -92,6 +111,12 @@ in
       "desktop-theme/obsidian".source = obsidianTheme;
     }
     // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      "vicinae/desktop-theme.json".text = builtins.toJSON {
+        theme = {
+          light.name = cfg.name;
+          dark.name = cfg.name;
+        };
+      };
       "quickshell/DesktopColors.qml".text = ''
         pragma Singleton
         import QtQuick
@@ -153,6 +178,56 @@ in
         .zen-browser-generic-background .zen-browser-grain {
           display: none !important;
         }
+      '';
+    };
+
+    xdg.dataFile = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      "vicinae/themes/${cfg.name}.toml".text = ''
+        [meta]
+        version = 1
+        name = "${cfg.name}"
+        description = "Shared desktop palette"
+        variant = "${theme.appearance}"
+        inherits = "vicinae-${theme.appearance}"
+
+        [colors.core]
+        background = "${colors.background}"
+        foreground = "${colors.text}"
+        secondary_background = "${colors.surface}"
+        border = "${colors.border}"
+        accent = "${colors.accent}"
+        accent_foreground = "${colors.background}"
+
+        [colors.accents]
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (name: color: "${name} = ${builtins.toJSON color}") {
+            inherit (theme.apps.herdrColors)
+              blue
+              green
+              red
+              yellow
+              ;
+            magenta = theme.apps.herdrColors.mauve;
+            purple = theme.apps.herdrColors.mauve;
+            cyan = theme.apps.herdrColors.teal;
+            orange = theme.apps.herdrColors.peach;
+          }
+        )}
+
+        [colors.text]
+        muted = "${colors.muted}"
+        placeholder = "${colors.muted}"
+        selection = { background = "${colors.selection}", foreground = "${colors.text}" }
+
+        [colors.list.item.hover]
+        foreground = "${colors.text}"
+        secondary_foreground = "${colors.text}"
+
+        [colors.list.item.selection]
+        background = "${colors.selection}"
+        foreground = "${colors.text}"
+        secondary_background = "${colors.selection}"
+        secondary_foreground = "${colors.text}"
       '';
     };
 

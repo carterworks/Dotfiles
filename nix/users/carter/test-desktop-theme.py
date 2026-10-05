@@ -21,7 +21,32 @@ files = config["files"]
 cli = read_json(files["opencode"])
 assert cli == read_json(files["opencodeBase"]) | {"theme": {"name": apps["opencode"], "mode": mode}}
 herdr = read_toml(files["herdr"])
-assert herdr == read_toml(files["herdrBase"]) | {"theme": {"name": apps["herdr"], "auto_switch": False}}
+colors = config["colors"]
+custom = apps["herdrColors"] | {
+    "accent": colors["accent"],
+    "panel_bg": colors["background"],
+    "sidebar_bg": colors["background"],
+    "active_row_bg": colors["selection"],
+    "selection_bg": colors["hover"],
+    "surface0": colors["surface"],
+    "surface1": colors["hover"],
+    "surface_dim": colors["border"],
+    "overlay0": colors["border"],
+    "overlay1": colors["muted"],
+    "text": colors["text"],
+    "subtext0": colors["muted"],
+}
+assert herdr == read_toml(files["herdrBase"]) | {
+    "theme": {"name": apps["herdr"], "auto_switch": False, "custom": custom}
+}
+vicinae = read_json(files["vicinae"])
+assert vicinae["theme"]["light"]["name"] == vicinae["theme"]["dark"]["name"]
+vicinae_theme = read_toml(files["vicinaeTheme"])
+assert vicinae_theme["meta"]["variant"] == mode
+assert isinstance(vicinae_theme["meta"]["description"], str)
+assert vicinae_theme["colors"]["core"]["background"] == colors["background"]
+assert vicinae_theme["colors"]["core"]["foreground"] == colors["text"]
+assert vicinae_theme["colors"]["list"]["item"]["selection"]["background"] == colors["selection"]
 
 helix = read_toml(files["helix"])
 assert helix["theme"] == apps["helix"]

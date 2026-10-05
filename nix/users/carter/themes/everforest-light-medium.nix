@@ -27,6 +27,15 @@
     # "terminal" follows Ghostty's palette. Built-in alternatives: search theme.name at
     # https://herdr.dev/docs/config-reference/
     herdr = "terminal";
+    herdrColors = {
+      mauve = "#df69ba";
+      green = "#8da101";
+      yellow = "#dfa000";
+      red = "#f85552";
+      blue = "#3a94c5";
+      teal = "#35a77c";
+      peach = "#f57d26";
+    };
     # Built-in theme names and previews:
     # https://zellij.dev/documentation/theme-list.html
     zellij = "everforest-light";
