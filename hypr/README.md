@@ -112,10 +112,23 @@ Check the selected theme and the vault updater without activating anything:
 nix build --no-link .#checks.x86_64-linux.desktop-theme
 ```
 
+## Motion
+
+`appearance.lua` opts into brief, restrained animations rather than Hyprland's
+defaults: windows open from 95% size over 180ms and close to 97% over 120ms,
+with a strong ease-out and an opacity fade. Shell surfaces only fade
+(160ms in, 120ms out). There is no bounce, workspace slide, animated scrolling,
+resize easing, delayed focus feedback, or decorative border rotation.
+
+Workspace navigation and Vicinae stay instant. Hyprland's window animation
+settings do not distinguish keyboard launches/closes from mouse actions, so
+both use the same short transition. For motion-free windows, set `enabled = false`
+on `windowsIn`, `windowsOut`, `fadeIn`, and `fadeOut`. Reload with Super+Shift+R.
+
 ## Files
 
 - `hyprland.lua`: entry point and monitors.
-- `appearance.lua`: scrolling layout, spacing, borders, and input.
+- `appearance.lua`: scrolling layout, spacing, borders, input, and motion.
 - `bindings.lua`: shortcuts.
 - `rules.lua`: floating utility windows.
 - `../quickshell/Theme.qml`: sidebar width, colors, and font.
