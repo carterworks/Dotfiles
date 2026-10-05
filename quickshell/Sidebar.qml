@@ -153,6 +153,7 @@ PanelWindow {
                         iconSource: desktopEntry && desktopEntry.icon ? Quickshell.iconPath(desktopEntry.icon, "application-x-executable") : Qt.resolvedUrl("icons/app-window.svg")
                         flat: true
                         selected: modelData.activated
+                        showToolTip: true
                         Layout.fillWidth: true
                         implicitHeight: 36
                         onClicked: {
@@ -215,8 +216,10 @@ PanelWindow {
                         }
                         onWheel: wheel => trayIcon.modelData.scroll(wheel.angleDelta.y, false)
                     }
-                    ToolTip.visible: trayMouse.containsMouse
-                    ToolTip.text: modelData.tooltipTitle || modelData.title
+                    ShellToolTip {
+                        visible: trayMouse.containsMouse
+                        text: trayIcon.modelData.tooltipTitle || trayIcon.modelData.title
+                    }
                 }
             }
         }
@@ -260,8 +263,10 @@ PanelWindow {
                                     border.color: spaceDot.hovered ? Theme.text : Theme.muted
                                 }
                             }
-                            ToolTip.visible: hovered
-                            ToolTip.text: Accessible.name
+                            ShellToolTip {
+                                visible: spaceDot.hovered
+                                text: spaceDot.Accessible.name
+                            }
                             onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = " + (index + 1) + " })")
                         }
                     }

@@ -1,6 +1,7 @@
 singleton Theme 1.0 Theme.qml
 singleton DesktopColors 1.0 DesktopColors.qml
 ShellButton 1.0 ShellButton.qml
+ShellToolTip 1.0 ShellToolTip.qml
 Sidebar 1.0 Sidebar.qml
 MediaCard 1.0 MediaCard.qml
 NotificationCard 1.0 NotificationCard.qml

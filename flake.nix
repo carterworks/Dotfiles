@@ -165,12 +165,14 @@
             obsidian = home.xdg.configFile."desktop-theme/obsidian".source;
             manifest = pkgs.writeText "desktop-theme-check.json" (
               builtins.toJSON {
-                inherit (theme) appearance apps;
+                inherit (theme) appearance apps colors;
                 files = {
                   opencode = home.xdg.configFile."opencode/cli.json".source;
                   opencodeBase = ./opencode/cli.json;
                   herdr = home.xdg.configFile."herdr/config.toml".source;
                   herdrBase = ./herdr/config.toml;
+                  vicinae = home.xdg.configFile."vicinae/desktop-theme.json".source;
+                  vicinaeTheme = home.xdg.dataFile."vicinae/themes/${home.dotfiles.desktopTheme.name}.toml".source;
                   helix = home.xdg.configFile."helix/config.toml".source;
                   helixBuiltin = "${pkgs.helix-unwrapped.src}/runtime/themes/${theme.apps.helix}.toml";
                   zellijBuiltin = "${pkgs.zellij-unwrapped.src}/zellij-utils/assets/themes/${theme.apps.zellij}.kdl";

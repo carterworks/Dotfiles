@@ -10,6 +10,7 @@ AbstractButton {
     property bool selected: false
     property bool flat: false
     property bool iconOnly: false
+    property bool showToolTip: iconOnly
     implicitWidth: contentItem.implicitWidth + 20
     implicitHeight: 38
     hoverEnabled: true
@@ -35,7 +36,7 @@ AbstractButton {
         Text {
             visible: !button.iconOnly
             text: button.label
-            color: button.selected ? Theme.accent : Theme.text
+            color: button.selected ? "#000000" : Theme.text
             font.family: Theme.font
             font.pixelSize: 12
             elide: Text.ElideRight
@@ -44,6 +45,8 @@ AbstractButton {
     }
     leftPadding: iconOnly ? 5 : 10
     rightPadding: iconOnly ? 5 : 10
-    ToolTip.visible: hovered && iconOnly
-    ToolTip.text: label
+    ShellToolTip {
+        visible: button.hovered && button.showToolTip
+        text: button.label
+    }
 }

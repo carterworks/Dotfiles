@@ -9,5 +9,6 @@ QtObject {
     readonly property color accent: DesktopColors.accent
     readonly property color text: DesktopColors.text
     readonly property color muted: DesktopColors.muted
+    readonly property color border: DesktopColors.border
     readonly property string font: "Inter"
 }
