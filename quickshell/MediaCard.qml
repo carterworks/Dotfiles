@@ -30,6 +30,7 @@ Rectangle {
             text: card.player ? card.player.trackArtist || card.player.identity : ""
             color: Theme.muted
             font.pixelSize: 11
+            font.family: Theme.font
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
