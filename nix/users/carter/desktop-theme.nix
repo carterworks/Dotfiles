@@ -189,10 +189,10 @@ in
                         "zellij/config.kdl"
                         "zed/settings.json"
                         "zed/themes/desktop-theme.json"
-                        "desktop-theme/zen.css"
                         "fish/config.fish"
                       ]
                       ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+                        "desktop-theme/zen.css"
                         "gtk-3.0/colors.css"
                         "gtk-4.0/colors.css"
                         "gtk-4.0/gtk.css"
