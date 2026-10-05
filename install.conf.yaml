@@ -40,7 +40,6 @@
     ~/.config/kconf_updaterc: kde/kconf_updaterc
     ~/.config/kded5rc: kde/kded5rc
     ~/.config/kded6rc: kde/kded6rc
-    ~/.config/kdeglobals: kde/kdeglobals
     ~/.config/kglobalshortcutsrc: kde/kglobalshortcutsrc
     ~/.config/khelpcenterrc: kde/khelpcenterrc
     ~/.config/kio_fishrc: kde/kio_fishrc

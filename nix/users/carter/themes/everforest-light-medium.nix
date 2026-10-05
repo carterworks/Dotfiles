@@ -8,7 +8,17 @@
     border = "#bdc3af";
     accent = "#8da101";
     text = "#5c6a72";
-    muted = "#829181";
+    # Readable UI variants; syntax/ANSI ports retain the upstream accents.
+    muted = "#56636b";
+    hoverText = "#4f5d65";
+    focus = "#5c6a72";
+    pressed = "#e0dcc7";
+    selectedText = "#000000";
+    link = "#276785";
+    visited = "#8f427c";
+    negative = "#b13e3c";
+    positive = "#5f7400";
+    warning = "#8b6400";
     selection = "#eaedc8";
   };
   ghostty = {
@@ -27,6 +37,7 @@
     # "terminal" follows Ghostty's palette. Built-in alternatives: search theme.name at
     # https://herdr.dev/docs/config-reference/
     herdr = "terminal";
+    btop = "everforest-light-medium";
     herdrColors = {
       mauve = "#df69ba";
       green = "#8da101";
