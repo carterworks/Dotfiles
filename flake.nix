@@ -186,6 +186,7 @@
           in
           pkgs.runCommandLocal "desktop-theme-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
             python3 ${source}/nix/users/carter/test-obsidian-theme.py
+            python3 ${source}/nix/users/carter/test-vicinae-onboarding.py
             python3 ${source}/nix/users/carter/test-desktop-theme.py ${manifest}
             touch "$out"
           '';

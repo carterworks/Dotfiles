@@ -98,6 +98,13 @@ in
       X-GNOME-Autostart-enabled=true
     '';
   };
+  # This desktop is already configured. Closing Vicinae's welcome window does
+  # not persist completion; seed its mutable state once, without replacing it.
+  home.activation.vicinaeOnboarding = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run ${pkgs.python3}/bin/python3 ${./complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
+    ''
+  );
   xdg.configFile."autostart/Handy.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
