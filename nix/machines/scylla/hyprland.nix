@@ -1,5 +1,12 @@
-{ pkgs, systemUsername, ... }:
+{
+  config,
+  pkgs,
+  systemUsername,
+  ...
+}:
 let
+  themeName = config.home-manager.users.${systemUsername}.dotfiles.desktopTheme.name;
+  colors = (import (../../users/carter/themes + "/${themeName}.nix")).colors;
   screenshot = pkgs.writeShellApplication {
     name = "hypr-screenshot";
     runtimeInputs = [
@@ -9,7 +16,7 @@ let
       pkgs.wl-clipboard
     ];
     text = ''
-      if ! region="$(slurp)"; then
+      if ! region="$(slurp -b '${colors.background}99' -c '${colors.focus}ff' -s '${colors.selection}44')"; then
         exit 0
       fi
       directory="$HOME/Pictures/Screenshots"

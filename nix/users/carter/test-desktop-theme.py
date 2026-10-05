@@ -3,6 +3,8 @@ from pathlib import Path
 import re
 import sys
 import tomllib
+import configparser
+import zipfile
 
 
 def read_json(path):
@@ -22,6 +24,44 @@ cli = read_json(files["opencode"])
 assert cli == read_json(files["opencodeBase"]) | {"theme": {"name": apps["opencode"], "mode": mode}}
 herdr = read_toml(files["herdr"])
 colors = config["colors"]
+kde = configparser.ConfigParser()
+kde.read(files["kde"])
+rgb = lambda color: ",".join(str(int(color[i:i + 2], 16)) for i in (1, 3, 5))
+assert kde["Colors:Window"]["BackgroundNormal"] == rgb(colors["background"])
+assert kde["Colors:Header][Inactive"]["BackgroundNormal"] == rgb(colors["background"])
+assert kde["Colors:Selection"]["ForegroundNormal"] == rgb(colors["text"])
+for file in ("gtk3", "gtk4"):
+    css = Path(files[file]).read_text()
+    assert f'@define-color theme_bg_color_breeze {colors["background"]};' in css
+    assert f'@define-color theme_selected_bg_color_breeze {colors["selection"]};' in css
+assert "@import 'colors.css';" in Path(files["gtk4Css"]).read_text()
+assert read_json(files["zedSettings"])["theme"]["light"] == apps["zed"]["name"]
+assert read_toml(files["helix"])["theme"] == apps["helix"]
+assert f'theme "{apps["zellij"]}"' in Path(files["zellij"]).read_text()
+assert f'color_theme = "{apps["btop"]}"' in Path(files["btop"]).read_text()
+fish = Path(files["fish"]).read_text()
+assert f'set -g fish_color_comment {colors["muted"][1:]}' in fish
+assert "set -gx FZF_DEFAULT_OPTS" in fish
+assert "--layout=reverse" in config["fzfOptions"]
+assert f'bg:{colors["background"]}' in config["fzfOptions"]
+assert f'--background: {colors["background"]};' in Path(files["heroic"]).read_text()
+with zipfile.ZipFile(files["telegram"]) as archive:
+    palette = archive.read("colors.tdesktop-theme").decode()
+    assert f'windowBg: {colors["background"]};' in palette
+    assert f'msgOutBg: {colors["selection"]};' in palette
+
+
+def luminance(color):
+    values = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+    return sum(v * weight for v, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
+
+
+for foreground, background in (("text", "background"), ("muted", "surface"),
+                              ("muted", "background"), ("hoverText", "hover"),
+                              ("hoverText", "pressed"), ("selectedText", "selection")):
+    low, high = sorted((luminance(colors[foreground]), luminance(colors[background])))
+    assert (high + 0.05) / (low + 0.05) >= 4.5, (foreground, background)
 custom = apps["herdrColors"] | {
     "accent": colors["accent"],
     "panel_bg": colors["background"],
