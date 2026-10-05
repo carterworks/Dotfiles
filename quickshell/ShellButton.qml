@@ -18,7 +18,9 @@ AbstractButton {
 
     background: Rectangle {
         radius: 9
-        color: button.selected ? Theme.hover : button.hovered ? Theme.hover : button.flat ? "transparent" : Theme.surface
+        color: button.down ? Theme.pressed : button.selected ? Theme.selection : button.hovered ? Theme.hover : button.flat ? "transparent" : Theme.surface
+        border.width: button.visualFocus ? 2 : 0
+        border.color: Theme.focus
         opacity: button.enabled ? 1 : 0.4
     }
 
@@ -36,7 +38,7 @@ AbstractButton {
         Text {
             visible: !button.iconOnly
             text: button.label
-            color: button.selected ? "#000000" : Theme.text
+            color: button.selected ? Theme.selectedText : button.hovered || button.down ? Theme.hoverText : Theme.text
             font.family: Theme.font
             font.pixelSize: 12
             elide: Text.ElideRight

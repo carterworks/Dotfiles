@@ -56,6 +56,7 @@ PanelWindow {
                     text: Qt.formatDateTime(clock.date, "h:mm AP")
                     color: Theme.text
                     font.pixelSize: 11
+                    font.family: Theme.font
                     horizontalAlignment: Text.AlignHCenter
                     Layout.fillWidth: true
                 }
@@ -63,6 +64,7 @@ PanelWindow {
                     text: Qt.formatDateTime(clock.date, "yyyy-MM-dd")
                     color: Theme.muted
                     font.pixelSize: 10
+                    font.family: Theme.font
                     horizontalAlignment: Text.AlignHCenter
                     Layout.fillWidth: true
                 }
@@ -174,6 +176,7 @@ PanelWindow {
                     text: "All caught up."
                     color: Theme.muted
                     font.pixelSize: 12
+                    font.family: Theme.font
                     Layout.topMargin: 12
                 }
             }

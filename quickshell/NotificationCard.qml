@@ -18,6 +18,7 @@ Rectangle {
                 text: card.notification.appName
                 color: Theme.muted
                 font.pixelSize: 11
+                font.family: Theme.font
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
@@ -36,6 +37,7 @@ Rectangle {
             textFormat: Text.PlainText
             color: Theme.text
             font.pixelSize: 13
+            font.family: Theme.font
             font.weight: Font.DemiBold
             wrapMode: Text.Wrap
             maximumLineCount: 3
@@ -48,6 +50,7 @@ Rectangle {
             visible: text !== ""
             color: Theme.muted
             font.pixelSize: 12
+            font.family: Theme.font
             wrapMode: Text.Wrap
             maximumLineCount: 4
             elide: Text.ElideRight
