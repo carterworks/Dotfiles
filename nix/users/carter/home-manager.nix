@@ -35,7 +35,7 @@ in
   ];
 
   dotfiles.desktopTheme = {
-    name = "everforest-light-medium";
+    name = "nord-light";
     zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
     obsidianVaults = [ "Documents/Notes" ];
   };

@@ -166,6 +166,11 @@
             manifest = pkgs.writeText "desktop-theme-check.json" (
               builtins.toJSON {
                 inherit (theme) appearance apps colors;
+                palettes = map (file: (import (./nix/users/carter/themes + "/${file}")).colors) (
+                  builtins.filter (nixpkgs.lib.hasSuffix ".nix") (
+                    builtins.attrNames (builtins.readDir ./nix/users/carter/themes)
+                  )
+                );
                 fzfOptions = home.home.sessionVariables.FZF_DEFAULT_OPTS;
                 files = {
                   opencode = home.xdg.configFile."opencode/cli.json".source;
@@ -186,6 +191,11 @@
                   gtk4 = home.xdg.configFile."gtk-4.0/colors.css".source;
                   gtk4Css = home.xdg.configFile."gtk-4.0/gtk.css".source;
                   btop = home.xdg.configFile."btop/btop.conf".source;
+                  btopTheme =
+                    if theme.apps ? btopTheme then
+                      home.xdg.configFile."btop/themes/${theme.apps.btop}.theme".source
+                    else
+                      null;
                   fish = home.xdg.configFile."fish/config.fish".source;
                   zedSettings = home.xdg.configFile."zed/settings.json".source;
                   zellij = home.xdg.configFile."zellij/config.kdl".source;
