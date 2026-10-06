@@ -39,6 +39,10 @@ assert read_json(files["zedSettings"])["theme"]["light"] == apps["zed"]["name"]
 assert read_toml(files["helix"])["theme"] == apps["helix"]
 assert f'theme "{apps["zellij"]}"' in Path(files["zellij"]).read_text()
 assert f'color_theme = "{apps["btop"]}"' in Path(files["btop"]).read_text()
+if "btopTheme" in apps:
+    btop_theme = Path(files["btopTheme"]).read_text()
+    for role, color in apps["btopTheme"].items():
+        assert f'theme[{role}]="{color}"' in btop_theme
 fish = Path(files["fish"]).read_text()
 assert f'set -g fish_color_comment {colors["muted"][1:]}' in fish
 assert "set -gx FZF_DEFAULT_OPTS" in fish
@@ -57,11 +61,12 @@ def luminance(color):
     return sum(v * weight for v, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
 
 
-for foreground, background in (("text", "background"), ("muted", "surface"),
-                              ("muted", "background"), ("hoverText", "hover"),
-                              ("hoverText", "pressed"), ("selectedText", "selection")):
-    low, high = sorted((luminance(colors[foreground]), luminance(colors[background])))
-    assert (high + 0.05) / (low + 0.05) >= 4.5, (foreground, background)
+for palette in config.get("palettes", [colors]):
+    for foreground, background in (("text", "background"), ("muted", "surface"),
+                                  ("muted", "background"), ("hoverText", "hover"),
+                                  ("hoverText", "pressed"), ("selectedText", "selection")):
+        low, high = sorted((luminance(palette[foreground]), luminance(palette[background])))
+        assert (high + 0.05) / (low + 0.05) >= 4.5, (foreground, background)
 custom = apps["herdrColors"] | {
     "accent": colors["accent"],
     "panel_bg": colors["background"],
@@ -91,8 +96,16 @@ assert vicinae_theme["colors"]["list"]["item"]["selection"]["background"] == col
 helix = read_toml(files["helix"])
 assert helix["theme"] == apps["helix"]
 assert Path(files["helixBuiltin"]).is_file(), "Helix theme is not included in the pinned editor"
-zellij = Path(files["zellijBuiltin"]).read_text()
-assert apps["zellij"] in zellij, "Zellij theme is not included in the pinned multiplexer"
+if "zellijTheme" in apps:
+    zellij = Path(files["zellij"]).read_text()
+    assert apps["zellij"] in zellij
+    for component, roles in apps["zellijTheme"].items():
+        assert component in zellij
+        for color in roles.values():
+            assert color in zellij
+else:
+    zellij = Path(files["zellijBuiltin"]).read_text()
+    assert apps["zellij"] in zellij, "Zellij theme is not included in the pinned multiplexer"
 
 zed = read_json(files["zed"])
 selected = next(t for t in zed["themes"] if t["name"] == apps["zed"]["name"])

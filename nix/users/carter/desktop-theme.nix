@@ -163,10 +163,18 @@ in
     };
     programs.helix.settings.theme = theme.apps.helix;
     programs.zellij.settings.theme = theme.apps.zellij;
+    programs.zellij.settings.themes = lib.optionalAttrs (theme.apps ? zellijTheme) {
+      ${theme.apps.zellij} = theme.apps.zellijTheme;
+    };
     programs.delta.options.light = theme.appearance == "light";
     programs.btop = {
       enable = true;
       settings.color_theme = theme.apps.btop;
+      themes = lib.optionalAttrs (theme.apps ? btopTheme) {
+        ${theme.apps.btop} = lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (name: color: "theme[${name}]=${builtins.toJSON color}") theme.apps.btopTheme
+        );
+      };
     };
     home.packages = [
       (pkgs.writeShellApplication {
