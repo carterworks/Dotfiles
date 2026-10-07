@@ -10,6 +10,7 @@ import Quickshell.Wayland
 PanelWindow {
     id: sidebar
     required property var notificationServer
+    required property var audioCard
     property bool showNotifications: false
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property var workspace: monitor ? monitor.activeWorkspace : null
@@ -36,9 +37,10 @@ PanelWindow {
                 iconName: "volume-2"
                 iconOnly: true
                 flat: true
+                selected: sidebar.audioCard.open
                 implicitWidth: 28
                 implicitHeight: 28
-                onClicked: Quickshell.execDetached(["uwsm", "app", "--", "kcmshell6", "kcm_pulseaudio"])
+                onClicked: sidebar.audioCard.open = !sidebar.audioCard.open
             }
             ShellButton {
                 label: "Clipboard history"
