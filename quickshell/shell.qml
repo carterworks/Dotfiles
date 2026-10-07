@@ -54,10 +54,13 @@ ShellRoot {
                 required property var modelData
                 screen: modelData
                 notificationServer: notifications
+                audioCard: audio
             }
         }
     }
 
     // A single popup stack avoids duplicating notifications on every monitor.
     NotificationPopups { notificationServer: notifications }
+
+    AudioCard { id: audio }
 }
