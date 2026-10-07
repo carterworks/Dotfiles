@@ -1,5 +1,5 @@
 ---
-name: gpt-6-prompt
+name: prompt-gpt-6
 description: Prompting best practices for the GPT-6 model family (Astra, Sol, Luna). Use when writing or tuning system prompts, AGENTS.md, skills, or harness instructions for GPT-6 models, or when a GPT-6 model stops to ask for approval too often, over-formats, under-delegates, or over-tests.
 ---
 
