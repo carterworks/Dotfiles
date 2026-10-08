@@ -31,6 +31,9 @@ in
   fff-mcp = localPackage ./fff-mcp.nix;
   nub = localPackage ./nub.nix;
 }
+// lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
+  github-desktop = localPackage ./github-desktop.nix;
+}
 // lib.optionalAttrs (system == "x86_64-linux") {
   bambu-studio = localPackage ./bambu-studio.nix;
   obsidian-headless = localPackage ./obsidian-headless.nix;
