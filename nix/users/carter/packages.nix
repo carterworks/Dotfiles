@@ -123,6 +123,7 @@ let
   darwinPackages = with pkgs; [
     awscli2
     github-copilot-cli
+    github-desktop
     kubectl
     kubelogin
     fff-mcp
