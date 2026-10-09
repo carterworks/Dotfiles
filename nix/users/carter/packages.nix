@@ -10,6 +10,7 @@ let
   agent-browser = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser;
   bambu-studio = self.packages.${pkgs.stdenv.hostPlatform.system}.bambu-studio;
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
+  delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   github-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.github-desktop;
   handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
@@ -77,6 +78,7 @@ let
     bun
     codex
     curl
+    delta
     docker-language-server
     dust
     fastfetch
