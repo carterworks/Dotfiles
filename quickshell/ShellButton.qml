@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 AbstractButton {
     id: button
+    signal middleClicked()
     property string label: ""
     property string iconName: ""
     property url iconSource: iconName ? Qt.resolvedUrl("icons/" + iconName + ".svg") : ""
@@ -50,5 +51,11 @@ AbstractButton {
     ShellToolTip {
         visible: button.hovered && button.showToolTip
         text: button.label
+    }
+
+    // AbstractButton ignores non-left buttons, so middle clicks pass through.
+    TapHandler {
+        acceptedButtons: Qt.MiddleButton
+        onTapped: button.middleClicked()
     }
 }

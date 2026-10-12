@@ -163,6 +163,9 @@ PanelWindow {
                         onClicked: {
                             if (modelData.wayland) modelData.wayland.activate();
                         }
+                        onMiddleClicked: {
+                            if (modelData.wayland) modelData.wayland.close();
+                        }
                     }
                 }
                 Repeater {
