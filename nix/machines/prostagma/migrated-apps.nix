@@ -291,6 +291,21 @@ in
           port = 30050;
           volumes = [ "${appRoot}/prowlarr/config:/config" ];
         };
+
+        # FlareSolverr lets Prowlarr reach Cloudflare-protected indexers (1337x and
+        # friends) by solving their JS challenges. It runs as root because headless
+        # Chrome needs more than the hardened appExtraOptions permit.
+        flaresolverr = {
+          image = "ghcr.io/flaresolverr/flaresolverr:v3.5.2@sha256:c80ae007ce2ccdcd217a12426e4f039ef763ff90738c808d38810c3e59323767";
+          autoStart = true;
+          environment = appEnvironment // {
+            LOG_LEVEL = "info";
+          };
+          extraOptions = rootExtraOptions ++ dockerNetworkOptions ++ [
+            "--hostname=flaresolverr"
+            "--network-alias=flaresolverr"
+          ];
+        };
       }
       // optionalAttrs cfg.apps.sonarr.enable {
         sonarr = mkArrContainer {
@@ -536,6 +551,11 @@ in
             after = dockerNetworkDependencies;
             requires = dockerNetworkDependencies;
           };
+
+        docker-flaresolverr = {
+          after = dockerNetworkDependencies;
+          requires = dockerNetworkDependencies;
+        };
       }
       // optionalAttrs cfg.apps.sonarr.enable {
         docker-sonarr =
