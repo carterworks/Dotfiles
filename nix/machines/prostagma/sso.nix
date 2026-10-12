@@ -51,7 +51,7 @@ let
     users:
       carter:
         displayname: Carter McBride
-        password: "$argon2id$v=19$m=65536,t=3,p=4$8628xF5AF1yqFebLh5VQzA$qtAtz8zzEkgI/ofo/M9XTw2/YM7g/XwUr/L8VuL8/wI"
+        password: "$argon2id$v=19$m=65536,t=3,p=4$jCWL8KuanYCGLrfjxBrx/Q$ALGHnP4lj8IzqrDWJxu5t1UMAFYc6lbayM0bt2QZxgE"
         # Immich matches an OIDC login to an existing account by email, so this
         # has to be the address on the Immich account itself. It is also a real
         # inbox, which the filesystem notifier could reach if it were ever
