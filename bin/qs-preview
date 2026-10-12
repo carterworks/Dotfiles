@@ -74,6 +74,9 @@ for _ in $(seq 1 80); do
     sleep 0.1
 done
 
+# Let the entrance transition settle before capturing.
+sleep 0.45
+
 monitor="$(hyprctl -j monitors | jq -r '.[] | select(.focused) | .name' 2>/dev/null || true)"
 monitor="${monitor:-DP-2}"
 "$grim_bin" -o "$monitor" "$out"
