@@ -17,3 +17,12 @@ hl.window_rule({
     float = true,
     pin = true,
 })
+
+-- Browser extension panels (for example Bitwarden's) are popup windows that
+-- would otherwise open as full tiles in the scrolling layout. Zen titles every
+-- one of them with an "Extension:" prefix, so float them all.
+hl.window_rule({
+    name = "zen-extension-windows",
+    match = { class = "^zen(-beta|-twilight)?$", title = "^Extension:" },
+    float = true,
+})
