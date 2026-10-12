@@ -33,6 +33,13 @@ PanelWindow {
         if (sink && sink.audio) sink.audio.muted = !sink.audio.muted;
     }
 
+    // Keep the popover top-aligned with the speaker button it grows from.
+    Binding {
+        target: sidebar.audioPanel
+        property: "anchorTop"
+        value: contentColumn.y + audioRow.y + audioButton.y
+    }
+
     anchors { top: true; bottom: true; left: true }
     implicitWidth: Theme.sidebarWidth
     exclusiveZone: Theme.sidebarWidth
@@ -42,10 +49,12 @@ PanelWindow {
     SystemClock { id: clock; precision: SystemClock.Minutes }
 
     ColumnLayout {
+        id: contentColumn
         anchors { fill: parent; margins: 14 }
         spacing: 12
 
         RowLayout {
+            id: audioRow
             Layout.fillWidth: true
             spacing: 2
             ShellButton {

@@ -8,19 +8,33 @@ import Quickshell.Wayland
 
 // Sidebar audio popover.
 //
-// A plain fullscreen overlay closes on any outside click; the card inside sits
-// just to the right of the sidebar. It covers the common cases: choosing the
-// default output/input, per-device and per-application volume and mute. Port
-// and profile selection are deliberately out of scope because Quickshell's
-// PipeWire service does not expose them; use wpctl for those.
+// Anchored to the sidebar speaker: the card's top edge lines up with the
+// button and it overlaps the sidebar slightly, then scales out of that
+// top-left corner. A fullscreen transparent surface sits underneath purely to
+// catch outside clicks; every visible surface is opaque.
+//
+// It covers the common cases: choosing the default output/input, per-device
+// and per-application volume and mute. Port and profile selection are
+// deliberately out of scope because Quickshell's PipeWire service does not
+// expose them; use wpctl for those.
 PanelWindow {
     id: panel
     property bool open: false
+    // Screen y of the sidebar speaker button, supplied by the sidebar.
+    property real anchorTop: 14
+    // Kept mapped through the exit transition, then unmapped.
+    property bool closing: false
+
     readonly property var sinks: Pipewire.nodes.values.filter(n => !n.isStream && n.isSink && n.audio)
     readonly property var sources: Pipewire.nodes.values.filter(n => !n.isStream && !n.isSink && n.audio)
     readonly property var streams: Pipewire.nodes.values.filter(n => n.isStream && n.audio)
 
-    visible: open
+    // Enter: crisp, front-loaded ease-out. Exit: shorter and simpler because
+    // the user has already made the decision.
+    readonly property int enterDuration: 180
+    readonly property int exitDuration: 120
+
+    visible: open || closing
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "miasma-audio"
@@ -29,6 +43,19 @@ PanelWindow {
     // which lets Escape close it without stealing focus otherwise.
     WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     color: "transparent"
+
+    onOpenChanged: {
+        if (open)
+            closing = false;
+        else if (visible)
+            closing = true;
+    }
+
+    Timer {
+        interval: panel.exitDuration + 20
+        running: panel.closing
+        onTriggered: panel.closing = false
+    }
 
     function toggle() {
         open = !open;
@@ -58,14 +85,33 @@ PanelWindow {
         id: card
         anchors.left: parent.left
         anchors.top: parent.top
-        anchors.leftMargin: Theme.sidebarWidth + 12
-        anchors.topMargin: 52
+        // Overlap the sidebar so the card reads as attached to it.
+        anchors.leftMargin: Theme.sidebarWidth - 12
+        anchors.topMargin: panel.anchorTop
         width: 320
         height: Math.min(content.implicitHeight + 24, 460)
         radius: 12
         color: Theme.surface
         border { width: 1; color: Theme.border }
         clip: true
+
+        // Grow out of the corner nearest the speaker, never from the center,
+        // and never from zero.
+        transformOrigin: Item.TopLeft
+        opacity: panel.open ? 1 : 0
+        scale: panel.open ? 1 : 0.96
+        Behavior on opacity {
+            NumberAnimation {
+                duration: panel.open ? panel.enterDuration : panel.exitDuration
+                easing.type: panel.open ? Easing.OutExpo : Easing.OutCubic
+            }
+        }
+        Behavior on scale {
+            NumberAnimation {
+                duration: panel.open ? panel.enterDuration : panel.exitDuration
+                easing.type: panel.open ? Easing.OutExpo : Easing.OutCubic
+            }
+        }
 
         // Swallow clicks so hitting the card does not dismiss the popover.
         MouseArea { anchors.fill: parent }
