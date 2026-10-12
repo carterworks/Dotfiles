@@ -26,3 +26,11 @@ hl.window_rule({
     match = { class = "^zen(-beta|-twilight)?$", title = "^Extension:" },
     float = true,
 })
+
+-- Google sign-in popups (for example the "Sign in with Google" flow) share
+-- Zen's class with ordinary tabs, so match their title instead.
+hl.window_rule({
+    name = "zen-google-signin-windows",
+    match = { class = "^zen(-beta|-twilight)?$", title = "Google Accounts" },
+    float = true,
+})
