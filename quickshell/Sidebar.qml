@@ -33,11 +33,17 @@ PanelWindow {
         if (sink && sink.audio) sink.audio.muted = !sink.audio.muted;
     }
 
-    // Keep the popover top-aligned with the speaker button it grows from.
+    // Hang the popover from the speaker button: flush left, 4px below.
     Binding {
         target: sidebar.audioPanel
-        property: "anchorTop"
-        value: contentColumn.y + audioRow.y + audioButton.y
+        property: "anchorLeft"
+        value: contentColumn.x + audioRow.x + audioButton.x
+    }
+
+    Binding {
+        target: sidebar.audioPanel
+        property: "anchorBottom"
+        value: contentColumn.y + audioRow.y + audioButton.y + audioButton.height
     }
 
     anchors { top: true; bottom: true; left: true }
