@@ -4,18 +4,34 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 import Quickshell.Wayland
 
 PanelWindow {
     id: sidebar
     required property var notificationServer
-    required property var audioCard
+    required property var audioPanel
     property bool showNotifications: false
+    readonly property var defaultSink: Pipewire.defaultAudioSink
+    readonly property bool defaultSinkMuted: defaultSink && defaultSink.audio ? defaultSink.audio.muted : false
+    readonly property int defaultSinkPercent: defaultSink && defaultSink.audio ? Math.round(defaultSink.audio.volume * 100) : 0
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property var workspace: monitor ? monitor.activeWorkspace : null
     readonly property var windows: Hyprland.toplevels.values.filter(w => w.workspace === workspace)
     readonly property var notifications: notificationServer.trackedNotifications.values.filter(n => !n.transient)
+
+    function nudgeDefaultSink(delta) {
+        const sink = Pipewire.defaultAudioSink;
+        if (!sink || !sink.audio) return;
+        if (sink.audio.muted && delta > 0) sink.audio.muted = false;
+        sink.audio.volume = Math.max(0, Math.min(1, sink.audio.volume + delta));
+    }
+
+    function toggleDefaultSinkMute() {
+        const sink = Pipewire.defaultAudioSink;
+        if (sink && sink.audio) sink.audio.muted = !sink.audio.muted;
+    }
 
     anchors { top: true; bottom: true; left: true }
     implicitWidth: Theme.sidebarWidth
@@ -33,14 +49,25 @@ PanelWindow {
             Layout.fillWidth: true
             spacing: 2
             ShellButton {
-                label: "Audio controls"
-                iconName: "volume-2"
+                id: audioButton
+                label: sidebar.defaultSinkMuted
+                    ? "Audio muted"
+                    : "Audio " + sidebar.defaultSinkPercent + "%  ·  scroll to adjust"
+                iconName: sidebar.defaultSinkMuted ? "volume-x" : "volume-2"
                 iconOnly: true
                 flat: true
-                selected: sidebar.audioCard.open
+                selected: sidebar.audioPanel.open
                 implicitWidth: 28
                 implicitHeight: 28
-                onClicked: sidebar.audioCard.open = !sidebar.audioCard.open
+                onClicked: sidebar.audioPanel.toggle()
+                onMiddleClicked: sidebar.toggleDefaultSinkMute()
+                WheelHandler {
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    onWheel: event => {
+                        sidebar.nudgeDefaultSink(event.angleDelta.y > 0 ? 0.05 : -0.05);
+                        event.accepted = true;
+                    }
+                }
             }
             ShellButton {
                 label: "Clipboard history"

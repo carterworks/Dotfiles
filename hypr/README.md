@@ -8,8 +8,12 @@ launchers, audio, media controls, system tray, notifications, and the
 Lucide icons, compact pinned app buttons, flat window rows, and bottom-centered
 workspace dots follow the Arc sidebar layout. A filled dot marks the active
 space; click any outlined dot to switch to it. Click a window row to focus it,
-or middle-click it to close it. The speaker button opens KDE's
-standalone audio module for input/output selection and per-application volumes.
+or middle-click it to close it. The speaker button opens a native PipeWire
+popover: choose the default output or input, then set per-device and
+per-application volume and mute. Scroll the sidebar speaker to change the
+default output volume; middle-click it to mute, and hover it to see the current
+level. Port and profile selection are not part of the panel because
+Quickshell's PipeWire service does not expose them; use `wpctl` for those.
 Tray icons retain the icons supplied by their applications.
 Trayscale starts hidden and supplies Tailscale's icon in the system tray.
 
@@ -134,14 +138,18 @@ on `windowsIn`, `windowsOut`, `fadeIn`, and `fadeOut`. Reload with Super+Shift+R
 - `rules.lua`: floating utility windows.
 - `../quickshell/Theme.qml`: sidebar width, colors, and font.
 - `../quickshell/Sidebar.qml`: sidebar layout and application launchers.
+- `../quickshell/AudioPanel.qml`: the sidebar audio popover.
+- `../quickshell/AudioRow.qml`: one device or application row in the popover.
+- `../quickshell/dev.qml`: isolated preview entry point for panel work.
+- `../bin/qs-preview`: preview-and-screenshot helper for shell development.
 - `../nix/machines/scylla/hyprland.nix`: packages, portals, UWSM environment,
   and session services.
 
-The sidebar reuses Dolphin, KDE's audio settings, PipeWire, KWallet,
-KDE authentication prompts, and KDE file dialogs. No network applet is started
-on this wired desktop. Vicinae and other existing XDG autostart apps are started by
-UWSM. KDE's display/window-management settings do not configure Hyprland; edit
-the Lua configuration instead.
+The sidebar reuses Dolphin, PipeWire, KWallet, KDE authentication prompts, and
+KDE file dialogs. No network applet is started on this wired desktop. Vicinae
+and other existing XDG autostart apps are started by UWSM. KDE's
+display/window-management settings do not configure Hyprland; edit the Lua
+configuration instead.
 
 Vicinae uses software rendering on this host to avoid a Qt OpenGL initialization
 crash when its Wayland window opens. The override affects only Vicinae.
@@ -157,6 +165,34 @@ and explicitly persistent popups stay until dismissed. Explicitly timed and
 transient notifications expire; other notifications remain in the list until
 dismissed or withdrawn by their sender. The list is not persisted across a
 shell restart.
+
+## Shell development
+
+Edit `quickshell/*.qml` and reload with Super+Ctrl+R
+(`systemctl --user restart quickshell`). The files are symlinked from this
+repository, so QML changes need no rebuild. Quickshell prints QML warnings and
+errors to the service journal:
+
+```sh
+journalctl --user -u quickshell -f
+```
+
+Iterate on the audio panel without touching the live sidebar. `qs-preview`
+starts a separate Quickshell instance from `quickshell/dev.qml`, waits for the
+panel to map, screenshots the focused monitor, and stops the instance:
+
+```sh
+qs-preview --crop 345:420:255:45   # prints the screenshot path
+qs-preview --keep                  # leave it running; tail -f /tmp/qs-dev.log
+```
+
+Because it is a separate process, a broken panel cannot take down
+`quickshell.service`. `dev.qml` opens the panel on a short timer (Quickshell
+does not map a fullscreen overlay created at startup) and keeps a one-pixel
+anchor surface beside it. To attach a QML debugger, run the preview command
+directly with `quickshell -p ~/.config/quickshell/dev.qml --debug 1234:1234
+--waitfordebug`. The helper needs `grim` and `ffmpeg`; both are already present
+on the Hyprland host.
 
 ## Troubleshooting
 
