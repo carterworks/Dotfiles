@@ -20,8 +20,11 @@ import Quickshell.Wayland
 PanelWindow {
     id: panel
     property bool open: false
-    // Screen y of the sidebar speaker button, supplied by the sidebar.
-    property real anchorTop: 14
+    // Anchor point supplied by the sidebar: the speaker button's left and
+    // bottom edges. The popover hangs from them like a dropdown.
+    property real anchorLeft: 14
+    property real anchorBottom: 42
+    property int anchorGap: 4
     // Kept mapped through the exit transition, then unmapped.
     property bool closing: false
 
@@ -85,9 +88,9 @@ PanelWindow {
         id: card
         anchors.left: parent.left
         anchors.top: parent.top
-        // Overlap the sidebar so the card reads as attached to it.
-        anchors.leftMargin: Theme.sidebarWidth - 12
-        anchors.topMargin: panel.anchorTop
+        // Flush with the button's left edge and a short step below it.
+        anchors.leftMargin: panel.anchorLeft
+        anchors.topMargin: panel.anchorBottom + panel.anchorGap
         width: 320
         height: Math.min(content.implicitHeight + 24, 460)
         radius: 12
