@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Render the Quickshell configuration in an isolated instance and screenshot it.
+#
+# This is the visual half of the shell development loop. It starts a second
+# Quickshell process running quickshell/dev.qml (which shows the audio panel,
+# opened on a timer, over the live desktop) so the panel can be iterated on
+# without restarting or risking the live sidebar service. It then grabs the
+# focused monitor.
+#
+# Usage:
+#   qs-preview [--keep] [--crop WxH+X+Y] [output.png]
+#
+#   --keep            leave the preview instance running for live poking
+#   --crop WxH+X+Y    also write an ffmpeg crop next to the screenshot
+#
+# The screenshot path is printed on stdout. The instance log is written to
+# ${TMPDIR:-/tmp}/qs-dev.log; with --keep, watch it with `tail -f`.
+set -euo pipefail
+
+keep=0
+crop=""
+out=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -k | --keep) keep=1 ;;
+        --crop)
+            crop="$2"
+            shift
+            ;;
+        -h | --help)
+            sed -n '2,20p' "$0"
+            exit 0
+            ;;
+        *) out="$1" ;;
+    esac
+    shift
+done
+
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+config="$HOME/.config/quickshell/dev.qml"
+log="${TMPDIR:-/tmp}/qs-dev.log"
+out="${out:-${TMPDIR:-/tmp}/qs-preview.png}"
+pattern="quickshell -p $HOME/.config/quickshell/dev.qml"
+
+# The preview entry point has to sit beside the generated DesktopColors.qml, so
+# run it from the real config directory (Home Manager / the install script link
+# it there; create the link here when running against a fresh checkout).
+if [ ! -e "$config" ]; then
+    ln -s "$repo/quickshell/dev.qml" "$config"
+fi
+
+grim_bin="$(command -v grim 2>/dev/null || true)"
+if [ -z "$grim_bin" ]; then
+    grim_bin="$(ls -d /nix/store/*-grim-*/bin/grim 2>/dev/null | head -1 || true)"
+fi
+if [ -z "$grim_bin" ]; then
+    echo "qs-preview: grim not found (install grim or add it to nixosPackages)" >&2
+    exit 1
+fi
+
+# Restart only the preview instance; the live service keeps running.
+pkill -f "$pattern" 2>/dev/null || true
+sleep 0.5
+setsid quickshell -p "$config" >"$log" 2>&1 &
+disown || true
+
+# Wait until the panel surface has actually mapped (not the anchor helper).
+for _ in $(seq 1 80); do
+    if grep -q "Configuration Loaded" "$log" 2>/dev/null &&
+        hyprctl layers 2>/dev/null | grep -qE 'namespace: miasma-audio(,|$)'; then
+        break
+    fi
+    sleep 0.1
+done
+
+monitor="$(hyprctl -j monitors | jq -r '.[] | select(.focused) | .name' 2>/dev/null || true)"
+monitor="${monitor:-DP-2}"
+"$grim_bin" -o "$monitor" "$out"
+
+result="$out"
+if [ -n "$crop" ]; then
+    cropped="${out%.png}-crop.png"
+    ffmpeg -y -loglevel error -i "$out" -vf "crop=$crop" "$cropped"
+    result="$cropped"
+fi
+
+echo "$result"
+
+if [ "$keep" -eq 0 ]; then
+    pkill -f "$pattern" 2>/dev/null || true
+fi
