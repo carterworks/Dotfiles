@@ -29,7 +29,6 @@ let
     "audiobookshelf"
 
     "backrest"
-    "cliparr"
   ];
 
   appRoot = cfg.appRoot;
@@ -180,18 +179,6 @@ in
       description = "Environment file containing VPN/provider settings for binhex qBittorrent VPN.";
     };
 
-    cliparrEnvFile = mkOption {
-      type = types.str;
-      default = "/var/lib/secrets/cliparr.env";
-      description = ''
-        Environment file holding Cliparr's APP_KEY. The key encrypts the
-        credentials Cliparr stores for its media-server providers, so it must be
-        stable across restarts and upgrades: regenerating it disconnects every
-        provider. Keep the file root-only; generate the value with
-        `openssl rand -base64 32`.
-      '';
-    };
-
     qbittorrentUmask = mkOption {
       type = types.str;
       default = "000";
@@ -314,13 +301,10 @@ in
           environment = appEnvironment // {
             LOG_LEVEL = "info";
           };
-          extraOptions =
-            rootExtraOptions
-            ++ dockerNetworkOptions
-            ++ [
-              "--hostname=flaresolverr"
-              "--network-alias=flaresolverr"
-            ];
+          extraOptions = rootExtraOptions ++ dockerNetworkOptions ++ [
+            "--hostname=flaresolverr"
+            "--network-alias=flaresolverr"
+          ];
         };
       }
       // optionalAttrs cfg.apps.sonarr.enable {
@@ -418,36 +402,6 @@ in
           ];
           extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
         };
-      }
-
-      // optionalAttrs cfg.apps.cliparr.enable {
-        # Cliparr is not a TrueNAS migration; it lives here with the rest of
-        # Prostagma's OCI containers. It clips Plex/Jellyfin playback, and
-        # providers are configured in its own web UI, so nothing is wired up
-        # here beyond making the app reachable and its data persistent.
-        #
-        # It is deliberately kept off the media Docker network and uses the
-        # default bridge instead, because its only peer is the host's own
-        # Jellyfin service, which it reaches through the bridge gateway
-        # (`host.docker.internal`) rather than by container name. That keeps the
-        # host-side firewall allowance needed for Jellyfin scoped to docker0.
-        cliparr = {
-          image = "ghcr.io/techsquidtv/cliparr:latest@sha256:f9ca175137ccc46dd6425893bffc3db339231f2507a06161a40ad01eb65cec69";
-          autoStart = true;
-          ports = [ "127.0.0.1:7171:7171/tcp" ];
-          environment = appEnvironment // {
-            PORT = "7171";
-            CLIPARR_DATA_DIR = "/data";
-            # Jellyfin is reached over the bridge gateway, which is a private
-            # address, so the loopback opt-in is intentionally absent. The Plex
-            # loopback opt-in is left off as well: Plex must not be connected.
-          };
-          environmentFiles = [ cfg.cliparrEnvFile ];
-          volumes = [ "${appRoot}/cliparr/data:/data" ];
-          extraOptions = appExtraOptions ++ [
-            "--add-host=host.docker.internal:host-gateway"
-          ];
-        };
       };
 
     systemd.tmpfiles.rules =
@@ -459,8 +413,7 @@ in
         "d ${appRoot}/audiobookshelf/metadata 0775 ${uid} ${gid} -"
       )
       ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/cache 0775 ${uid} ${gid} -")
-      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -")
-      ++ optional cfg.apps.cliparr.enable ("d ${appRoot}/cliparr/data 0775 ${uid} ${gid} -");
+      ++ optional cfg.apps.backrest.enable ("d ${appRoot}/backrest/tmp 0775 ${uid} ${gid} -");
 
     systemd.services =
       optionalAttrs cfg.dockerNetwork.enable {
@@ -677,16 +630,6 @@ in
             after = dockerNetworkDependencies;
             requires = dockerNetworkDependencies;
           };
-      }
-
-      // optionalAttrs cfg.apps.cliparr.enable {
-        # Unlike the media containers, Cliparr runs on the default bridge with
-        # no private-network dependency; it only needs its data directory and
-        # the APP_KEY environment file to exist before the container starts.
-        docker-cliparr = mkPathCheckService [
-          "${appRoot}/cliparr/data"
-          cfg.cliparrEnvFile
-        ];
       };
 
     systemd.timers.prostagma-qbittorrent-space-guard =
