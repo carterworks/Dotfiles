@@ -78,6 +78,7 @@ let
               <li><a href="https://audiobookshelf.${tailnetDomain}/audiobookshelf/">Audiobookshelf</a></li>
               <li><a href="https://backrest.${tailnetDomain}/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
+              <li><a href="https://cliparr.${tailnetDomain}/">Cliparr</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
@@ -225,6 +226,7 @@ in
     apps.audiobookshelf.enable = true;
 
     apps.backrest.enable = true;
+    apps.cliparr.enable = true;
 
   };
 
@@ -255,6 +257,13 @@ in
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
     9119
   ];
+
+  # Cliparr runs on the default Docker bridge and reaches Jellyfin — the only
+  # provider it is wired to — through the bridge gateway. Opening just the
+  # Jellyfin port on docker0 scopes the allowance to containers; people still
+  # reach Jellyfin only through its Tailscale Serve route, and Plex is left
+  # unconnected.
+  networking.firewall.interfaces.docker0.allowedTCPPorts = [ 8096 ];
 
   # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
   # chmod or chown anything there: a single failure makes systemd-tmpfiles
@@ -485,10 +494,14 @@ in
       # which is the issuer prefix for OpenID Connect clients.
       "$tailscale" serve --service=svc:authelia --https=443 http://127.0.0.1:9091
 
-      # Backrest, gated like the others. Kept last because the unit runs under
-      # `set -e` and this Service needs admin approval in the tailnet before the
-      # route is accepted; a failure here must not strand the routes above.
+      # Backrest, gated like the others. Gated routes that need admin approval
+      # are kept last because the unit runs under `set -e`: a rejected Service
+      # must not strand the accepted routes above it.
       "$tailscale" serve --service=svc:backrest --https=443 http://127.0.0.1:80
+
+      # Cliparr, gated like the others. This Service still needs admin approval
+      # in the tailnet before the route is accepted, so it stays last too.
+      "$tailscale" serve --service=svc:cliparr --https=443 http://127.0.0.1:80
 
 
 
