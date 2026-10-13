@@ -113,6 +113,13 @@ let
       name = "backrest";
       port = 9898;
     }
+
+    # Cliparr has no user system of its own and its docs recommend an
+    # authenticated proxy in front of it, so this gate is its only lock.
+    {
+      name = "cliparr";
+      port = 7171;
+    }
   ];
 in
 {
