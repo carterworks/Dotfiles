@@ -34,7 +34,7 @@ let
   # nixpkgs still ships sd.cpp 656a135 (2026-09-18), which predates Qwen Image
   # 2.1 support (137f740) and the Qwen Image 2.1 Turbo sigma preset. Pin the
   # upstream master until the nixpkgs package catches up.
-  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan.overrideAttrs {
+  stableDiffusionCppPin = {
     version = "master-1d0a58a";
     src = pkgs.fetchFromGitHub {
       owner = "leejet";
@@ -44,6 +44,10 @@ let
       fetchSubmodules = true;
     };
   };
+  # The base package enables Metal by default on aarch64-darwin; Vulkan is the
+  # Linux equivalent.
+  stableDiffusionCppMetal = pkgs.stable-diffusion-cpp.overrideAttrs stableDiffusionCppPin;
+  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan.overrideAttrs stableDiffusionCppPin;
   # Use the host package set for compatibility with its GPU drivers and libc.
   vicinae = pkgs.vicinae;
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
@@ -132,6 +136,7 @@ let
     kubelogin
     fff-mcp
     openspec
+    stableDiffusionCppMetal
     t3code-desktop
     vault
   ];
