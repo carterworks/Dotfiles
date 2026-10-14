@@ -31,14 +31,16 @@ let
       {
         inherit t3code;
       };
-  # Qwen Image 2.1 support landed upstream after the current nixpkgs package.
+  # nixpkgs still ships sd.cpp 656a135 (2026-09-18), which predates Qwen Image
+  # 2.1 support (137f740) and the Qwen Image 2.1 Turbo sigma preset. Pin the
+  # upstream master until the nixpkgs package catches up.
   stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan.overrideAttrs {
-    version = "master-137f740";
+    version = "master-1d0a58a";
     src = pkgs.fetchFromGitHub {
       owner = "leejet";
       repo = "stable-diffusion.cpp";
-      rev = "137f7409bbfb98c70a350a57d6a135487080db96";
-      hash = "sha256-3Bk1LnymmC+tIybCt7TuR0vFy4SyCA1fWIrLWKQKAX8=";
+      rev = "1d0a58a35050d285b1d6fb1bc68a92924d35825e";
+      hash = "sha256-7LO5nROQhHkkv2iJsYd9ZAhShV0ZOzN94Y0+xTfFwxE=";
       fetchSubmodules = true;
     };
   };
