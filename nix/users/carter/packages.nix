@@ -20,17 +20,9 @@ let
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   opencode2-desktop =
     inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
-  t3code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code.override {
-    providerPackages = [
-      codex
-      opencode2
-    ];
-  };
-  t3code-desktop =
-    inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.t3code-desktop.override
-      {
-        inherit t3code;
-      };
+  # Nightly desktop app. Upstream publishes a self-contained, notarised build,
+  # so this is fetch-and-wrap instead of the llm-agents source build.
+  t3code-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-nightly;
   # nixpkgs still ships sd.cpp 656a135 (2026-09-18), which predates Qwen Image
   # 2.1 support (137f740) and the Qwen Image 2.1 Turbo sigma preset. Pin the
   # upstream master until the nixpkgs package catches up.

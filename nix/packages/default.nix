@@ -31,6 +31,9 @@ in
   fff-mcp = localPackage ./fff-mcp.nix;
   nub = localPackage ./nub.nix;
 }
+// lib.optionalAttrs (system == "aarch64-darwin" || system == "x86_64-linux") {
+  t3code-nightly = localPackage ./t3code-nightly.nix;
+}
 // lib.optionalAttrs (system == "aarch64-darwin") {
   delta = localPackage ./delta.nix;
 }
