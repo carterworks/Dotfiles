@@ -75,11 +75,14 @@ let
   #
   # Every listener named here is published on 127.0.0.1 only and is not allowed
   # through the firewall, so Tailscale Serve is the sole ingress and the gate
-  # cannot be bypassed on another interface. Each application keeps its own
-  # login as well: Servarr's `External` authentication method is a plain auth
-  # disable that reads no proxy header, so an Authelia identity cannot be
-  # mapped onto an application user. The gate protects the network edge, and
-  # the application login remains as the second layer.
+  # cannot be bypassed on another interface. None of these applications reads a
+  # proxy header, so an Authelia identity cannot be mapped onto an application
+  # user: the gate decides who reaches the service, and wherever an application
+  # can be told not to ask for a login of its own it is, so that one Authelia
+  # login is the whole of it. Servarr's `External` authentication method and
+  # Backrest's switched-off authentication are those in-app disables, and
+  # qBittorrent trusts the proxy's address (see its entry). Bazarr is the
+  # exception, keeping a credential of its own because its API is not gated.
   gatedApps = [
     {
       name = "sonarr";
@@ -93,6 +96,15 @@ let
       name = "prowlarr";
       port = 30050;
     }
+    # qBittorrent keeps its account for the API clients (Sonarr, Radarr and
+    # Prowlarr, which reach the container directly and log in), but its WebUI
+    # skips authentication for clients it trusts, and the address it has to
+    # trust is the prostagma-media gateway (172.30.0.1) rather than loopback:
+    # publishing the port rewrites the source address of the connections
+    # Caddy and Tailscale Serve make from this host, so WebUI\LocalHostAuth =
+    # false never covered them and the browser was asked for a second login.
+    # Both settings live in qBittorrent.conf on the app volume, not here, since
+    # this repository does not own that file.
     {
       name = "qbittorrent";
       port = 38080;
