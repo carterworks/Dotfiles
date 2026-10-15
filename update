@@ -149,6 +149,43 @@ latest_update() {
       version="${tag#"${prefix}"}"
       jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
+    github-release-channel)
+      # Prerelease trains are published as GitHub prereleases, which
+      # /releases/latest skips, so scan the release list for the newest tag in
+      # the requested channel, the way upstream installers select one.
+      local owner repo channel prefix pattern tag version
+      owner="$(jq -r '.owner' <<<"${update_info}")"
+      repo="$(jq -r '.repo' <<<"${update_info}")"
+      channel="$(jq -r '.channel' <<<"${update_info}")"
+      prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
+      # The channel is interpolated into a regex below; keep it a SemVer
+      # identifier.
+      if [[ ! "${channel}" =~ ^[0-9A-Za-z][0-9A-Za-z-]*$ ]]; then
+        log_message error "${repo}: invalid prerelease channel '${channel}'"
+        return 1
+      fi
+      # SemVer 2.0.0 prerelease tags are <version>-<identifier>[.<identifier>...]
+      # and the channel must be the first identifier: 0.28.0-beta.1,
+      # 0.0.46-nightly.20261015.3158, 1.0.0-rc.2.
+      pattern="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}(\\.[0-9A-Za-z-]+)*$"
+      tag="$(
+        github_api "repos/${owner}/${repo}/releases?per_page=100" \
+          | jq -r --arg pattern "${pattern}" --arg prefix "${prefix}" '
+              [
+                .[]
+                | .tag_name
+                | select(startswith($prefix))
+                | .[($prefix | length):]
+                | select(test($pattern))
+              ][0] // empty
+            '
+      )"
+      if [[ -z "${tag}" ]]; then
+        return 1
+      fi
+      version="${tag#"${prefix}"}"
+      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      ;;
     npm)
       local package channel version
       package="$(jq -r '.package' <<<"${update_info}")"
