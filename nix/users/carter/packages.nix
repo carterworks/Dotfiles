@@ -109,6 +109,7 @@ let
     spotify
     sshpass
     superhtml
+    t3code-desktop
     taplo
     tmux
     typescript-language-server
@@ -129,7 +130,6 @@ let
     fff-mcp
     openspec
     stableDiffusionCppMetal
-    t3code-desktop
     vault
   ];
 

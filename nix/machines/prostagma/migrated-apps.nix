@@ -301,10 +301,13 @@ in
           environment = appEnvironment // {
             LOG_LEVEL = "info";
           };
-          extraOptions = rootExtraOptions ++ dockerNetworkOptions ++ [
-            "--hostname=flaresolverr"
-            "--network-alias=flaresolverr"
-          ];
+          extraOptions =
+            rootExtraOptions
+            ++ dockerNetworkOptions
+            ++ [
+              "--hostname=flaresolverr"
+              "--network-alias=flaresolverr"
+            ];
         };
       }
       // optionalAttrs cfg.apps.sonarr.enable {
