@@ -10,6 +10,9 @@
 let
   hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
   obsidian-headless = self.packages.${pkgs.stdenv.hostPlatform.system}.obsidian-headless;
+  opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
+
+  opencode2Port = 49374;
 in
 {
   home = {
@@ -21,6 +24,7 @@ in
       pkgs.age
       pkgs.fnox
       obsidian-headless
+      opencode2
     ];
   };
 
@@ -114,6 +118,29 @@ in
         "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
       ];
       Restart = "on-failure";
+      RestartSec = "5s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
+  systemd.user.services.opencode2 = {
+    Unit = {
+      Description = "OpenCode 2 background server";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      # `serve --service` runs the managed background server in the foreground,
+      # which keeps its pairing password and local client registration stable
+      # across restarts; systemd owns the lifecycle from here, so use
+      # `systemctl --user stop opencode2` rather than `opencode2 service stop`.
+      ExecStart = "${opencode2}/bin/opencode2 serve --service --hostname 0.0.0.0 --port ${toString opencode2Port}";
+      WorkingDirectory = config.home.homeDirectory;
+      Environment = [
+        "HOME=${config.home.homeDirectory}"
+        "PATH=${config.home.profileDirectory}/bin:/run/current-system/sw/bin"
+      ];
+      Restart = "always";
       RestartSec = "5s";
     };
     Install.WantedBy = [ "default.target" ];
