@@ -5,7 +5,7 @@
 
 let
   pname = "t3code-nightly";
-  version = "0.0.46-nightly.20261015.3158";
+  version = "0.1.1-nightly.20261019.3373";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   appName = "T3 Code (Nightly)";
@@ -17,11 +17,11 @@ let
   platformPackages = {
     aarch64-darwin = {
       asset = "T3-Code-${version}-arm64.zip";
-      hash = "sha256-n/sz527221TaKVpV2zjQjo6+UtXUilKJhrdOlWuA9Sg=";
+      hash = "sha256-KN/Wl2WzXYETX19d48BN9gihgxeY0W5wly3chb8S4DY=";
     };
     x86_64-linux = {
       asset = "T3-Code-${version}-x86_64.AppImage";
-      hash = "sha256-pC090tH1awNsbl0v+mzZ6o2wwINRy8W4Z5DzSdT3Wb4=";
+      hash = "sha256-xv/QFjlyxpX4HXnw3kpM+vIf0xj4M9MazqIVqnWXSZY=";
     };
   };
 
@@ -54,6 +54,7 @@ let
     owner = "pingdotgg";
     repo = "t3code";
     channel = "nightly";
+    tagPrefix = "v";
   };
 in
 if pkgs.stdenv.hostPlatform.isDarwin then
