@@ -15,6 +15,8 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Temporary cached Darwin Atuin with NixOS/nixpkgs#574509; see TODO.md.
+    nixpkgs-atuin.url = "github:NixOS/nixpkgs/7a6522c868711d06e3a520bbcdfafe9806f4337f";
     systems = {
       url = "path:./nix/systems";
       flake = false;
