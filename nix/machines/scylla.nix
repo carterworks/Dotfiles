@@ -138,7 +138,6 @@ in
   networking.networkmanager.enable = true;
   home-manager.users.${systemUsername} = {
     imports = [ ./scylla/home-manager.nix ];
-    home.sessionVariables.CODEHOME = "$HOME/Projects/code";
   };
 
   time.timeZone = "America/Denver";

@@ -1,5 +1,9 @@
 onboarding = false
 
+[worktrees]
+# Herdr appends <repo>/<branch-slug> beneath this directory.
+directory = "~/Projects/code/worktrees"
+
 [ui.toast]
 delivery = "system"
 
