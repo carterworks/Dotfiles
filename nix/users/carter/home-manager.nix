@@ -349,6 +349,8 @@ in
   };
 
   home.sessionVariables = {
+    CODEHOME = "${config.home.homeDirectory}/Projects/code";
+    WORKTREEHOME = "${config.home.homeDirectory}/Projects/code/worktrees";
     EZA_ICON_SPACING = "2";
   };
 
