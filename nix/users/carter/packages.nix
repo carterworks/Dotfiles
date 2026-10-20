@@ -20,8 +20,9 @@ let
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   opencode2-desktop =
     inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
-  # Nightly desktop app. Upstream publishes a self-contained, notarised build,
-  # so this is fetch-and-wrap instead of the llm-agents source build.
+  # Nightly desktop app and CLI. Upstream publishes self-contained builds, so
+  # these are fetch-and-wrap instead of llm-agents source builds.
+  t3code-cli = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-cli;
   t3code-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-nightly;
   # nixpkgs still ships sd.cpp 656a135 (2026-09-18), which predates Qwen Image
   # 2.1 support (137f740) and the Qwen Image 2.1 Turbo sigma preset. Pin the
@@ -110,6 +111,7 @@ let
     spotify
     sshpass
     superhtml
+    t3code-cli
     t3code-desktop
     taplo
     tmux

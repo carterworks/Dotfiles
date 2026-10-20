@@ -32,6 +32,7 @@ in
   nub = localPackage ./nub.nix;
 }
 // lib.optionalAttrs (system == "aarch64-darwin" || system == "x86_64-linux") {
+  t3code-cli = localPackage ./t3code-cli.nix;
   t3code-nightly = localPackage ./t3code-nightly.nix;
 }
 // lib.optionalAttrs (system == "aarch64-darwin") {
