@@ -18,3 +18,12 @@ rev=$(git ls-remote --exit-code https://github.com/NixOS/nixpkgs.git refs/heads/
 ```
 
 This command checks channel advancement only; it does not verify that the lock was updated, that the Atuin fix is included, or that installation succeeds.
+
+## Temporary pins and workarounds
+
+- [ ] `t3code-cli`: remove the patchelf 0.15.2 pin in `nix/packages/t3code-cli.nix` once a newer patchelf can rewrite the Node SEA launcher without corrupting its program headers. Validate with `nix build .#t3code-cli`, `t3 --version`, and `t3 serve` before removing.
+- [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it.
+- [ ] macOS Brave: remove the `sourceRoot` overlay in `nix/machines/carters-macbook-pro.nix` once NixOS/nixpkgs#560971 is fixed upstream.
+- [ ] Vicinae on scylla: remove the `QT_QUICK_BACKEND=software` override in `nix/machines/scylla/hyprland.nix` once the Qt OpenGL backend opens reliably with hardware rendering.
+- [ ] stable-diffusion.cpp: drop the upstream master pin in `nix/users/carter/packages.nix` when nixpkgs ships Qwen Image 2.1 support and the Turbo sigma preset.
+- [ ] kubelogin: reassess the 0.1.9 pin when newer releases persist the Ethos device-code token instead of re-prompting on every invocation.
