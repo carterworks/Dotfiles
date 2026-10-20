@@ -8,5 +8,14 @@
     "provider": "exa"
   },
   "disabled_providers": [],
+  "mcp": {
+    "servers": {
+      "fff": {
+        "type": "local",
+        "command": ["fff-mcp"],
+        "disabled": false
+      }
+    }
+  },
   "plugins": [],
 }
