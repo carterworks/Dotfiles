@@ -80,6 +80,7 @@ let
     dust
     fastfetch
     fd
+    fff-mcp
     ffmpeg
     fish-lsp
     fnox
@@ -127,7 +128,6 @@ let
     github-desktop
     kubectl
     kubelogin
-    fff-mcp
     openspec
     stableDiffusionCppMetal
     vault

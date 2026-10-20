@@ -1,4 +1,8 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  self,
+  ...
+}:
 
 {
   environment.systemPackages = with pkgs; [
@@ -6,6 +10,7 @@
     btop
     curl
     fd
+    self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp
     fnox
     jq
     nfs-utils
