@@ -5,6 +5,8 @@
 - link:
     ~/.npmrc: npm/npmrc
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
+    ~/.config/opencode/AGENTS.md: agents/AGENTS.md
+    ~/.copilot/copilot-instructions.md: agents/AGENTS.md
     ~/.agents/skills/:
       glob: true
       path: agents/skills/personal/*
