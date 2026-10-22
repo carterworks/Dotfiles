@@ -229,6 +229,7 @@ in
   services.tailscale = {
     enable = true;
     openFirewall = true;
+    extraSetFlags = [ "--operator=${systemUsername}" ];
   };
 
   services.resolved.enable = true;

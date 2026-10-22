@@ -428,6 +428,7 @@ in
     enable = true;
     useRoutingFeatures = "both";
     authKeyFile = "/run/secrets/tailscale_key";
+    extraSetFlags = [ "--operator=carter" ];
   };
 
   services.caddy = {

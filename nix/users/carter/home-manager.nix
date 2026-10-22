@@ -31,6 +31,7 @@ in
 {
   imports = [
     inputs.hunk.homeManagerModules.default
+    ./agent-daemons.nix
     ./desktop-theme.nix
   ];
 
