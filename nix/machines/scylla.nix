@@ -136,6 +136,8 @@ in
   networking.hostName = "scylla";
   networking.firewall.enable = false;
   networking.networkmanager.enable = true;
+  # The onboard Intel NIC (eno1) is unused; enp7s0 is the Realtek 2.5GbE card carrying the link.
+  networking.interfaces.enp7s0.wakeOnLan.enable = true;
   home-manager.users.${systemUsername} = {
     imports = [ ./scylla/home-manager.nix ];
   };
