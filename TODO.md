@@ -31,7 +31,7 @@ This command checks channel advancement only; it does not verify that the lock w
 ## Agent daemons
 
 - [ ] Deploy the `opencode2`/`t3` services to Scylla, Prostagma, and Carters-MacBook-Pro, then verify both survive a reboot (Linux) or login (macOS). On Scylla, stop the manually started `opencode2 serve --service` first so the new user unit can bind port 49374.
-- [ ] Pair clients over Tailscale per host whenever that host's `t3` service is running. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
+- [ ] Pair clients per host whenever that host's `t3` service is running. `t3pair` uses Tailscale when its CLI is present and otherwise pairs locally. Without Tailscale, remote clients need an SSH tunnel to the loopback-only server on port 3773. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
   - `t3pair --label phone` (scan the QR code)
   - `t3pair --label desktop` (add the environment in Settings → Connections)
   - Direct pairing is per host and per client, so three hosts × two clients means six initial links. T3 Connect is the only route that gives one sign-in per device across all hosts.

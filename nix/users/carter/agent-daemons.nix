@@ -28,7 +28,7 @@ let
   ];
   # Keep the port and origin stable: paired clients are scoped to the origin,
   # so changing either forces every phone and desktop to pair again.
-  # Tailscale Serve is the only ingress; bind loopback so nothing bypasses it.
+  # Bind loopback so remote access requires Tailscale Serve or an SSH tunnel.
   t3Args = [
     "serve"
     "--mode"
@@ -81,7 +81,10 @@ let
   t3pair = pkgs.writeShellApplication {
     name = "t3pair";
     text = ''
-      exec ${t3}/bin/t3 pair --tailscale --tailscale-serve-port 9443 "$@"
+      if command -v tailscale >/dev/null 2>&1; then
+        exec ${t3}/bin/t3 pair --tailscale --tailscale-serve-port 9443 "$@"
+      fi
+      exec ${t3}/bin/t3 pair "$@"
     '';
   };
 in
