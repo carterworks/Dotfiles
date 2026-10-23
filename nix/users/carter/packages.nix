@@ -119,6 +119,7 @@ let
     vscode-css-languageserver
     vscode-json-languageserver
     uv
+    wakeonlan
     wget
     yaml-language-server
     zen-browser

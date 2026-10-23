@@ -16,6 +16,7 @@
     nfs-utils
     nodejs_latest
     ripgrep
+    wakeonlan
     wget
   ];
 }
