@@ -205,6 +205,9 @@ in
     (_final: prev: {
       cloudflared = prev.cloudflared.overrideAttrs (finalAttrs: _old: {
         version = "2026.10.3";
+        # The LXC builds without a sandbox, so cloudflared's tests that scan for
+        # a metrics server see the running connector instead of an empty host.
+        doCheck = false;
         src = prev.fetchFromGitHub {
           owner = "cloudflare";
           repo = "cloudflared";
