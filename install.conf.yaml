@@ -26,10 +26,6 @@
       glob: true
       path: agents/skills/generated/*
 - link:
-    ~/.agents/skills/:
-      glob: true
-      path: agents/skills/mattpocock/*
-- link:
     ~/.config/arkrc: kde/arkrc
     ~/.config/baloofilerc: kde/baloofilerc
     ~/.config/baloofileinformationrc: kde/baloofileinformationrc
