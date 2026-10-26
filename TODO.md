@@ -21,6 +21,7 @@ This command checks channel advancement only; it does not verify that the lock w
 
 ## Temporary pins and workarounds
 
+- [ ] `cloudflared`: remove the 2026.10.3 `overrideAttrs` in `nix/machines/prostagma.nix` once `nixos-unstable` ships 2026.10.2 or later, which stops trusting the compromised eMudhra (emSign) intermediates. `nixos-unstable` still pinned 2026.10.1 on 2026-10-26 while nixpkgs master carries 2026.10.3. Validate with `nix build --no-link .#nixosConfigurations.prostagma.pkgs.cloudflared`, then confirm the built binary reports 2026.10.3 before removing the override.
 - [ ] `t3code-cli`: remove the patchelf 0.15.2 pin in `nix/packages/t3code-cli.nix` once a newer patchelf can rewrite the Node SEA launcher without corrupting its program headers. Validate with `nix build .#t3code-cli`, `t3 --version`, and `t3 serve` before removing.
 - [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it.
 - [ ] macOS Brave: remove the `sourceRoot` overlay in `nix/machines/carters-macbook-pro.nix` once NixOS/nixpkgs#560971 is fixed upstream.
