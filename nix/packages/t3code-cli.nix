@@ -5,7 +5,7 @@
 
 let
   pname = "t3code-cli";
-  version = "0.1.3-nightly.20261026.3717";
+  version = "0.1.4-nightly.20261027.3770";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # The CLI is a self-contained Node SEA build. It still loads a handful of
@@ -16,11 +16,11 @@ let
   platformPackages = {
     aarch64-darwin = {
       asset = "t3-${version}-darwin-arm64.tar.gz";
-      hash = "sha256-WISXSh09570yxkNICEzC0HLH5o1tqSdcHVUa0DMmm1w=";
+      hash = "sha256-uaznQ1PVPU54eLaRLgDngtddZHOTf+d8TjtscasKeWs=";
     };
     x86_64-linux = {
       asset = "t3-${version}-linux-x64.tar.gz";
-      hash = "sha256-JNLUUvhD8va4Z5cNvtQrEW7VvpFWbnkEk4jqiTNp9rk=";
+      hash = "sha256-TbmUis7c/rdQ02EFwjMCQ02NJxxdFPzoBE3v/WfgALQ=";
     };
   };
 
