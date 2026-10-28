@@ -13,6 +13,7 @@ let
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   github-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.github-desktop;
+  rex-client = self.packages.${pkgs.stdenv.hostPlatform.system}.rex-client;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
@@ -130,6 +131,8 @@ let
     kubectl
     kubelogin
     openspec
+    python3
+    rex-client
     stableDiffusionCppMetal
     vault
   ];

@@ -67,6 +67,9 @@
       inputs.home-manager.follows = "home-manager";
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
+    # Keep gated downloads out of normal evaluation until access is available.
+    # Token setup and activation: docs/rex.md.
+    # rex.url = "path:/absolute/path/to/private/rex-flake";
   };
 
   outputs =
@@ -128,19 +131,43 @@
             shellcheck --severity=warning ${source}/check ${source}/install ${source}/update
             touch "$out"
           '';
+          update =
+            pkgs.runCommandLocal "update-check"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.jq
+                  pkgs.python3
+                ];
+              }
+              ''
+                python3 ${source}/test-update.py
+                touch "$out"
+              '';
+          rex-module =
+            assert import ./nix/tests/rex.nix { inherit (nixpkgs) lib; };
+            pkgs.runCommandLocal "rex-module-check" { } ''
+              touch "$out"
+            '';
         }
       );
       scylla = mkSystem "scylla" {
         system = "x86_64-linux";
         profile = "carter";
-        extraModules = [ inputs.disko.nixosModules.disko ];
+        extraModules = [
+          inputs.disko.nixosModules.disko
+          ./nix/modules/rex.nix
+        ];
       };
       prostagma = mkSystem "prostagma" {
         system = "x86_64-linux";
         profile = "root";
         systemUsername = "root";
         gui = false;
-        extraModules = [ inputs.copyparty.nixosModules.default ];
+        extraModules = [
+          inputs.copyparty.nixosModules.default
+          ./nix/modules/rex.nix
+        ];
       };
       carters-macbook-pro = mkSystem "carters-macbook-pro" {
         system = "aarch64-darwin";
@@ -163,6 +190,7 @@
         inherit (packageSets.aarch64-darwin)
           dotbot
           github-desktop
+          rex-client
           nub
           fff-mcp
           ;

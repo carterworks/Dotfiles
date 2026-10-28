@@ -1,5 +1,11 @@
 # TODO
 
+## Rex
+
+- [x] Stage the gated Linux input, package alias, disabled NixOS wrapper, and token/activation instructions. Wrapper tests pass, and Rex remains disabled on both Scylla and Prostagma without fetching the gated input.
+- [ ] Obtain Linux testing access through Discord `#alpha-registration`, then follow `docs/rex.md` to configure private source locations and the token outside the repository, cache and lock the external preview flake, and enable `dotfiles.rex.enable` on the desired hosts. Validate the real upstream package and service once access is available, and inspect its transitive lock entries for private URLs before committing. `./update --apply` refreshes the external flake before updating its pin.
+- [ ] Deploy the macOS `rex-client` package with `./install` and verify Finder launch. `./update` reads the preview feed from the external private-source manifest; `./update --fetch rex-client` caches the hash-pinned installer without recording its URL in Git.
+
 ## Installation blocker: Atuin on macOS
 
 The main nixpkgs pin's Atuin 18.23.0 fails its `filtered_commands_leave_no_captured_output` end-to-end test on `Carters-MacBook-Pro`. The shell-completion, Home Manager, and Darwin system failures are downstream dependency failures.

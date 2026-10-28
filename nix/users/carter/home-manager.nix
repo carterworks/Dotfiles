@@ -358,6 +358,10 @@ in
       else if command -qs nano
           set -gx EDITOR nano
       end
+
+      if set -q REX_BIN_DIR; and test -n "$REX_BIN_DIR"
+          fish_add_path --path --prepend --move "$REX_BIN_DIR"
+      end
     '';
   };
 

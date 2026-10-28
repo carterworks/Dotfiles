@@ -2,3 +2,4 @@
 /result
 .osgrep
 node_modules/
+/sources.private.json

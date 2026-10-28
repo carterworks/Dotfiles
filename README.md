@@ -40,6 +40,10 @@ Those names must match the flake host names. Multiple names may point to the sam
 
 On a Mac without nix-darwin, the installer builds the selected configuration from this flake and uses its pinned `darwin-rebuild` to perform the first activation. Only Nix itself must already be installed.
 
+## Rex
+
+For the Rex macOS client and gated Linux server setup, see [Rex](docs/rex.md).
+
 ## Dotbot
 
 `./check` and `./install` run Dotbot from the pinned `nixpkgs` input in `flake.lock`, so Dotbot updates come from normal flake input updates instead of a submodule bump.

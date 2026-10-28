@@ -1,4 +1,6 @@
 {
+  lib,
+  pkgs,
   self,
   systemUsername,
   ...
@@ -56,6 +58,10 @@
   security.pam.services.sudo_local.touchIdAuth = true;
 
   system.defaults = {
+    CustomUserPreferences."com.superlogical.rex" = {
+      "Workspace.terminalFontPointSize" = 14.0;
+      "Workspace.terminalStartupCommand" = lib.getExe pkgs.fish;
+    };
     dock = {
       autohide = true;
       mineffect = "scale";

@@ -134,12 +134,48 @@ github_api() {
   fi
 }
 
+private_source() {
+  local key="$1"
+  local file="${DOTFILES_PRIVATE_SOURCES_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles-private/sources.json}"
+
+  if [[ ! -r "${file}" ]]; then
+    log_message error "Private source configuration is missing; see docs/rex.md"
+    return 1
+  fi
+  jq -er --arg key "${key}" 'getpath($key | split(".")) | select(type == "string" and startswith("https://"))' "${file}"
+}
+
 latest_update() {
   local update_info="$1"
   local source
 
   source="$(jq -r '.source' <<<"${update_info}")"
   case "${source}" in
+    sparkle)
+      local url
+      require_tool python3
+      if jq -e '.privateUrlKey' <<<"${update_info}" >/dev/null; then
+        url="$(private_source "$(jq -r '.privateUrlKey' <<<"${update_info}")")" || return 1
+      else
+        url="$(jq -r '.url' <<<"${update_info}")"
+      fi
+      curl -fsSL "${url}" | python3 -c '
+import json
+import sys
+import xml.etree.ElementTree as ET
+
+item = ET.parse(sys.stdin).getroot().find("channel/item")
+namespace = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
+if item is None:
+    sys.exit("No Sparkle releases found")
+version = item.findtext(namespace + "shortVersionString")
+build = item.findtext(namespace + "version")
+if not version or not build:
+    sys.exit("Sparkle release is missing its version or build")
+version = version + "-" + build
+print(json.dumps({"revision": version, "version": version}))
+'
+      ;;
     github-release)
       local owner repo prefix tag version
       owner="$(jq -r '.owner' <<<"${update_info}")"
@@ -283,6 +319,74 @@ apply_update() {
   printf '%s\n' "${content}" >"${file}"
 }
 
+cache_private_release() (
+  local update_info="$1"
+  local version="$2"
+  local expected_hash="${3:-}"
+  local url filename tempdir file hash
+
+  url="$(private_source "$(jq -r '.privateUrlTemplateKey' <<<"${update_info}")")" || return 1
+  url="${url//\{version\}/${version}}"
+  filename="$(jq -r '.fileName' <<<"${update_info}")"
+  filename="${filename//\{version\}/${version}}"
+  tempdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-private-download.XXXXXX")" || return 1
+  trap 'rm -rf "${tempdir}"' EXIT
+  file="${tempdir}/${filename}"
+  curl -fsSL "${url}" -o "${file}" || return 1
+  hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" hash file --type sha256 --sri "${file}")" || return 1
+  if [[ -n "${expected_hash}" && "${hash}" != "${expected_hash}" ]]; then
+    log_message error "Private download does not match the pinned hash; refusing to import it"
+    return 1
+  fi
+  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store add-file --name "${filename}" "${file}" >/dev/null || return 1
+  printf '%s\n' "${hash}"
+)
+
+apply_private_update() {
+  local pkg="$1"
+  local file="$2"
+  local current="$3"
+  local latest="$4"
+  local system="$5"
+  local update_info="$6"
+  local oldhash newhash content
+
+  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")" || return 1
+  newhash="$(cache_private_release "${update_info}" "${latest}")" || return 1
+  content="$(cat "${file}")"
+  content="${content//${oldhash}/${newhash}}"
+  content="${content//version = \"${current}\"/version = \"${latest}\"}"
+  printf '%s\n' "${content}" >"${file}"
+}
+
+fetch_private_package() {
+  local pkg="$1"
+  local update_info version hash
+
+  update_info="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages.${CURRENT_SYSTEM}.${pkg}.updateInfo")" || return 1
+  if [[ "$(jq -r '.strategy' <<<"${update_info}")" != require-file ]]; then
+    log_message error "${pkg}: --fetch requires a private require-file package"
+    return 1
+  fi
+  version="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.version")" || return 1
+  hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.src.outputHash")" || return 1
+  cache_private_release "${update_info}" "${version}" "${hash}" >/dev/null
+}
+
+refresh_private_rex_flake() {
+  local destination="${1:-${XDG_DATA_HOME:-${HOME}/.local/share}/dotfiles-private/rex-flake}"
+  local url source
+
+  if [[ -e "${destination}" && ! -L "${destination}" ]]; then
+    log_message error "Private Rex flake destination is not a symlink; refusing to replace it"
+    return 1
+  fi
+  url="$(private_source rex.serverFlakeUrl)" || return 1
+  source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake archive --refresh --no-write-lock-file --json "${url}" | jq -er '.path')" || return 1
+  mkdir -p "$(dirname "${destination}")"
+  nix-store --realise "${source}" --add-root "${destination}" --indirect >/dev/null
+}
+
 nixpkgs_tool() {
   local tool="$1"
   local flake_ref expression
@@ -418,18 +522,29 @@ usage() {
   cat <<EOF
 Update flake inputs and manually packaged binaries.
 
-Usage: ./update [--apply]
+Usage: ./update [--apply | --fetch PACKAGE]
 
   --apply   Bump version and hashes for any out-of-date package.
+  --fetch PACKAGE
+            Cache a pinned private download without updating any files or inputs.
   -h, --help
 EOF
 }
 
+FETCH_PACKAGE=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --apply)
       APPLY=true
       shift
+      ;;
+    --fetch)
+      if [[ $# -lt 2 || "$2" == -* ]]; then
+        log_message error "--fetch requires a package name"
+        exit 1
+      fi
+      FETCH_PACKAGE="$2"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -443,6 +558,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [[ "${APPLY}" == true && -n "${FETCH_PACKAGE}" ]]; then
+  log_message error "Use --apply or --fetch, not both"
+  exit 1
+fi
+
 require_tool nix
 require_tool curl
 require_tool jq
@@ -452,8 +572,24 @@ cd "${BASEDIR}"
 section "Dotfiles update"
 warn_if_git_dirty
 
+if [[ -n "${FETCH_PACKAGE}" ]]; then
+  if [[ "${FETCH_PACKAGE}" == rex-server ]]; then
+    run_quiet_step "Caching private Rex flake" refresh_private_rex_flake
+  else
+    run_quiet_step "Caching ${FETCH_PACKAGE}" fetch_private_package "${FETCH_PACKAGE}"
+  fi
+  exit 0
+fi
+
 if [[ "${APPLY}" == true ]]; then
   section "Update flake inputs"
+  if jq -e '.nodes.root.inputs.rex' flake.lock >/dev/null; then
+    rex_path="$(jq -er '.nodes[.nodes.root.inputs.rex].original | select(.type == "path") | .path | select(startswith("/"))' flake.lock)" || {
+      log_message error "Rex must use an external absolute path input; see docs/rex.md"
+      exit 1
+    }
+    run_quiet_step "Refreshing private Rex flake" refresh_private_rex_flake "${rex_path}"
+  fi
   run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
   section "Update generated files"
@@ -491,6 +627,11 @@ for file in "${BASEDIR}"/nix/packages/*.nix; do
   fi
 
   source="$(jq -r '.source' <<<"${update_info}")"
+  if jq -e '.privateUrlKey' <<<"${update_info}" >/dev/null \
+    && ! private_source "$(jq -r '.privateUrlKey' <<<"${update_info}")" >/dev/null 2>&1; then
+    log_message warn "${pkg}: private source configuration unavailable; see docs/rex.md; skipping"
+    continue
+  fi
   if [[ "${source}" == github-branch ]]; then
     current_revision="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.src.rev" 2>/dev/null || true)"
   else
@@ -528,6 +669,9 @@ for entry in "${updates[@]}"; do
   update_info="$(printf '%s' "${encoded_update_info}" | base64 --decode)"
   strategy="$(jq -r '.strategy // "archive"' <<<"${update_info}")"
   case "${strategy}" in
+    require-file)
+      update_command=(apply_private_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
+      ;;
     archive)
       update_command=(apply_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${update_info}")
       ;;
