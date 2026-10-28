@@ -14,6 +14,7 @@
       glob: true
       path: bin/*
     ~/.config/vicinae/settings.json: vicinae-config.jsonc
+    ~/.config/rex/init.lua: rex/init.lua
     ~/.config/hypr/:
       glob: true
       path: hypr/*.lua
