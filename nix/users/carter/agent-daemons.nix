@@ -59,8 +59,9 @@ let
   # login init to pick up the path nix-darwin computes instead of baking one in.
   mkLaunchdAgent = name: executable: args: {
     enable = true;
-    domain = "user";
+    domain = "gui";
     config = {
+      LimitLoadToSessionType = "Aqua";
       ProgramArguments = [
         "${pkgs.fish}/bin/fish"
         "--login"
