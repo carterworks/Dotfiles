@@ -48,7 +48,11 @@ publishes no stable Linux release, so the executable is the dev build named by
 [`https://anoma.ly/release/hex/desktop/dev.json`](https://anoma.ly/release/hex/desktop/dev.json). `./update` does not bump
 it; update the version, URL, and hash by hand.
 
-- [ ] Run `hex model install` on scylla, then set the dictation shortcut. Models download into `~/.local/share/hex`, not the Nix store, so each host fetches its own copy.
-- [ ] Confirm Hyprland's GlobalShortcuts portal hands Hex its shortcut; if it does not, bind `hex dictation toggle` (or `start`/`stop`) in the Hyprland config.
+- [x] Install the default model on scylla. `hex-model-install.service` runs `hex model install` before `hex.service` at login, is a no-op once the model is checksum-verified, and Hex's onboarding also downloads it. `hex model check` prewarmed the model on the RX 9070 XT.
+- [ ] Set the dictation shortcut. The service log already reports `the desktop did not grant a Hex shortcut name=Dictation`; bind `hex dictation toggle` in Hyprland if the GlobalShortcuts portal keeps refusing.
 - [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
 - [ ] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships.
+
+macOS has no `hex-model-install` equivalent: its `model install` takes a model id
+and drives the running app over its control socket, so a launchd job would race
+the app. The cask app downloads its model during setup instead.

@@ -46,6 +46,32 @@ in
         self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
   };
 
+  # Hex downloads a model during onboarding. Install it before the app service
+  # so a fresh host can dictate immediately; the command is a no-op once the
+  # model is present and checksum-verified.
+  systemd.user.services.hex-model-install =
+    lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.programs.hex.enable)
+      {
+        Unit = {
+          Description = "Download and verify the local Hex dictation model";
+          After = [ "network-online.target" ];
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = "${lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.hex} model install";
+          Environment = [ "HEX_APPLICATION_SUPPORT_DIR=${config.xdg.dataHome}/hex" ];
+          Restart = "on-failure";
+          RestartSec = 30;
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
+  systemd.user.services.hex.Unit =
+    lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.programs.hex.enable)
+      {
+        Wants = [ "hex-model-install.service" ];
+        After = [ "hex-model-install.service" ];
+      };
+
   dotfiles.desktopTheme = {
     name = "nord-light";
     zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
