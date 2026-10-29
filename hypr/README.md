@@ -138,6 +138,8 @@ on `windowsIn`, `windowsOut`, `fadeIn`, and `fadeOut`. Reload with Super+Shift+R
 - `rules.lua`: floating utility windows.
 - `../quickshell/Theme.qml`: sidebar width, colors, and font.
 - `../quickshell/Sidebar.qml`: sidebar layout and application launchers.
+- `../quickshell/NotificationPopups.qml`: popup stack, timers, and transitions.
+- `../quickshell/NotificationCard.qml`: the shared notification card.
 - `../quickshell/AudioPanel.qml`: the sidebar audio popover.
 - `../quickshell/AudioRow.qml`: one device or application row in the popover.
 - `../quickshell/dev.qml`: isolated preview entry point for panel work.
@@ -159,12 +161,15 @@ save it under `~/Pictures/Screenshots/`, and close the editor. Escape during
 region selection cancels the capture.
 
 Tray icons support left-click activation, right-click menus, middle-click
-secondary actions, and scrolling. The bell toggles the notification list;
-popups use the sender's timeout, or six seconds when unspecified. Critical
-and explicitly persistent popups stay until dismissed. Explicitly timed and
-transient notifications expire; other notifications remain in the list until
-dismissed or withdrawn by their sender. The list is not persisted across a
-shell restart.
+secondary actions, and scrolling. The bell toggles the notification list.
+Cards show the app icon (or its initial), any attached image, and a progress
+bar when the sender supplies a value; clicking a card runs its default action,
+and other actions appear as buttons. Popups use the sender's timeout, or six
+seconds when unspecified, and the countdown pauses while the pointer is over a
+card. Critical and explicitly persistent notifications stay until dismissed.
+Explicitly timed and transient notifications expire; other notifications remain
+in the list until dismissed or withdrawn by their sender. Cards fade and scale
+in and out; the list is not persisted across a shell restart.
 
 ## Shell development
 
