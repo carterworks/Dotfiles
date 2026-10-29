@@ -49,7 +49,7 @@ publishes no stable Linux release, so the executable is the dev build named by
 it; update the version, URL, and hash by hand.
 
 - [x] Install the default model on scylla. `hex-model-install.service` runs `hex model install` before `hex.service` at login, is a no-op once the model is checksum-verified, and Hex's onboarding also downloads it. `hex model check` prewarmed the model on the RX 9070 XT.
-- [x] Set the dictation shortcut: Alt+Space in `hypr/bindings.lua` runs `hex dictation toggle`; Ctrl+Space stays Vicinae. The log already showed the GlobalShortcuts portal refusing Hex.
+- [x] Set the dictation shortcut: holding Alt+Space in `hypr/bindings.lua` runs `hex dictation start` on press and `stop` on release; Ctrl+Space stays Vicinae. The log already showed the GlobalShortcuts portal refusing Hex.
 - [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
 - [ ] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships.
 

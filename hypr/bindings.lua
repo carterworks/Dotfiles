@@ -5,7 +5,9 @@ hl.bind(mod .. " + SHIFT + F", hl.dsp.exec_cmd("uwsm app -- dolphin"))
 hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("uwsm app -- spotify"))
 hl.bind(mod .. " + SHIFT + B", hl.dsp.exec_cmd("uwsm app -- zen-beta"))
 -- Hyprland's GlobalShortcuts portal does not reach Hex, so drive its CLI.
-hl.bind("ALT + Space", hl.dsp.exec_cmd("hex dictation toggle"))
+-- start/stop is Hex's hold-to-talk pair: start on press, stop on release.
+hl.bind("ALT + Space", hl.dsp.exec_cmd("hex dictation start"))
+hl.bind("ALT + Space", hl.dsp.exec_cmd("hex dictation stop"), { release = true })
 hl.bind("CTRL + Space", hl.dsp.exec_cmd("vicinae toggle"))
 hl.bind(mod .. " + W", hl.dsp.window.close())
 hl.bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
