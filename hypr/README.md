@@ -35,7 +35,7 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 | Super+Shift+F | Dolphin |
 | Super+Shift+M | Spotify |
 | Super+Shift+B | Zen |
-| Alt+Space | Dictation (Hex) |
+| Alt+Space (hold) | Dictation (Hex) |
 | Ctrl+Space | Vicinae |
 | Super+F | Toggle floating |
 | Super+W | Close window |
