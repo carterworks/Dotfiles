@@ -184,6 +184,12 @@ in
     };
   };
 
+  # The root disk is 50G. Time-based GC alone lets a busy rebuild week pin
+  # several full system closures, so also cap the system profile.
+  systemd.services.nix-gc.preStart = ''
+    ${pkgs.nix}/bin/nix-env -p /nix/var/nix/profiles/system --delete-generations +3
+  '';
+
   services.journald.settings.Journal = {
     SystemMaxUse = "1G";
     SystemKeepFree = "5G";
