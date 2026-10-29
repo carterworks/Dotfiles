@@ -13,7 +13,6 @@ let
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   github-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.github-desktop;
-  handy = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.handy;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
@@ -89,7 +88,6 @@ let
     gnupg
     go
     gum
-    handy
     herdr
     home-assistant-cli
     hyperfine

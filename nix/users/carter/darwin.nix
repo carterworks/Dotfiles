@@ -36,9 +36,10 @@
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";
-    taps = [ ];
+    taps = [ "anomalyco/tap" ];
     brews = [ ];
     casks = [
+      "anomalyco/tap/hex"
       "bitwarden"
       "lunar"
       "podman-desktop"

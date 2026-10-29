@@ -38,3 +38,17 @@ This command checks channel advancement only; it does not verify that the lock w
   - Direct pairing is per host and per client, so three hosts × two clients means six initial links. T3 Connect is the only route that gives one sign-in per device across all hosts.
   - On a host that runs the `t3` service, turn off the desktop app's **Local environment** first so it attaches to the service instead of starting a second backend or failing on the shared `~/.t3`.
   - `opencode2`: create `tailscale serve --bg --https=9444 http://127.0.0.1:49374` once, then pair with `opencode2 pair --url https://<host>.dropbear-tortoise.ts.net:9444`.
+
+## Hex dictation
+
+Handy is replaced by Hex: the `anomalyco/tap/hex` cask on macOS and a pinned
+prebuilt Linux executable in `nix/packages/hex.nix`, driven by the
+`programs.hex` Home Manager module from the `anomalyco/hex` flake input. Hex
+publishes no stable Linux release, so the executable is the dev build named by
+[`https://anoma.ly/release/hex/desktop/dev.json`](https://anoma.ly/release/hex/desktop/dev.json). `./update` does not bump
+it; update the version, URL, and hash by hand.
+
+- [ ] Run `hex model install` on scylla, then set the dictation shortcut. Models download into `~/.local/share/hex`, not the Nix store, so each host fetches its own copy.
+- [ ] Confirm Hyprland's GlobalShortcuts portal hands Hex its shortcut; if it does not, bind `hex dictation toggle` (or `start`/`stop`) in the Hyprland config.
+- [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
+- [ ] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships.

@@ -50,6 +50,12 @@
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";
     };
+    # Hex has no stable channel yet; its flake packages the Linux beta from dev.
+    hex = {
+      url = "github:anomalyco/hex";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
     hunk = {
       url = "github:modem-dev/hunk";
       inputs.nixpkgs.follows = "nixpkgs";

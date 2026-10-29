@@ -311,6 +311,29 @@
         "url": "https://flakehub.com/f/cachix/git-hooks.nix/0.1.941"
       }
     },
+    "hex": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793279504,
+        "narHash": "sha256-v2OZPooThlZAEvZR6oUpaTzQp2k2aJNRhly+mZdrYAI=",
+        "owner": "anomalyco",
+        "repo": "hex",
+        "rev": "4c22f5f51926f8d640196552443ebe2c7538f431",
+        "type": "github"
+      },
+      "original": {
+        "owner": "anomalyco",
+        "repo": "hex",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -604,6 +627,7 @@
         "delta": "delta",
         "determinate": "determinate",
         "disko": "disko",
+        "hex": "hex",
         "home-manager": "home-manager",
         "hunk": "hunk",
         "nix-darwin": "nix-darwin",
