@@ -104,18 +104,18 @@ in
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.nix}/bin/nix profile wipe-history --profile ${config.home.homeDirectory}/.local/state/nix/profiles/profile --older-than 30d";
+      ExecStart = "${pkgs.nix}/bin/nix-env --profile ${config.home.homeDirectory}/.local/state/nix/profiles/profile --delete-generations +5";
     };
   };
 
   systemd.user.timers.carter-nix-profile-prune = {
     Unit = {
-      Description = "Weekly pruning of old Carter Nix profile generations";
+      Description = "Daily pruning of old Carter Nix profile generations";
     };
     Timer = {
-      OnCalendar = "weekly";
+      OnCalendar = "02:45";
       Persistent = true;
-      RandomizedDelaySec = "1h";
+      RandomizedDelaySec = "10m";
       Unit = "carter-nix-profile-prune.service";
     };
     Install.WantedBy = [ "timers.target" ];
