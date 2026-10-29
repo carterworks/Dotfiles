@@ -80,7 +80,6 @@ let
               <li><a href="https://backrest.${tailnetDomain}/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
-              <li><a href="http://prostagma.${tailnetDomain}:9119/">Hermes Agent</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
 
               <li><a href="https://jellyfin.${tailnetDomain}/">Jellyfin</a></li>
@@ -159,13 +158,6 @@ let
       file_server
     }
   '';
-
-  hermesDashboardSiteConfig = ''
-    bind 100.96.32.111
-    reverse_proxy 127.0.0.1:9119 {
-      header_up Host 127.0.0.1:9119
-    }
-  '';
 in
 {
   imports = [
@@ -177,7 +169,7 @@ in
     ./prostagma/sso.nix
   ];
 
-  home-manager.users.carter = import ./prostagma/hermes-carter.nix;
+  home-manager.users.carter = import ./prostagma/home-manager.nix;
 
   nix = {
     gc = {
@@ -203,18 +195,20 @@ in
     # Temporary: nixpkgs 2026.10.1 trusts the compromised eMudhra (emSign)
     # intermediates; see TODO.md before removing.
     (_final: prev: {
-      cloudflared = prev.cloudflared.overrideAttrs (finalAttrs: _old: {
-        version = "2026.10.3";
-        # The LXC builds without a sandbox, so cloudflared's tests that scan for
-        # a metrics server see the running connector instead of an empty host.
-        doCheck = false;
-        src = prev.fetchFromGitHub {
-          owner = "cloudflare";
-          repo = "cloudflared";
-          tag = finalAttrs.version;
-          hash = "sha256-k1OMkHHItOT5VHhQqgC8ODm/RCJEtwtZi0Lxyf/esLg=";
-        };
-      });
+      cloudflared = prev.cloudflared.overrideAttrs (
+        finalAttrs: _old: {
+          version = "2026.10.3";
+          # The LXC builds without a sandbox, so cloudflared's tests that scan for
+          # a metrics server see the running connector instead of an empty host.
+          doCheck = false;
+          src = prev.fetchFromGitHub {
+            owner = "cloudflare";
+            repo = "cloudflared";
+            tag = finalAttrs.version;
+            hash = "sha256-k1OMkHHItOT5VHhQqgC8ODm/RCJEtwtZi0Lxyf/esLg=";
+          };
+        }
+      );
     })
   ];
 
@@ -454,7 +448,6 @@ in
     virtualHosts = {
       "http://prostagma.localhost".extraConfig = prostagmaSiteConfig;
       "http://prostagma.${tailnetDomain}".extraConfig = prostagmaSiteConfig;
-      "http://prostagma.${tailnetDomain}:9119".extraConfig = hermesDashboardSiteConfig;
     };
   };
 

@@ -106,7 +106,6 @@ let
           <nav aria-label="Scylla services">
             <ul>
               <li><a href="http://cups.scylla.localhost/">CUPS</a></li>
-              <li><a href="http://hermes.scylla.localhost/">Hermes Web UI</a></li>
               <li><a href="http://sunshine.scylla.localhost/">Sunshine</a></li>
               <li><a href="http://syncthing.scylla.localhost/">Syncthing</a></li>
             </ul>
@@ -179,13 +178,6 @@ in
           transport http {
             tls_insecure_skip_verify
           }
-        }
-      '';
-
-      "http://hermes.scylla.localhost".extraConfig = ''
-        bind 127.0.0.1 ::1
-        reverse_proxy 127.0.0.1:9119 {
-          header_up Host 127.0.0.1:9119
         }
       '';
 
