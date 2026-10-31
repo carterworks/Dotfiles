@@ -1,5 +1,6 @@
 {
   pkgs,
+  self,
   systemUsername,
   ...
 }:
@@ -335,6 +336,7 @@ in
     samba
     vim
     vulkan-tools
+    self.packages.${pkgs.stdenv.hostPlatform.system}.cua-driver
   ];
 
   services.gvfs.enable = true;

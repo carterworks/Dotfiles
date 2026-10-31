@@ -51,6 +51,7 @@ in
 // lib.optionalAttrs (system == "x86_64-linux") {
   delta = inputs.delta.packages.${system}.delta;
   bambu-studio = localPackage ./bambu-studio.nix;
+  cua-driver = localPackage ./cua-driver.nix;
   hex = localPackage ./hex.nix;
   obsidian-headless = localPackage ./obsidian-headless.nix;
 }

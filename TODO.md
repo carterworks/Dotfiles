@@ -37,6 +37,8 @@ This command checks channel advancement only; it does not verify that the lock w
 
 ## Agent daemons
 
+- [ ] Package Cua Driver for macOS and decide how the shared `cua-driver` MCP entry in `opencode/opencode.jsonc` should behave there. `nix/packages/cua-driver.nix` currently ships only the x86_64-linux release and Scylla runs the daemon; on a host without the package OpenCode reports the server as failed to start.
+
 - [ ] Deploy the `opencode2`/`t3` services to Scylla, Prostagma, and Carters-MacBook-Pro, then verify both survive a reboot (Linux) or login (macOS). On Scylla, stop the manually started `opencode2 serve --service` first so the new user unit can bind port 49374.
 - [ ] Pair clients per host whenever that host's `t3` service is running. `t3pair` uses Tailscale when its CLI is present and otherwise pairs locally. Without Tailscale, remote clients need an SSH tunnel to the loopback-only server on port 3773. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
   - `t3pair --label phone` (scan the QR code)
@@ -44,6 +46,16 @@ This command checks channel advancement only; it does not verify that the lock w
   - Direct pairing is per host and per client, so three hosts × two clients means six initial links. T3 Connect is the only route that gives one sign-in per device across all hosts.
   - On a host that runs the `t3` service, turn off the desktop app's **Local environment** first so it attaches to the service instead of starting a second backend or failing on the shared `~/.t3`.
   - `opencode2`: create `tailscale serve --bg --https=9444 http://127.0.0.1:49374` once, then pair with `opencode2 pair --url https://<host>.dropbear-tortoise.ts.net:9444`.
+
+## Cua Driver
+
+Cua Driver gives an agent background control of GUI apps.
+`nix/packages/cua-driver.nix` packages the upstream x86_64-linux binary, Scylla
+runs `cua-driver serve` inside its Hyprland session, and OpenCode reaches that
+daemon over its socket through the `cua-driver` MCP server.
+
+- [ ] Package the macOS `darwin-universal-binary` release for Carters-MacBook-Pro, or disable the `cua-driver` MCP entry on hosts without the binary. The OpenCode entry lives in the shared `opencode/opencode.jsonc`.
+- [ ] Reassess the Hyprland input plugin (`cua-hyprland-plugin`) once upstream qualifies more apps; the packaged Wayland backend already covers AT-SPI reads and compositor capture, and its `doctor` reports AT-SPI as unreachable on Scylla even though the accessibility tree reads work.
 
 ## Hex dictation
 
