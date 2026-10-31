@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   modulesPath,
@@ -84,6 +85,7 @@ let
 
               <li><a href="https://jellyfin.${tailnetDomain}/">Jellyfin</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:32400/web/">Plex</a></li>
+              <li><a href="https://podmaker.${tailnetDomain}/">PodMaker</a></li>
               <li><a href="https://prowlarr.${tailnetDomain}/">Prowlarr</a></li>
               <li><a href="https://qbittorrent.${tailnetDomain}/">qBittorrent</a></li>
               <li><a href="https://radarr.${tailnetDomain}/">Radarr</a></li>
@@ -164,6 +166,7 @@ in
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware/prostagma.nix
     ./prostagma/app-storage.nix
+    ./prostagma/podmaker.nix
 
     ./prostagma/migrated-apps.nix
     ./prostagma/sso.nix
@@ -228,6 +231,8 @@ in
     enable = true;
     mode = "external";
   };
+
+  prostagma.podmaker.enable = true;
 
   prostagma.migratedApps = {
     enable = true;
@@ -510,8 +515,12 @@ in
       # route is accepted; a failure here must not strand the routes above.
       "$tailscale" serve --service=svc:backrest --https=443 http://127.0.0.1:80
 
-
-
+      # PodMaker's UI is gated by Caddy/Authelia; its feed, media, and artwork
+      # paths bypass the gate so podcast apps can subscribe. Kept last for the
+      # same Service-approval reason as Backrest.
+      ${lib.optionalString config.prostagma.podmaker.enable ''
+        "$tailscale" serve --service=svc:podmaker --https=443 http://127.0.0.1:80
+      ''}
     '';
   };
 

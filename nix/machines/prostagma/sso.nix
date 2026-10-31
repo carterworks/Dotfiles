@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -116,7 +117,7 @@ let
     {
       name = "bazarr";
       port = 6767;
-      apiBypass = true;
+      bypassPaths = [ "/api/*" ];
     }
 
     # Backrest has no OIDC and no header auth, and its own authentication is
@@ -125,7 +126,20 @@ let
       name = "backrest";
       port = 9898;
     }
-  ];
+  ]
+  ++ lib.optional config.prostagma.podmaker.enable {
+    # PodMaker has no login of its own. Gate the UI and management API, but
+    # leave feed, audio, and artwork URLs open: podcast clients cannot complete
+    # an Authelia login, and those paths are already protected by feed tokens.
+    name = "podmaker";
+    port = config.prostagma.podmaker.port;
+    bypassPaths = [
+      "/feed/*"
+      "/media/*"
+      "/images/*"
+      "/healthz"
+    ];
+  };
 in
 {
   services.authelia.instances.main = {
@@ -259,32 +273,39 @@ in
   # the original Host header, so Caddy selects the site by hostname exactly as
   # it does for the directory.
   services.caddy.virtualHosts = builtins.listToAttrs (
-    map (app: {
-      name = "http://${app.name}.${tailnetDomain}";
-      value.extraConfig = ''
-        # Serve connects to Caddy over loopback, and the directory sites are
-        # bound to loopback explicitly. A site without a matching bind lands in
-        # a separate wildcard listener, and the kernel prefers the specific
-        # bind, so Serve's connection would be answered by the directory server
-        # and never reach this site.
-        bind 127.0.0.1 ::1
+    map (
+      app:
+      let
+        bypassPaths = app.bypassPaths or [ ];
+        hasBypass = bypassPaths != [ ];
+      in
+      {
+        name = "http://${app.name}.${tailnetDomain}";
+        value.extraConfig = ''
+          # Serve connects to Caddy over loopback, and the directory sites are
+          # bound to loopback explicitly. A site without a matching bind lands in
+          # a separate wildcard listener, and the kernel prefers the specific
+          # bind, so Serve's connection would be answered by the directory server
+          # and never reach this site.
+          bind 127.0.0.1 ::1
 
-        ${lib.optionalString (app.apiBypass or false) "@notapi not path /api/*\n"}
-        forward_auth ${lib.optionalString (app.apiBypass or false) "@notapi "}127.0.0.1:9091 {
-          uri /api/authz/forward-auth
-          copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+          ${lib.optionalString hasBypass "@unprotected not path ${lib.concatStringsSep " " bypassPaths}\n"}
+          forward_auth ${lib.optionalString hasBypass "@unprotected "}127.0.0.1:9091 {
+            uri /api/authz/forward-auth
+            copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 
-          # Serve terminates TLS, so the browser is on https while this hop is
-          # plain http. Authelia derives the target URL from the request scheme
-          # and refuses anything that is not https or wss, so state the
-          # external scheme explicitly or every request fails with "has an
-          # insecure scheme 'http'".
-          header_up X-Original-URL "https://{host}{uri}"
-          header_up X-Forwarded-Proto https
-        }
-        reverse_proxy 127.0.0.1:${toString app.port}
-      '';
-    }) gatedApps
+            # Serve terminates TLS, so the browser is on https while this hop is
+            # plain http. Authelia derives the target URL from the request scheme
+            # and refuses anything that is not https or wss, so state the
+            # external scheme explicitly or every request fails with "has an
+            # insecure scheme 'http'".
+            header_up X-Original-URL "https://{host}{uri}"
+            header_up X-Forwarded-Proto https
+          }
+          reverse_proxy 127.0.0.1:${toString app.port}
+        '';
+      }
+    ) gatedApps
   );
 
   # Containers reach the portal through the tailnet address, which means the
