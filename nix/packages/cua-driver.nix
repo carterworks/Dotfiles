@@ -54,6 +54,7 @@ pkgs.stdenvNoCC.mkDerivation {
       --prefix PATH : ${
         lib.makeBinPath [
           pkgs.ffmpeg
+          pkgs.glib
           pkgs.grim
           pkgs.wtype
         ]
