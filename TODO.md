@@ -2,44 +2,19 @@
 
 ## Rex
 
-- [x] Stage the gated Linux input, package alias, disabled NixOS wrapper, and token/activation instructions. Wrapper tests pass, and Rex remains disabled on both Scylla and Prostagma without fetching the gated input.
 - [ ] Obtain Linux testing access through Discord `#alpha-registration`, then follow `docs/rex.md` to configure private source locations and the token outside the repository, cache and lock the external preview flake, and enable `dotfiles.rex.enable` on the desired hosts. Validate the real upstream package and service once access is available, and inspect its transitive lock entries for private URLs before committing. `./update --apply` refreshes the external flake before updating its pin.
 - [ ] Deploy the macOS `rex-client` package with `./install` and verify Finder launch. `./update` reads the preview feed from the external private-source manifest; `./update --fetch rex-client` caches the hash-pinned installer without recording its URL in Git.
 
-## Installation blocker: Atuin on macOS
-
-The main nixpkgs pin's Atuin 18.23.0 fails its `filtered_commands_leave_no_captured_output` end-to-end test on `Carters-MacBook-Pro`. The shell-completion, Home Manager, and Darwin system failures are downstream dependency failures.
-
-The failing derivation is `/nix/store/g144wicsf2xrv1hxc3wkf95y6dzdf6fq-atuin-18.23.0.drv`, matching [failed Hydra build 349284273](https://hydra.nixos.org/build/349284273). The Darwin test fix was merged in [nixpkgs PR #574509](https://github.com/NixOS/nixpkgs/pull/574509), after the previous October 15 pin.
-
-The temporary macOS workaround selects the unmodified Atuin package from the separate `nixpkgs-atuin` input, pinned to `7a6522c868711d06e3a520bbcdfafe9806f4337f`. Its output, `/nix/store/lyh7qwqxlbyv8va4ssmh2js4jdq36w4q-atuin-18.23.0`, was downloaded successfully from `cache.nixos.org` with local builds disabled. This replaces the test-skipping override, which required a custom source build. Linux is unchanged. The main nixpkgs pin has since advanced to `09063bd1f2b36fd9fd793c36dfade7bd40a93dfc`, which contains the Darwin test fix; its Atuin output matches the cached workaround output. The workaround remains until the macOS install is validated.
-
-- [x] Validate that the upstream `nixos-unstable` channel advanced beyond `fe13242281a67641c0102cdb1087f0ebe586c7df` and run `./update --apply` to pick up the newer snapshot. The lock now points at `09063bd1f2b36fd9fd793c36dfade7bd40a93dfc`.
-- [ ] Remove the temporary Atuin assignment in `nix/machines/carters-macbook-pro.nix` and the `nixpkgs-atuin` input from `flake.nix`, then run `nix flake lock` to prune its lock entry. Follow the machine file's validation instructions. Complete this task only after Atuin is available without local compilation or the temporary pin and `./install` succeeds.
-
-Run this Bash one-liner from the repository root. It prints the current revision and exits successfully only when the channel has advanced:
-
-```bash
-rev=$(git ls-remote --exit-code https://github.com/NixOS/nixpkgs.git refs/heads/nixos-unstable) && rev=${rev%%[[:space:]]*} && if [[ -n "$rev" && "$rev" != fe13242281a67641c0102cdb1087f0ebe586c7df ]]; then printf 'Channel advanced: %s\n' "$rev"; else printf 'Channel has not advanced: %s\n' "$rev"; false; fi
-```
-
-This command checks channel advancement only; it does not verify that the lock was updated, that the Atuin fix is included, or that installation succeeds.
-
 ## Temporary pins and workarounds
 
-- [ ] `cloudflared`: remove the 2026.10.3 `overrideAttrs` in `nix/machines/prostagma.nix` once `nixos-unstable` ships 2026.10.2 or later, which stops trusting the compromised eMudhra (emSign) intermediates. `nixos-unstable` still pinned 2026.10.1 on 2026-10-26 while nixpkgs master carries 2026.10.3. Validate with `nix build --no-link .#nixosConfigurations.prostagma.pkgs.cloudflared`, then confirm the built binary reports 2026.10.3 before removing the override.
-- [ ] `t3code-cli`: remove the patchelf 0.15.2 pin in `nix/packages/t3code-cli.nix` once a newer patchelf can rewrite the Node SEA launcher without corrupting its program headers. Validate with `nix build .#t3code-cli`, `t3 --version`, and `t3 serve` before removing.
-- [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it.
-- [ ] macOS Brave: remove the `sourceRoot` overlay in `nix/machines/carters-macbook-pro.nix` once NixOS/nixpkgs#560971 is fixed upstream.
-- [ ] Vicinae on scylla: remove the `QT_QUICK_BACKEND=software` override in `nix/machines/scylla/hyprland.nix` once the Qt OpenGL backend opens reliably with hardware rendering.
-- [ ] stable-diffusion.cpp: drop the upstream master pin in `nix/users/carter/packages.nix` when nixpkgs ships Qwen Image 2.1 support and the Turbo sigma preset.
-- [ ] kubelogin: reassess the 0.1.9 pin when newer releases persist the Ethos device-code token instead of re-prompting on every invocation.
+- [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it. Retested 2026-11-01 with nixpkgs patchelf 0.19.2: stripping still truncates the SEA `NOTE` segment and `t3 --version` aborts.
+- [ ] Verify Vicinae opens with hardware rendering on Scylla after the `QT_QUICK_BACKEND=software` override removal; restore the override if it regresses. nixpkgs 0.29.2 carries the upstream fix (vicinaehq/vicinae#2055).
+- [ ] kubelogin: reassess the 0.1.9 pin when newer releases persist the Ethos device-code token instead of re-prompting on every invocation. Upstream still treats legacy `spn:` logins as unsupported and recommends pinning 0.1.9.
 
 ## Agent daemons
 
-- [ ] Package Cua Driver for macOS and decide how the shared `cua-driver` MCP entry in `opencode/opencode.jsonc` should behave there. `nix/packages/cua-driver.nix` currently ships only the x86_64-linux release and Scylla runs the daemon; on a host without the package OpenCode reports the server as failed to start.
-
-- [ ] Deploy the `opencode2`/`t3` services to Scylla, Prostagma, and Carters-MacBook-Pro, then verify both survive a reboot (Linux) or login (macOS). On Scylla, stop the manually started `opencode2 serve --service` first so the new user unit can bind port 49374.
+- [ ] Package the Cua Driver `darwin-universal` tarball for Carters-MacBook-Pro and install `CuaDriver.app` at `/Applications` so TCC can find it. Use the full tarball, not the `-binary` asset, which omits the app. `nix/packages/cua-driver.nix` currently ships only x86_64-linux, so OpenCode reports the shared `cua-driver` MCP entry as failed on hosts without the binary.
+- [ ] Verify `opencode2`/`t3` survive a reboot on Scylla and Prostagma (both units are enabled, active, and lingering) and deploy/verify them at login on Carters-MacBook-Pro. Scylla's manual `opencode2 serve --service` blocker is resolved.
 - [ ] Pair clients per host whenever that host's `t3` service is running. `t3pair` uses Tailscale when its CLI is present and otherwise pairs locally. Without Tailscale, remote clients need an SSH tunnel to the loopback-only server on port 3773. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
   - `t3pair --label phone` (scan the QR code)
   - `t3pair --label desktop` (add the environment in Settings → Connections)
@@ -54,8 +29,7 @@ Cua Driver gives an agent background control of GUI apps.
 runs `cua-driver serve` inside its Hyprland session, and OpenCode reaches that
 daemon over its socket through the `cua-driver` MCP server.
 
-- [ ] Package the macOS `darwin-universal-binary` release for Carters-MacBook-Pro, or disable the `cua-driver` MCP entry on hosts without the binary. The OpenCode entry lives in the shared `opencode/opencode.jsonc`.
-- [ ] Reassess the Hyprland input plugin (`cua-hyprland-plugin`) once upstream qualifies more apps; the packaged Wayland backend already covers AT-SPI reads and compositor capture, and its `doctor` reports AT-SPI as unreachable on Scylla even though the accessibility tree reads work.
+- [ ] Reassess the optional Hyprland input plugin (`cua-hyprland-plugin`) when Cua qualifies apps beyond native Wayland Calc (`libreoffice-fresh 26.2.5-3`) and Inkscape (`1.4.4-6`); upstream 0.38.0 still ships it experimental, off by default, and ABI-pinned, and Scylla does not install it.
 
 ## Hex dictation
 
@@ -66,11 +40,8 @@ executable, the flake input, and the cask all follow Hex's stable channel;
 `./update` does not bump the executable, so update the version, URL, and hash
 by hand together with the flake input's tag.
 
-- [x] Install the default model on scylla. `hex-model-install.service` runs `hex model install` before `hex.service` at login, is a no-op once the model is checksum-verified, and Hex's onboarding also downloads it. `hex model check` prewarmed the model on the RX 9070 XT.
-- [x] Set the dictation shortcut: `hypr/bindings.lua` binds `hl.dsp.global("anomaly.hex:dictation-ALT-space")` to Alt+Space and `anomaly.hex:cancel-dictation` to Alt+Escape, through Hyprland's GlobalShortcuts portal. The earlier `hex dictation start` / `stop` CLI pair lost the release when stop arrived before start, leaving the recording pill up.
 - [ ] Remove the PipeWire client config override in `nix/packages/hex.nix` once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME` here. With the stock config, the ALSA plugin promotes Hex's data loop to realtime and the kernel SIGKILLs Hex the moment it runs (`code=killed, status=9/KILL`), for both the default microphone and Hex's sounds. The wrapper loads the stock client config with `module.rt = false`, which keeps dictation working without realtime scheduling; the PipeWire server keeps its own RT.
 - [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
-- [x] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships. The executable and flake input are pinned to v3.1.1; the tap cask follows stable by itself.
 
 macOS has no `hex-model-install` equivalent: its `model install` takes a model id
 and drives the running app over its control socket, so a launchd job would race
