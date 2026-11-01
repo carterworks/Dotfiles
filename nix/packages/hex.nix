@@ -1,17 +1,19 @@
 {
   pkgs,
   lib,
+  # Hex's source tree, for the desktop entry and icons its release service
+  # serves only inside the app bundle.
+  hexSource,
 }:
 
 let
-  version = "0.0.0-dev-213";
+  version = "3.1.1";
 
-  # Hex publishes no stable Linux release, and its flake builds the Rust/Vulkan
-  # app from source. The release service serves the same executable under a
-  # content-addressed path, so fetch that and skip the compile.
+  # The stable release serves the same executable under a content-addressed
+  # path, so fetch that and skip the Rust/Vulkan compile.
   src = pkgs.fetchurl {
-    url = "https://anoma.ly/release/hex/files/842f8ab6eb01a6868bbfe587d2fed8ffcab7ec3ffb06354e9d99fb6f7c29ac86/hex";
-    hash = "sha256-hC+KtusBpoaLv+WH0v7Y/8q37D/7BjVOnZn7b3wprIY=";
+    url = "https://anoma.ly/release/hex/files/913fc3523c25194b24721fe1d6a59a28b9b0136ef0cdf9d55eed7f21b19201d2/hex";
+    hash = "sha256-kT/DUjwlGUskch/h1qWaKLmwE27wzfnVXu1/IbGSAdI=";
   };
 
   # Match upstream's package so the prebuilt binary resolves the same PipeWire
@@ -23,6 +25,16 @@ let
       "${pkgs.alsa-plugins}/lib/alsa-lib"
     ];
   };
+
+  # PipeWire's client-side module-rt gives Hex's audio threads a zero
+  # RLIMIT_RTTIME on this host, so the kernel SIGKILLs Hex as soon as the
+  # ALSA plugin promotes one. Dictation needs no realtime scheduling, so use
+  # the stock client config without module-rt. The server keeps its own RT.
+  pipewireClientConfig = pkgs.runCommand "hex-pipewire-client.conf" { } ''
+    install -Dm644 ${pkgs.pipewire}/share/pipewire/client.conf $out/client.conf
+    substituteInPlace $out/client.conf \
+      --replace-fail '{ module.rt = !false }' '{ module.rt = false }'
+  '';
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "hex";
@@ -52,24 +64,14 @@ pkgs.stdenvNoCC.mkDerivation {
     runHook preInstall
 
     install -Dm755 $src $out/bin/hex
-    # The GlobalShortcuts portal identifies Hex by this desktop entry.
-    mkdir -p $out/share/applications
-    cat > $out/share/applications/hex.desktop <<EOF
-    [Desktop Entry]
-    Type=Application
-    Name=Hex
-    Comment=Local voice dictation
-    Exec=$out/bin/hex
-    Icon=audio-input-microphone
-    Terminal=false
-    Categories=Utility;Accessibility;
-    StartupNotify=true
-    Actions=quit;
-
-    [Desktop Action quit]
-    Name=Quit Hex
-    Exec=$out/bin/hex quit
-    EOF
+    # The GlobalShortcuts portal identifies Hex by its reverse-DNS app id,
+    # anomaly.hex, which this entry has to be named after.
+    install -Dm644 ${hexSource}/packaging/anomaly.hex.desktop \
+      $out/share/applications/anomaly.hex.desktop
+    substituteInPlace $out/share/applications/anomaly.hex.desktop \
+      --replace-fail '@HEX_BIN@' "$out/bin/hex"
+    mkdir -p $out/share/icons
+    cp -R ${hexSource}/packaging/linux/icons/hicolor $out/share/icons/hicolor
 
     runHook postInstall
   '';
@@ -83,7 +85,9 @@ pkgs.stdenvNoCC.mkDerivation {
           pkgs.wtype
         ]
       } \
-      --set ALSA_PLUGIN_DIR ${alsaPluginDir}
+      --set ALSA_PLUGIN_DIR ${alsaPluginDir} \
+      --set PIPEWIRE_CONFIG_DIR ${pipewireClientConfig} \
+      --set PIPEWIRE_CONFIG_NAME client.conf
   '';
 
   doInstallCheck = true;

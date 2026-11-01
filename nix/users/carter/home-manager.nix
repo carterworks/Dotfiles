@@ -38,39 +38,20 @@ in
   ];
 
   # The Hex Nix package targets x86_64-linux; macOS installs the cask instead.
+  # installModel downloads the speech model from the module's own service, so
+  # a fresh host can dictate immediately; it is a no-op once the model is
+  # present and checksum-verified.
   programs.hex = {
     enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     autostart = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
+    installModel = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     package =
       lib.mkIf pkgs.stdenv.hostPlatform.isLinux
         self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
+    # The Hyprland bind in hypr/bindings.lua names the portal shortcut by this
+    # trigger, so changing it means changing that bind too.
+    shortcut = lib.mkIf pkgs.stdenv.hostPlatform.isLinux "option+space";
   };
-
-  # Hex downloads a model during onboarding. Install it before the app service
-  # so a fresh host can dictate immediately; the command is a no-op once the
-  # model is present and checksum-verified.
-  systemd.user.services.hex-model-install =
-    lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.programs.hex.enable)
-      {
-        Unit = {
-          Description = "Download and verify the local Hex dictation model";
-          After = [ "network-online.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          ExecStart = "${lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.hex} model install";
-          Environment = [ "HEX_APPLICATION_SUPPORT_DIR=${config.xdg.dataHome}/hex" ];
-          Restart = "on-failure";
-          RestartSec = 30;
-        };
-        Install.WantedBy = [ "default.target" ];
-      };
-  systemd.user.services.hex.Unit =
-    lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.programs.hex.enable)
-      {
-        Wants = [ "hex-model-install.service" ];
-        After = [ "hex-model-install.service" ];
-      };
 
   dotfiles.desktopTheme = {
     name = "nord-light";
