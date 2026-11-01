@@ -4,10 +4,15 @@ hl.bind(mod .. " + SHIFT + Return", hl.dsp.exec_cmd("uwsm app -- ghostty"))
 hl.bind(mod .. " + SHIFT + F", hl.dsp.exec_cmd("uwsm app -- dolphin"))
 hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("uwsm app -- spotify"))
 hl.bind(mod .. " + SHIFT + B", hl.dsp.exec_cmd("uwsm app -- zen-beta"))
--- Hyprland's GlobalShortcuts portal does not reach Hex, so drive its CLI.
--- start/stop is Hex's hold-to-talk pair: start on press, stop on release.
-hl.bind("ALT + Space", hl.dsp.exec_cmd("hex dictation start"))
-hl.bind("ALT + Space", hl.dsp.exec_cmd("hex dictation stop"), { release = true })
+-- Hex's GlobalShortcuts portal gives the app press and release. Driving its CLI
+-- commands instead lost the release: a stop that arrived before the start was
+-- dropped, leaving the recording pill up until another stop. The bind name is
+-- the portal app id plus "dictation-" and the `dictation_hotkey` setting, so
+-- keep that at option+space (programs.hex.shortcut).
+hl.bind("ALT + Space", hl.dsp.global("anomaly.hex:dictation-ALT-space"))
+-- Cancels a recording. Hyprland holds it for every app, so it has to be a
+-- chord nothing else uses.
+hl.bind("ALT + Escape", hl.dsp.global("anomaly.hex:cancel-dictation"))
 hl.bind("CTRL + Space", hl.dsp.exec_cmd("vicinae toggle"))
 hl.bind(mod .. " + W", hl.dsp.window.close())
 hl.bind(mod .. " + F", hl.dsp.window.float({ action = "toggle" }))
