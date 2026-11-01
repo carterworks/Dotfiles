@@ -24,23 +24,10 @@ let
   # these are fetch-and-wrap instead of llm-agents source builds.
   t3code-cli = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-cli;
   t3code-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-nightly;
-  # nixpkgs still ships sd.cpp 656a135 (2026-09-18), which predates Qwen Image
-  # 2.1 support (137f740) and the Qwen Image 2.1 Turbo sigma preset. Pin the
-  # upstream master until the nixpkgs package catches up.
-  stableDiffusionCppPin = {
-    version = "master-1d0a58a";
-    src = pkgs.fetchFromGitHub {
-      owner = "leejet";
-      repo = "stable-diffusion.cpp";
-      rev = "1d0a58a35050d285b1d6fb1bc68a92924d35825e";
-      hash = "sha256-7LO5nROQhHkkv2iJsYd9ZAhShV0ZOzN94Y0+xTfFwxE=";
-      fetchSubmodules = true;
-    };
-  };
   # The base package enables Metal by default on aarch64-darwin; Vulkan is the
   # Linux equivalent.
-  stableDiffusionCppMetal = pkgs.stable-diffusion-cpp.overrideAttrs stableDiffusionCppPin;
-  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan.overrideAttrs stableDiffusionCppPin;
+  stableDiffusionCppMetal = pkgs.stable-diffusion-cpp;
+  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan;
   # Use the host package set for compatibility with its GPU drivers and libc.
   vicinae = pkgs.vicinae;
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
