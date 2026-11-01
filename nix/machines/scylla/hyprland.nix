@@ -68,15 +68,6 @@ in
   };
 
   home-manager.users.${systemUsername} = { config, lib, ... }: {
-    # Vicinae's Qt OpenGL backend crashes when opening its Wayland window on
-    # this host. Keep the workaround local to its existing autostart service.
-    #TODO: Switch Vicinae to hardware rendering when nixpkgs updates; verify
-    # opening the launcher on the real GPU before removing this override.
-    xdg.configFile."systemd/user/app-vicinae@autostart.service.d/rendering.conf".text = ''
-      [Service]
-      Environment=QT_QUICK_BACKEND=software
-    '';
-
     xdg.configFile."uwsm/env-hyprland".text = ''
       export XCURSOR_THEME=Bibata-Modern-Classic
       export XCURSOR_SIZE=24
