@@ -201,24 +201,6 @@ in
   nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [
     inputs.copyparty.overlays.default
-    # Temporary: nixpkgs 2026.10.1 trusts the compromised eMudhra (emSign)
-    # intermediates; see TODO.md before removing.
-    (_final: prev: {
-      cloudflared = prev.cloudflared.overrideAttrs (
-        finalAttrs: _old: {
-          version = "2026.10.3";
-          # The LXC builds without a sandbox, so cloudflared's tests that scan for
-          # a metrics server see the running connector instead of an empty host.
-          doCheck = false;
-          src = prev.fetchFromGitHub {
-            owner = "cloudflare";
-            repo = "cloudflared";
-            tag = finalAttrs.version;
-            hash = "sha256-k1OMkHHItOT5VHhQqgC8ODm/RCJEtwtZi0Lxyf/esLg=";
-          };
-        }
-      );
-    })
   ];
 
   proxmoxLXC = {
