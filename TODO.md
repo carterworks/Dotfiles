@@ -61,15 +61,16 @@ daemon over its socket through the `cua-driver` MCP server.
 
 Handy is replaced by Hex: the `anomalyco/tap/hex` cask on macOS and a pinned
 prebuilt Linux executable in `nix/packages/hex.nix`, driven by the
-`programs.hex` Home Manager module from the `anomalyco/hex` flake input. Hex
-publishes no stable Linux release, so the executable is the dev build named by
-[`https://anoma.ly/release/hex/desktop/dev.json`](https://anoma.ly/release/hex/desktop/dev.json). `./update` does not bump
-it; update the version, URL, and hash by hand.
+`programs.hex` Home Manager module from the `anomalyco/hex` flake input. The
+executable, the flake input, and the cask all follow Hex's stable channel;
+`./update` does not bump the executable, so update the version, URL, and hash
+by hand together with the flake input's tag.
 
 - [x] Install the default model on scylla. `hex-model-install.service` runs `hex model install` before `hex.service` at login, is a no-op once the model is checksum-verified, and Hex's onboarding also downloads it. `hex model check` prewarmed the model on the RX 9070 XT.
-- [x] Set the dictation shortcut: holding Alt+Space in `hypr/bindings.lua` runs `hex dictation start` on press and `stop` on release; Ctrl+Space stays Vicinae. The log already showed the GlobalShortcuts portal refusing Hex.
+- [x] Set the dictation shortcut: `hypr/bindings.lua` binds `hl.dsp.global("anomaly.hex:dictation-ALT-space")` to Alt+Space and `anomaly.hex:cancel-dictation` to Alt+Escape, through Hyprland's GlobalShortcuts portal. The earlier `hex dictation start` / `stop` CLI pair lost the release when stop arrived before start, leaving the recording pill up.
+- [ ] Remove the PipeWire client config override in `nix/packages/hex.nix` once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME` here. With the stock config, the ALSA plugin promotes Hex's data loop to realtime and the kernel SIGKILLs Hex the moment it runs (`code=killed, status=9/KILL`), for both the default microphone and Hex's sounds. The wrapper loads the stock client config with `module.rt = false`, which keeps dictation working without realtime scheduling; the PipeWire server keeps its own RT.
 - [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
-- [ ] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships.
+- [x] Switch the pinned Linux executable, the macOS cask, and the flake input to Hex's stable channel when a Linux release ships. The executable and flake input are pinned to v3.1.1; the tap cask follows stable by itself.
 
 macOS has no `hex-model-install` equivalent: its `model install` takes a model id
 and drives the running app over its control socket, so a launchd job would race
