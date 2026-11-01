@@ -28,17 +28,6 @@ let
     platformPackages.${pkgs.stdenv.hostPlatform.system}
       or (throw "Unsupported system for ${pname}: ${pkgs.stdenv.hostPlatform.system}");
 
-  # patchelf 0.18 and newer corrupt the Node SEA launcher's program headers,
-  # so the packaged binary segfaults on startup. Keep the last known-good
-  # release until upstream handles this layout.
-  patchelf015 = pkgs.patchelf.overrideAttrs (_: {
-    version = "0.15.2";
-    src = pkgs.fetchurl {
-      url = "https://github.com/NixOS/patchelf/releases/download/0.15.2/patchelf-0.15.2.tar.bz2";
-      hash = "sha256-F3RfVkFZyOIo/EEtplogSLhGxLa0Igt3y/IkFuAvLXw=";
-    };
-  });
-
   src = packageUtils.fetchGitHubRelease {
     owner = "pingdotgg";
     repo = "t3code";
@@ -72,12 +61,11 @@ pkgs.stdenvNoCC.mkDerivation {
     meta
     ;
 
-  # patchelf015 has to precede the hook so auto-patchelf picks it from PATH.
   nativeBuildInputs = [
     pkgs.makeWrapper
   ]
   ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-    patchelf015
+    pkgs.patchelf
     pkgs.autoPatchelfHook
   ];
   buildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
