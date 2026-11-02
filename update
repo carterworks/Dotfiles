@@ -239,13 +239,6 @@ print(version + "-" + build)
       query="$(jq -r '.query' <<<"${update_info}")"
       version_record "$(curl -fsSL "${url}" | jq -r "${query}")"
       ;;
-    redirect)
-      local url pattern location
-      url="$(jq -r '.url' <<<"${update_info}")"
-      pattern="$(jq -r '.pattern' <<<"${update_info}")"
-      location="$(curl -fsS -o /dev/null -w '%{redirect_url}' "${url}")" || return 1
-      version_record "$(jq -Rr --arg pattern "${pattern}" 'capture($pattern).version // empty' <<<"${location}")"
-      ;;
     github-branch)
       local owner repo branch commit
       owner="$(jq -r '.owner' <<<"${update_info}")"
