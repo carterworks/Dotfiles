@@ -5,6 +5,7 @@
 
 let
   version = "0.38.0";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "cua-driver";
@@ -12,8 +13,12 @@ pkgs.stdenvNoCC.mkDerivation {
 
   # Upstream ships the driver as a glibc-linked Rust binary with no source
   # packaging; autoPatchelf rewrites it for the NixOS loader.
-  src = pkgs.fetchurl {
-    url = "https://github.com/trycua/cua/releases/download/cua-driver-rs-v${version}/cua-driver-rs-${version}-linux-x86_64-binary.tar.gz";
+  src = packageUtils.fetchGitHubRelease {
+    owner = "trycua";
+    repo = "cua";
+    tag = "cua-driver-rs-v${version}";
+    asset = "cua-driver-rs-${version}-linux-x86_64-binary.tar.gz";
+    inherit version;
     hash = "sha256-MauXCd2RznNnfkm58+dcbw0+TZYlwobJ5YJiv76mmN0=";
   };
 

@@ -6,6 +6,8 @@
 let
   # Upstream names releases by version and commit, e.g. 3.6.6-8b85519e.
   version = "3.6.6-8b85519e";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
+
   platformPackages = {
     aarch64-darwin = {
       arch = "arm64";
@@ -16,20 +18,19 @@ let
       hash = "sha256-TiYf1f6czYSQlVii/y1mb6S4wKWWfJqM2weAZh4+OMc=";
     };
   };
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for github-desktop: ${pkgs.stdenv.hostPlatform.system}");
 in
-pkgs.stdenvNoCC.mkDerivation {
+packageUtils.mkPlatformBinary {
   pname = "github-desktop";
-  inherit version;
+  inherit version platformPackages;
 
-  src = pkgs.fetchurl {
-    url = "https://desktop.githubusercontent.com/releases/${version}/GitHubDesktop-${platformPackage.arch}.zip";
-    inherit (platformPackage) hash;
-  };
+  src =
+    platformPackage:
+    pkgs.fetchurl {
+      url = "https://desktop.githubusercontent.com/releases/${version}/GitHubDesktop-${platformPackage.arch}.zip";
+      inherit (platformPackage) hash;
+    };
 
-  passthru.updateInfo = {
+  updateInfo = {
     source = "redirect";
     url = "https://central.github.com/deployments/desktop/desktop/latest/darwin-arm64";
     pattern = "/releases/(?<version>[^/]+)/";
@@ -73,8 +74,6 @@ pkgs.stdenvNoCC.mkDerivation {
     description = "Desktop client for GitHub repositories";
     homepage = "https://desktop.github.com/";
     license = lib.licenses.mit;
-    platforms = builtins.attrNames platformPackages;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     mainProgram = "github-desktop";
   };
 }

@@ -3,7 +3,15 @@
   pkgs,
 }:
 
+let
+  selectPlatformPackage =
+    pname: platformPackages:
+    platformPackages.${pkgs.stdenv.hostPlatform.system}
+      or (throw "Unsupported system for ${pname}: ${pkgs.stdenv.hostPlatform.system}");
+in
 {
+  inherit selectPlatformPackage;
+
   fetchGitHubRelease =
     {
       owner,
@@ -32,39 +40,33 @@
       inherit hash;
     };
 
+  # A prebuilt per-platform binary. Any other attribute is passed through to
+  # mkDerivation.
   mkPlatformBinary =
     {
       pname,
-      version,
       platformPackages,
       src,
-      installPhase,
       meta,
       updateInfo,
-      dontUnpack ? false,
-      nativeBuildInputs ? [ ],
-    }:
-    let
-      platformPackage =
-        platformPackages.${pkgs.stdenv.hostPlatform.system}
-          or (throw "Unsupported system for ${pname}: ${pkgs.stdenv.hostPlatform.system}");
-    in
-    pkgs.stdenvNoCC.mkDerivation {
-      inherit
-        dontUnpack
-        installPhase
-        nativeBuildInputs
-        pname
-        version
-        ;
+      ...
+    }@args:
+    pkgs.stdenvNoCC.mkDerivation (
+      removeAttrs args [
+        "platformPackages"
+        "updateInfo"
+      ]
+      // {
+        src = src (selectPlatformPackage pname platformPackages);
 
-      src = src platformPackage;
+        passthru = (args.passthru or { }) // {
+          inherit updateInfo;
+        };
 
-      passthru.updateInfo = updateInfo;
-
-      meta = meta // {
-        platforms = builtins.attrNames platformPackages;
-        sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-      };
-    };
+        meta = meta // {
+          platforms = builtins.attrNames platformPackages;
+          sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
+        };
+      }
+    );
 }
