@@ -35,6 +35,7 @@ in
     inputs.hunk.homeManagerModules.default
     ./agent-daemons.nix
     ./desktop-theme.nix
+    ./obsidian-sync.nix
   ];
 
   # Upstream's Home Manager module supports x86_64-linux only; macOS installs
