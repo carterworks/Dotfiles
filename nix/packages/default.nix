@@ -32,6 +32,7 @@ in
   nub = localPackage ./nub.nix;
 }
 // lib.optionalAttrs (system == "aarch64-darwin" || system == "x86_64-linux") {
+  hex = pkgs.callPackage ./hex.nix { hexSource = inputs.hex; };
   t3code-cli = localPackage ./t3code-cli.nix;
   t3code-nightly = localPackage ./t3code-nightly.nix;
 }
@@ -51,6 +52,5 @@ in
   delta = inputs.delta.packages.${system}.delta;
   bambu-studio = localPackage ./bambu-studio.nix;
   cua-driver = localPackage ./cua-driver.nix;
-  hex = pkgs.callPackage ./hex.nix { hexSource = inputs.hex; };
   obsidian-headless = localPackage ./obsidian-headless.nix;
 }

@@ -35,16 +35,16 @@ daemon over its socket through the `cua-driver` MCP server.
 
 ## Hex dictation
 
-Handy is replaced by Hex: the `anomalyco/tap/hex` cask on macOS and a pinned
-prebuilt Linux executable in `nix/packages/hex.nix`, driven by the
-`programs.hex` Home Manager module from the `anomalyco/hex` flake input. The
-executable, the flake input, and the cask all follow Hex's stable channel;
-`./update` does not bump the executable, so update the version, URL, and hash
-by hand together with the flake input's tag.
+Handy is replaced by Hex: `nix/packages/hex.nix` pins Hex's prebuilt GitHub
+releases, the macOS app and the Linux executable. On Linux the `programs.hex`
+Home Manager module from the `anomalyco/hex` flake input drives it; macOS
+installs the app system-wide with Hex's own updater turned off
+(`DisableUpdates`). `./update` bumps both releases and the flake input's tag
+together.
 
 - [ ] Remove the PipeWire client config override in `nix/packages/hex.nix` once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME` here. With the stock config, the ALSA plugin promotes Hex's data loop to realtime and the kernel SIGKILLs Hex the moment it runs (`code=killed, status=9/KILL`), for both the default microphone and Hex's sounds. The wrapper loads the stock client config with `module.rt = false`, which keeps dictation working without realtime scheduling; the PipeWire server keeps its own RT.
 - [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
 
 macOS has no `hex-model-install` equivalent: its `model install` takes a model id
 and drives the running app over its control socket, so a launchd job would race
-the app. The cask app downloads its model during setup instead.
+the app. The app downloads its model during setup instead.
