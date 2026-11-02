@@ -12,7 +12,6 @@ let
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
   fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
-  github-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.github-desktop;
   rex-client = self.packages.${pkgs.stdenv.hostPlatform.system}.rex-client;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
@@ -114,7 +113,6 @@ let
   darwinPackages = with pkgs; [
     awscli2
     github-copilot-cli
-    github-desktop
     kubectl
     kubelogin
     openspec

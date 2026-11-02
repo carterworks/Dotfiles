@@ -39,7 +39,6 @@ in
   delta = localPackage ./delta.nix;
 }
 // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
-  github-desktop = localPackage ./github-desktop.nix;
   rex-client = localPackage ./rex-client.nix;
 }
 // lib.optionalAttrs (lib.hasSuffix "-linux" system && inputs ? rex) {
