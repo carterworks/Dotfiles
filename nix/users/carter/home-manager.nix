@@ -37,7 +37,8 @@ in
     ./desktop-theme.nix
   ];
 
-  # The Hex Nix package targets x86_64-linux; macOS installs the cask instead.
+  # Upstream's Home Manager module supports x86_64-linux only; macOS installs
+  # the same package as a system app instead.
   # installModel downloads the speech model from the module's own service, so
   # a fresh host can dictate immediately; it is a no-op once the model is
   # present and checksum-verified.

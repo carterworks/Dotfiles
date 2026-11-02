@@ -38,10 +38,8 @@
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap";
-    taps = [ "anomalyco/tap" ];
     brews = [ ];
     casks = [
-      "anomalyco/tap/hex"
       "bitwarden"
       "lunar"
       "podman-desktop"
@@ -58,6 +56,8 @@
   security.pam.services.sudo_local.touchIdAuth = true;
 
   system.defaults = {
+    # Hex runs from the read-only Nix store; ./update bumps it instead.
+    CustomUserPreferences."anomaly.hex".DisableUpdates = true;
     CustomUserPreferences."com.superlogical.rex" = {
       "Workspace.terminalFontPointSize" = 14.0;
       "Workspace.terminalStartupCommand" = lib.getExe pkgs.fish;

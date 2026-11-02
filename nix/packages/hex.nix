@@ -7,16 +7,46 @@
 }:
 
 let
+  pname = "hex";
   version = "3.3.0";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
-  # Fetch the prebuilt release executable and skip the Rust/Vulkan compile.
+  # Fetch the prebuilt releases and skip the Rust/Vulkan compile.
+  platformPackages = {
+    aarch64-darwin = {
+      asset = "hex-${version}-macos-arm64.zip";
+      hash = "sha256-HCjWoeeQMj7xmbSBvJIx5q2OcKF4W+hJE+Cnvwpuuzk=";
+    };
+    x86_64-linux = {
+      asset = "hex-${version}-linux-x64";
+      hash = "sha256-6MezouvrHX2l1idtXyUUWJHVIXjjY2NHyzrDMfdmJiI=";
+    };
+  };
+  platformPackage = packageUtils.selectPlatformPackage pname platformPackages;
+
   src = packageUtils.fetchGitHubRelease {
     owner = "anomalyco";
     repo = "hex";
-    asset = "hex-${version}-linux-x64";
     inherit version;
-    hash = "sha256-6MezouvrHX2l1idtXyUUWJHVIXjjY2NHyzrDMfdmJiI=";
+    inherit (platformPackage) asset hash;
+  };
+
+  # The hex flake input supplies hexSource and must match this release.
+  updateInfo = {
+    source = "github-release";
+    owner = "anomalyco";
+    repo = "hex";
+    tagPrefix = "v";
+    flakeInput = "hex";
+  };
+
+  meta = {
+    description = "Local-first voice dictation";
+    homepage = "https://github.com/anomalyco/hex";
+    license = lib.licenses.mit;
+    mainProgram = "hex";
+    platforms = builtins.attrNames platformPackages;
+    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
 
   # Match upstream's package so the prebuilt binary resolves the same PipeWire
@@ -39,82 +69,113 @@ let
       --replace-fail '{ module.rt = !false }' '{ module.rt = false }'
   '';
 in
-pkgs.stdenvNoCC.mkDerivation {
-  pname = "hex";
-  inherit version src;
+if pkgs.stdenv.hostPlatform.isDarwin then
+  pkgs.stdenvNoCC.mkDerivation {
+    inherit
+      pname
+      version
+      src
+      meta
+      ;
 
-  nativeBuildInputs = [
-    pkgs.autoPatchelfHook
-    # After autoPatchElf: it rewrites RPATH wholesale, which would drop the
-    # driver path if this hook ran first.
-    pkgs.autoAddDriverRunpath
-    pkgs.makeWrapper
-  ];
-  buildInputs = [
-    pkgs.alsa-lib
-    pkgs.libxkbcommon
-    pkgs.stdenv.cc.cc.lib
-    pkgs.vulkan-loader
-  ];
-  # wgpu loads the host's Vulkan driver at runtime.
-  runtimeDependencies = [ pkgs.vulkan-loader ];
+    nativeBuildInputs = [
+      pkgs.unzip
+      pkgs.makeWrapper
+    ];
 
-  dontUnpack = true;
-  dontConfigure = true;
-  dontBuild = true;
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+    # Keep the notarised bundle byte-identical so its signature stays valid.
+    dontFixup = true;
 
-  # The hex flake input supplies hexSource and must match this release.
-  passthru.updateInfo = {
-    source = "github-release";
-    owner = "anomalyco";
-    repo = "hex";
-    tagPrefix = "v";
-    flakeInput = "hex";
-  };
+    passthru = { inherit updateInfo; };
 
-  installPhase = ''
-    runHook preInstall
+    installPhase = ''
+      runHook preInstall
 
-    install -Dm755 $src $out/bin/hex
-    # The GlobalShortcuts portal identifies Hex by its reverse-DNS app id,
-    # anomaly.hex, which this entry has to be named after.
-    install -Dm644 ${hexSource}/packaging/anomaly.hex.desktop \
-      $out/share/applications/anomaly.hex.desktop
-    substituteInPlace $out/share/applications/anomaly.hex.desktop \
-      --replace-fail '@HEX_BIN@' "$out/bin/hex"
-    mkdir -p $out/share/icons
-    cp -R ${hexSource}/packaging/linux/icons/hicolor $out/share/icons/hicolor
+      mkdir -p "$out/Applications" "$out/bin"
+      unzip -q "$src" -d "$out/Applications" -x '*/._*'
+      makeWrapper "$out/Applications/Hex.app/Contents/MacOS/hex" "$out/bin/hex"
 
-    runHook postInstall
-  '';
+      runHook postInstall
+    '';
 
-  postFixup = ''
-    wrapProgram $out/bin/hex \
-      --prefix PATH : ${
-        lib.makeBinPath [
-          pkgs.curl
-          pkgs.wl-clipboard
-          pkgs.wtype
-        ]
-      } \
-      --set ALSA_PLUGIN_DIR ${alsaPluginDir} \
-      --set PIPEWIRE_CONFIG_DIR ${pipewireClientConfig} \
-      --set PIPEWIRE_CONFIG_NAME client.conf
-  '';
+    doInstallCheck = true;
+    installCheckPhase = ''
+      runHook preInstallCheck
 
-  doInstallCheck = true;
-  installCheckPhase = ''
-    runHook preInstallCheck
-    "$out/bin/hex" --version
-    runHook postInstallCheck
-  '';
+      test -x "$out/bin/hex"
+      /usr/bin/codesign --verify --deep --strict "$out/Applications/Hex.app"
 
-  meta = {
-    description = "Local-first voice dictation (Linux beta)";
-    homepage = "https://github.com/anomalyco/hex";
-    license = lib.licenses.mit;
-    mainProgram = "hex";
-    platforms = [ "x86_64-linux" ];
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-  };
-}
+      runHook postInstallCheck
+    '';
+  }
+else
+  pkgs.stdenvNoCC.mkDerivation {
+    inherit
+      pname
+      version
+      src
+      meta
+      ;
+
+    nativeBuildInputs = [
+      pkgs.autoPatchelfHook
+      # After autoPatchElf: it rewrites RPATH wholesale, which would drop the
+      # driver path if this hook ran first.
+      pkgs.autoAddDriverRunpath
+      pkgs.makeWrapper
+    ];
+    buildInputs = [
+      pkgs.alsa-lib
+      pkgs.libxkbcommon
+      pkgs.stdenv.cc.cc.lib
+      pkgs.vulkan-loader
+    ];
+    # wgpu loads the host's Vulkan driver at runtime.
+    runtimeDependencies = [ pkgs.vulkan-loader ];
+
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+
+    passthru = { inherit updateInfo; };
+
+    installPhase = ''
+      runHook preInstall
+
+      install -Dm755 $src $out/bin/hex
+      # The GlobalShortcuts portal identifies Hex by its reverse-DNS app id,
+      # anomaly.hex, which this entry has to be named after.
+      install -Dm644 ${hexSource}/packaging/anomaly.hex.desktop \
+        $out/share/applications/anomaly.hex.desktop
+      substituteInPlace $out/share/applications/anomaly.hex.desktop \
+        --replace-fail '@HEX_BIN@' "$out/bin/hex"
+      mkdir -p $out/share/icons
+      cp -R ${hexSource}/packaging/linux/icons/hicolor $out/share/icons/hicolor
+
+      runHook postInstall
+    '';
+
+    postFixup = ''
+      wrapProgram $out/bin/hex \
+        --prefix PATH : ${
+          lib.makeBinPath [
+            pkgs.curl
+            pkgs.wl-clipboard
+            pkgs.wtype
+          ]
+        } \
+        --set ALSA_PLUGIN_DIR ${alsaPluginDir} \
+        --set PIPEWIRE_CONFIG_DIR ${pipewireClientConfig} \
+        --set PIPEWIRE_CONFIG_NAME client.conf
+    '';
+
+    doInstallCheck = true;
+    installCheckPhase = ''
+      runHook preInstallCheck
+      "$out/bin/hex" --version
+      runHook postInstallCheck
+    '';
+  }

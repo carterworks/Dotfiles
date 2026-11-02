@@ -188,6 +188,7 @@
       checks.aarch64-darwin = repositoryChecks.aarch64-darwin // {
         inherit (packageSets.aarch64-darwin)
           dotbot
+          hex
           rex-client
           nub
           fff-mcp
