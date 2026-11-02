@@ -177,11 +177,28 @@ print(json.dumps({"revision": version, "version": version}))
 '
       ;;
     github-release)
-      local owner repo prefix tag version
+      # Monorepos publish several products from one repository, so
+      # /releases/latest may belong to another product; take the newest stable
+      # release whose tag carries this package's prefix instead.
+      local owner repo prefix prereleases tag version
       owner="$(jq -r '.owner' <<<"${update_info}")"
       repo="$(jq -r '.repo' <<<"${update_info}")"
       prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
-      tag="$(github_api "repos/${owner}/${repo}/releases/latest" | jq -r '.tag_name')"
+      prereleases="$(jq -r '.includePrereleases // false' <<<"${update_info}")"
+      tag="$(
+        github_api "repos/${owner}/${repo}/releases?per_page=100" \
+          | jq -r --arg prefix "${prefix}" --argjson prereleases "${prereleases}" '
+              [
+                .[]
+                | select((.draft | not) and ($prereleases or (.prerelease | not)))
+                | .tag_name
+                | select(startswith($prefix))
+              ][0] // empty
+            '
+      )"
+      if [[ -z "${tag}" ]]; then
+        return 1
+      fi
       version="${tag#"${prefix}"}"
       jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
@@ -229,6 +246,24 @@ print(json.dumps({"revision": version, "version": version}))
       version="$(curl -fsSL "https://registry.npmjs.org/${package}" | jq -r --arg channel "${channel}" '.["dist-tags"][$channel]')"
       jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
+    json)
+      local url query version
+      url="$(jq -r '.url' <<<"${update_info}")"
+      query="$(jq -r '.query' <<<"${update_info}")"
+      version="$(curl -fsSL "${url}" | jq -er "${query}")" || return 1
+      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      ;;
+    redirect)
+      local url pattern location version
+      url="$(jq -r '.url' <<<"${update_info}")"
+      pattern="$(jq -r '.pattern' <<<"${update_info}")"
+      location="$(curl -fsS -o /dev/null -w '%{redirect_url}' "${url}")" || return 1
+      version="$(jq -Rr --arg pattern "${pattern}" 'capture($pattern).version // empty' <<<"${location}")"
+      if [[ -z "${version}" ]]; then
+        return 1
+      fi
+      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      ;;
     github-branch)
       local owner repo branch commit
       owner="$(jq -r '.owner' <<<"${update_info}")"
@@ -266,7 +301,9 @@ package_systems() {
   local system
 
   for system in "${SYSTEMS[@]}"; do
-    if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.pname" >/dev/null 2>&1; then
+    # Some systems take a package of the same name from a flake input, which
+    # this updater does not own; only systems with update metadata are ours.
+    if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateInfo.source" >/dev/null 2>&1; then
       printf '%s\n' "${system}"
     fi
   done
@@ -317,6 +354,33 @@ apply_update() {
   fi
   content="${content//version = \"${current}\"/version = \"${latest}\"}"
   printf '%s\n' "${content}" >"${file}"
+
+  if jq -e '.flakeInput' <<<"${update_info}" >/dev/null; then
+    update_flake_input "${current}" "${latest}" "${update_info}" || return 1
+  fi
+}
+
+# Bump a flake input pinned to the release tag that matches the package.
+update_flake_input() {
+  local current="$1"
+  local latest="$2"
+  local update_info="$3"
+  local input owner repo prefix old_ref new_ref content
+
+  input="$(jq -r '.flakeInput' <<<"${update_info}")"
+  owner="$(jq -r '.owner' <<<"${update_info}")"
+  repo="$(jq -r '.repo' <<<"${update_info}")"
+  prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
+  old_ref="github:${owner}/${repo}/${prefix}${current}"
+  new_ref="github:${owner}/${repo}/${prefix}${latest}"
+
+  content="$(cat "${BASEDIR}/flake.nix")"
+  if [[ "${content}" != *"\"${old_ref}\""* ]]; then
+    log_message error "flake.nix does not pin ${input} to ${old_ref}"
+    return 1
+  fi
+  printf '%s\n' "${content//\"${old_ref}\"/\"${new_ref}\"}" >"${BASEDIR}/flake.nix"
+  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update "${input}"
 }
 
 cache_private_release() (
@@ -610,7 +674,7 @@ for file in "${BASEDIR}"/nix/packages/*.nix; do
   mapfile -t supported_systems < <(package_systems "${pkg}")
   package_system="${supported_systems[0]:-}"
   if [[ -z "${package_system}" ]]; then
-    log_message warn "${pkg}: not exposed through flake packages; skipping"
+    log_message warn "${pkg}: no flake package with update metadata; skipping"
     continue
   fi
 
