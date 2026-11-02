@@ -145,6 +145,18 @@ private_source() {
   jq -er --arg key "${key}" 'getpath($key | split(".")) | select(type == "string" and startswith("https://"))' "${file}"
 }
 
+# Print the version record every source resolves to: the revision the package
+# pins (a tag version, or a commit for branch sources) and its display version.
+version_record() {
+  local revision="$1"
+  local version="${2:-$1}"
+
+  if [[ -z "${revision}" || "${revision}" == null ]]; then
+    return 1
+  fi
+  jq -cn --arg revision "${revision}" --arg version "${version}" '{ revision: $revision, version: $version }'
+}
+
 latest_update() {
   local update_info="$1"
   local source
@@ -159,8 +171,7 @@ latest_update() {
       else
         url="$(jq -r '.url' <<<"${update_info}")"
       fi
-      curl -fsSL "${url}" | python3 -c '
-import json
+      version_record "$(curl -fsSL "${url}" | python3 -c '
 import sys
 import xml.etree.ElementTree as ET
 
@@ -172,97 +183,68 @@ version = item.findtext(namespace + "shortVersionString")
 build = item.findtext(namespace + "version")
 if not version or not build:
     sys.exit("Sparkle release is missing its version or build")
-version = version + "-" + build
-print(json.dumps({"revision": version, "version": version}))
-'
+print(version + "-" + build)
+')"
       ;;
     github-release)
-      # Monorepos publish several products from one repository, so
-      # /releases/latest may belong to another product; take the newest stable
-      # release whose tag carries this package's prefix instead.
-      local owner repo prefix prereleases tag version
+      # Scan the release list rather than /releases/latest: a monorepo's latest
+      # release may belong to another product (tagPrefix tells them apart), and
+      # /releases/latest skips prereleases. Prerelease trains select a SemVer
+      # channel; includePrereleases accepts releases upstream merely flags as
+      # prereleases.
+      local owner repo prefix channel prereleases pattern
       owner="$(jq -r '.owner' <<<"${update_info}")"
       repo="$(jq -r '.repo' <<<"${update_info}")"
       prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
+      channel="$(jq -r '.channel // ""' <<<"${update_info}")"
       prereleases="$(jq -r '.includePrereleases // false' <<<"${update_info}")"
-      tag="$(
+      pattern=""
+      if [[ -n "${channel}" ]]; then
+        # The channel is interpolated into a regex below; keep it a SemVer
+        # identifier.
+        if [[ ! "${channel}" =~ ^[0-9A-Za-z][0-9A-Za-z-]*$ ]]; then
+          log_message error "${repo}: invalid prerelease channel '${channel}'"
+          return 1
+        fi
+        # SemVer 2.0.0 prerelease tags are <version>-<identifier>[.<identifier>...]
+        # and the channel must be the first identifier: 0.28.0-beta.1,
+        # 0.0.46-nightly.20261015.3158, 1.0.0-rc.2.
+        pattern="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}(\\.[0-9A-Za-z-]+)*$"
+        prereleases=true
+      fi
+      version_record "$(
         github_api "repos/${owner}/${repo}/releases?per_page=100" \
-          | jq -r --arg prefix "${prefix}" --argjson prereleases "${prereleases}" '
+          | jq -r --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
               [
                 .[]
                 | select((.draft | not) and ($prereleases or (.prerelease | not)))
                 | .tag_name
                 | select(startswith($prefix))
-              ][0] // empty
-            '
-      )"
-      if [[ -z "${tag}" ]]; then
-        return 1
-      fi
-      version="${tag#"${prefix}"}"
-      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
-      ;;
-    github-release-channel)
-      # Prerelease trains are published as GitHub prereleases, which
-      # /releases/latest skips, so scan the release list for the newest tag in
-      # the requested channel, the way upstream installers select one.
-      local owner repo channel prefix pattern tag version
-      owner="$(jq -r '.owner' <<<"${update_info}")"
-      repo="$(jq -r '.repo' <<<"${update_info}")"
-      channel="$(jq -r '.channel' <<<"${update_info}")"
-      prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
-      # The channel is interpolated into a regex below; keep it a SemVer
-      # identifier.
-      if [[ ! "${channel}" =~ ^[0-9A-Za-z][0-9A-Za-z-]*$ ]]; then
-        log_message error "${repo}: invalid prerelease channel '${channel}'"
-        return 1
-      fi
-      # SemVer 2.0.0 prerelease tags are <version>-<identifier>[.<identifier>...]
-      # and the channel must be the first identifier: 0.28.0-beta.1,
-      # 0.0.46-nightly.20261015.3158, 1.0.0-rc.2.
-      pattern="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}(\\.[0-9A-Za-z-]+)*$"
-      tag="$(
-        github_api "repos/${owner}/${repo}/releases?per_page=100" \
-          | jq -r --arg pattern "${pattern}" --arg prefix "${prefix}" '
-              [
-                .[]
-                | .tag_name
-                | select(startswith($prefix))
                 | .[($prefix | length):]
-                | select(test($pattern))
+                | select($pattern == "" or test($pattern))
               ][0] // empty
             '
       )"
-      if [[ -z "${tag}" ]]; then
-        return 1
-      fi
-      version="${tag#"${prefix}"}"
-      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
       ;;
     npm)
-      local package channel version
-      package="$(jq -r '.package' <<<"${update_info}")"
-      channel="$(jq -r '.channel // "latest"' <<<"${update_info}")"
-      version="$(curl -fsSL "https://registry.npmjs.org/${package}" | jq -r --arg channel "${channel}" '.["dist-tags"][$channel]')"
-      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      latest_update "$(jq -c '{
+        source: "json",
+        url: ("https://registry.npmjs.org/" + .package),
+        query: (".[\"dist-tags\"][\"" + (.channel // "latest") + "\"]")
+      }' <<<"${update_info}")"
       ;;
     json)
-      local url query version
+      local url query
       url="$(jq -r '.url' <<<"${update_info}")"
       query="$(jq -r '.query' <<<"${update_info}")"
-      version="$(curl -fsSL "${url}" | jq -er "${query}")" || return 1
-      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      version_record "$(curl -fsSL "${url}" | jq -r "${query}")"
       ;;
     redirect)
-      local url pattern location version
+      local url pattern location
       url="$(jq -r '.url' <<<"${update_info}")"
       pattern="$(jq -r '.pattern' <<<"${update_info}")"
       location="$(curl -fsS -o /dev/null -w '%{redirect_url}' "${url}")" || return 1
-      version="$(jq -Rr --arg pattern "${pattern}" 'capture($pattern).version // empty' <<<"${location}")"
-      if [[ -z "${version}" ]]; then
-        return 1
-      fi
-      jq -cn --arg revision "${version}" --arg version "${version}" '{ revision: $revision, version: $version }'
+      version_record "$(jq -Rr --arg pattern "${pattern}" 'capture($pattern).version // empty' <<<"${location}")"
       ;;
     github-branch)
       local owner repo branch commit
@@ -270,10 +252,9 @@ print(json.dumps({"revision": version, "version": version}))
       repo="$(jq -r '.repo' <<<"${update_info}")"
       branch="$(jq -r '.branch' <<<"${update_info}")"
       commit="$(github_api "repos/${owner}/${repo}/commits/${branch}")"
-      jq -cn \
-        --arg revision "$(jq -r '.sha' <<<"${commit}")" \
-        --arg version "0-unstable-$(jq -r '.commit.committer.date | split("T")[0]' <<<"${commit}")" \
-        '{ revision: $revision, version: $version }'
+      version_record \
+        "$(jq -r '.sha' <<<"${commit}")" \
+        "0-unstable-$(jq -r '.commit.committer.date | split("T")[0]' <<<"${commit}")"
       ;;
     *)
       return 1

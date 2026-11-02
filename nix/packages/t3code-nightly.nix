@@ -50,7 +50,7 @@ let
   };
 
   updateInfo = {
-    source = "github-release-channel";
+    source = "github-release";
     owner = "pingdotgg";
     repo = "t3code";
     channel = "nightly";
