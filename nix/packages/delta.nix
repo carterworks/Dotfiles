@@ -23,6 +23,12 @@ pkgs.stdenvNoCC.mkDerivation rec {
   # Keep the official app bundle intact so its code signature remains valid.
   dontFixup = true;
 
+  passthru.updateInfo = {
+    source = "json";
+    url = "https://releases.delta.dev/releases/stable/latest.json";
+    query = ".version";
+  };
+
   installPhase = ''
     runHook preInstall
 

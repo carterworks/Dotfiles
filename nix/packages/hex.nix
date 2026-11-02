@@ -8,11 +8,14 @@
 
 let
   version = "3.1.1";
+  packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
-  # The stable release serves the same executable under a content-addressed
-  # path, so fetch that and skip the Rust/Vulkan compile.
-  src = pkgs.fetchurl {
-    url = "https://anoma.ly/release/hex/files/913fc3523c25194b24721fe1d6a59a28b9b0136ef0cdf9d55eed7f21b19201d2/hex";
+  # Fetch the prebuilt release executable and skip the Rust/Vulkan compile.
+  src = packageUtils.fetchGitHubRelease {
+    owner = "anomalyco";
+    repo = "hex";
+    asset = "hex-${version}-linux-x64";
+    inherit version;
     hash = "sha256-kT/DUjwlGUskch/h1qWaKLmwE27wzfnVXu1/IbGSAdI=";
   };
 
@@ -59,6 +62,15 @@ pkgs.stdenvNoCC.mkDerivation {
   dontUnpack = true;
   dontConfigure = true;
   dontBuild = true;
+
+  # The hex flake input supplies hexSource and must match this release.
+  passthru.updateInfo = {
+    source = "github-release";
+    owner = "anomalyco";
+    repo = "hex";
+    tagPrefix = "v";
+    flakeInput = "hex";
+  };
 
   installPhase = ''
     runHook preInstall

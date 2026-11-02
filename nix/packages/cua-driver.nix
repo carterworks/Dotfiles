@@ -33,6 +33,15 @@ pkgs.stdenvNoCC.mkDerivation {
 
   sourceRoot = ".";
 
+  passthru.updateInfo = {
+    source = "github-release";
+    owner = "trycua";
+    repo = "cua";
+    tagPrefix = "cua-driver-rs-v";
+    # Upstream flags every driver release as a prerelease.
+    includePrereleases = true;
+  };
+
   # Keep the sibling payload next to the executable: the driver resolves the
   # cursor theme and cursor renderer relative to its own directory.
   installPhase = ''
