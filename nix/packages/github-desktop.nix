@@ -4,8 +4,8 @@
 }:
 
 let
-  version = "3.6.6";
-  release = "${version}-8b85519e";
+  # Upstream names releases by version and commit, e.g. 3.6.6-8b85519e.
+  version = "3.6.6-8b85519e";
   platformPackages = {
     aarch64-darwin = {
       arch = "arm64";
@@ -25,8 +25,14 @@ pkgs.stdenvNoCC.mkDerivation {
   inherit version;
 
   src = pkgs.fetchurl {
-    url = "https://desktop.githubusercontent.com/releases/${release}/GitHubDesktop-${platformPackage.arch}.zip";
+    url = "https://desktop.githubusercontent.com/releases/${version}/GitHubDesktop-${platformPackage.arch}.zip";
     inherit (platformPackage) hash;
+  };
+
+  passthru.updateInfo = {
+    source = "redirect";
+    url = "https://central.github.com/deployments/desktop/desktop/latest/darwin-arm64";
+    pattern = "/releases/(?<version>[^/]+)/";
   };
 
   nativeBuildInputs = [
