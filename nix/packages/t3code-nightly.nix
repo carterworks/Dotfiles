@@ -25,9 +25,7 @@ let
     };
   };
 
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for ${pname}: ${pkgs.stdenv.hostPlatform.system}");
+  platformPackage = packageUtils.selectPlatformPackage pname platformPackages;
 
   src = packageUtils.fetchGitHubRelease {
     owner = "pingdotgg";

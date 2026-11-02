@@ -23,27 +23,18 @@ let
       hash = "sha256-87HDtuxlbB7wuag4/fv/02u0Urh4XE+XGXpwJKcdfYs=";
     };
   };
+in
+packageUtils.mkPlatformBinary {
+  inherit pname version platformPackages;
 
-  platformPackage =
-    platformPackages.${pkgs.stdenv.hostPlatform.system}
-      or (throw "Unsupported system for ${pname}: ${pkgs.stdenv.hostPlatform.system}");
-
-  src = packageUtils.fetchGitHubRelease {
-    owner = "pingdotgg";
-    repo = "t3code";
-    inherit version;
-    inherit (platformPackage) asset hash;
-  };
-
-  meta = {
-    description = "Command-line client for the T3 Code control surface";
-    homepage = "https://t3.codes";
-    changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
-    license = lib.licenses.mit;
-    mainProgram = "t3";
-    platforms = builtins.attrNames platformPackages;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
-  };
+  src =
+    platformPackage:
+    packageUtils.fetchGitHubRelease {
+      owner = "pingdotgg";
+      repo = "t3code";
+      inherit version;
+      inherit (platformPackage) asset hash;
+    };
 
   updateInfo = {
     source = "github-release";
@@ -52,14 +43,6 @@ let
     channel = "nightly";
     tagPrefix = "v";
   };
-in
-pkgs.stdenvNoCC.mkDerivation {
-  inherit
-    pname
-    version
-    src
-    meta
-    ;
 
   nativeBuildInputs = [
     pkgs.makeWrapper
@@ -99,5 +82,11 @@ pkgs.stdenvNoCC.mkDerivation {
     runHook postInstallCheck
   '';
 
-  passthru = { inherit updateInfo; };
+  meta = {
+    description = "Command-line client for the T3 Code control surface";
+    homepage = "https://t3.codes";
+    changelog = "https://github.com/pingdotgg/t3code/releases/tag/v${version}";
+    license = lib.licenses.mit;
+    mainProgram = "t3";
+  };
 }
