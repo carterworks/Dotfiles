@@ -7,7 +7,7 @@
 }:
 
 let
-  version = "3.1.1";
+  version = "3.3.0";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # Fetch the prebuilt release executable and skip the Rust/Vulkan compile.
@@ -16,7 +16,7 @@ let
     repo = "hex";
     asset = "hex-${version}-linux-x64";
     inherit version;
-    hash = "sha256-kT/DUjwlGUskch/h1qWaKLmwE27wzfnVXu1/IbGSAdI=";
+    hash = "sha256-6MezouvrHX2l1idtXyUUWJHVIXjjY2NHyzrDMfdmJiI=";
   };
 
   # Match upstream's package so the prebuilt binary resolves the same PipeWire
