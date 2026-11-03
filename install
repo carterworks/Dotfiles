@@ -54,6 +54,88 @@ show_log() {
   fi
 }
 
+# Report state to the terminal with OSC 7501:
+# https://www.superlogical.com/rex/docs/build/program-status
+program_status() {
+  local state="$1"
+  local message="$2"
+  shift 2
+  local pairs=("state=${state}" app=dotfiles "$@" "msg=$(printf '%s' "${message}" | base64 | tr -d '\n')")
+  local IFS=:
+
+  { printf '\e]7501;%s\e\\' "${pairs[*]}" >/dev/tty; } 2>/dev/null || true
+}
+
+report_exit_status() {
+  local status=$?
+
+  case "${status}" in
+    0) program_status "done" "Dotfiles install complete" ;;
+    130) program_status idle "Dotfiles install cancelled" ;;
+    *) program_status error "Dotfiles install failed" ;;
+  esac
+}
+
+# Print the build percentage whenever it changes, from Nix's internal-json log.
+# Activity type 104 counts builds and 103 counts substitutions; result type 105
+# carries [done, expected, running, failed].
+nix_progress() {
+  jq -Rnr --unbuffered '
+    foreach (inputs | fromjson?) as $event ({ progress: {}, percent: null };
+      ($event.id | tostring) as $id
+      | if $event.action == "start" and ($event.type == 103 or $event.type == 104) then
+          .progress[$id] = [0, 0]
+        elif $event.action == "result" and $event.type == 105 and .progress[$id] then
+          .progress[$id] = $event.fields
+        else . end
+      | .previous = .percent
+      | ([.progress[][1]] | add // 0) as $expected
+      | .percent = if $expected > 0 then ([.progress[][0]] | add) * 100 / $expected | floor else null end;
+      select(.percent != null and .percent != .previous) | .percent)
+  '
+}
+
+# Run a Nix command, or a wrapper such as darwin-rebuild that forwards --option
+# to Nix, and report its build progress. Nix tees its JSON log to the FIFO while
+# its own progress output stays on the terminal.
+run_with_nix_progress() {
+  local message="$1"
+  shift
+
+  local fifo_dir
+  local reader
+  local status=0
+
+  program_status working "${message}"
+  if ! command -v jq >/dev/null 2>&1; then
+    "$@"
+    return
+  fi
+
+  fifo_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-install.XXXXXX")"
+  mkfifo "${fifo_dir}/nix-log"
+  nix_progress <"${fifo_dir}/nix-log" | while read -r percent; do
+    program_status working "${message}" "progress=${percent}"
+  done &
+  reader=$!
+  # Hold a writer open so the reader survives between the several Nix processes
+  # a rebuild runs, and a later Nix never blocks opening a FIFO with no reader.
+  exec 3<>"${fifo_dir}/nix-log"
+  "$@" --option json-log-path "${fifo_dir}/nix-log" || status=$?
+  exec 3>&-
+  wait "${reader}"
+  rm -rf "${fifo_dir}"
+  return "${status}"
+}
+
+authenticate_sudo() {
+  if sudo -n true 2>/dev/null; then
+    return
+  fi
+  program_status blocked "Password required to switch the system" kind=auth
+  sudo -v
+}
+
 run_quiet_step() {
   local title="$1"
   shift
@@ -62,6 +144,7 @@ run_quiet_step() {
   local pid
   local status=0
 
+  program_status working "${title}"
   logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-install.XXXXXX")"
   "$@" >"${logfile}" 2>&1 &
   pid=$!
@@ -150,11 +233,12 @@ run_rebuild() {
       rebuild="$(command -v darwin-rebuild || true)"
       if [[ -z "${rebuild}" ]]; then
         log_message info "Bootstrapping nix-darwin from the pinned configuration"
-        system_path="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+        system_path="$(run_with_nix_progress "Building nix-darwin" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
         rebuild="${system_path}/sw/bin/darwin-rebuild"
       fi
 
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
+      authenticate_sudo
+      run_with_nix_progress "Rebuilding system" sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
       ;;
     Linux)
       if [[ ! -e /etc/NIXOS && ! -e /run/current-system/nixos-version ]]; then
@@ -168,7 +252,8 @@ run_rebuild() {
         exit 1
       fi
 
-      sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
+      authenticate_sudo
+      run_with_nix_progress "Rebuilding system" sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
       ;;
     *)
       printf 'Unsupported system: %s\n' "$(uname -s)" >&2
@@ -178,6 +263,7 @@ run_rebuild() {
 }
 
 cd "${BASEDIR}"
+trap report_exit_status EXIT
 section "Dotfiles install"
 log_message info "Machine: $(current_machine_name)"
 log_message info "System: $(uname -s)"
