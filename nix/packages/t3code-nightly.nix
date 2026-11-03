@@ -5,7 +5,7 @@
 
 let
   pname = "t3code-nightly";
-  version = "0.1.7-nightly.20261102.4093";
+  version = "0.1.7-nightly.20261103.4119";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   appName = "T3 Code (Nightly)";
@@ -17,11 +17,11 @@ let
   platformPackages = {
     aarch64-darwin = {
       asset = "T3-Code-${version}-arm64.zip";
-      hash = "sha256-MufDqdwmQrztU81DVKBnBNMDo5PyumMyV3V0qxwjU4E=";
+      hash = "sha256-OmXANVoIqNMuDfBNdxn1RVUddr5ee0Zit/JjNfBvDJU=";
     };
     x86_64-linux = {
       asset = "T3-Code-${version}-x86_64.AppImage";
-      hash = "sha256-nlKQ3Gk2aIgHnq5tLL8sH45QiGkRlCXwr2Kfo5f5D+s=";
+      hash = "sha256-FTAzyBkyzgEfuO0Q+IiW9PanwNUEepuI8HPp9Lo1Ty4=";
     };
   };
 
