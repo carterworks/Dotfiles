@@ -55,6 +55,28 @@ show_log() {
   fi
 }
 
+# Report state to the terminal with OSC 7501:
+# https://www.superlogical.com/rex/docs/build/program-status
+program_status() {
+  local state="$1"
+  local message="$2"
+  shift 2
+  local pairs=("state=${state}" app=dotfiles "$@" "msg=$(printf '%s' "${message}" | base64 | tr -d '\n')")
+  local IFS=:
+
+  { printf '\e]7501;%s\e\\' "${pairs[*]}" >/dev/tty; } 2>/dev/null || true
+}
+
+report_exit_status() {
+  local status=$?
+
+  case "${status}" in
+    0) program_status "done" "Dotfiles update complete" ;;
+    130) program_status idle "Dotfiles update cancelled" ;;
+    *) program_status error "Dotfiles update failed" ;;
+  esac
+}
+
 run_quiet_step() {
   local title="$1"
   shift
@@ -63,6 +85,7 @@ run_quiet_step() {
   local pid
   local status=0
 
+  program_status working "${title}"
   logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-update.XXXXXX")"
   "$@" >"${logfile}" 2>&1 &
   pid=$!
@@ -105,6 +128,7 @@ confirm_apply() {
   fi
 
   if has_gum && [[ -t 0 ]]; then
+    program_status blocked "Apply ${count} package update(s)?" kind=permission
     if gum confirm "Apply ${count} package update(s)?"; then
       return 0
     fi
@@ -607,6 +631,7 @@ require_tool jq
 CURRENT_SYSTEM="$(nix eval --impure --raw --expr builtins.currentSystem)"
 
 cd "${BASEDIR}"
+trap report_exit_status EXIT
 section "Dotfiles update"
 warn_if_git_dirty
 
@@ -641,9 +666,12 @@ section "Check packaged binaries"
 mapfile -t SYSTEMS < <(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
 
 updates=()
-for file in "${BASEDIR}"/nix/packages/*.nix; do
+package_files=("${BASEDIR}"/nix/packages/*.nix)
+for index in "${!package_files[@]}"; do
+  file="${package_files[$index]}"
   pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
   [[ -n "${pkg}" ]] || continue
+  program_status working "Checking ${pkg}" "progress=$(( index * 100 / ${#package_files[@]} ))"
 
   mapfile -t supported_systems < <(package_systems "${pkg}")
   package_system="${supported_systems[0]:-}"
