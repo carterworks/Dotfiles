@@ -71,6 +71,65 @@ apply_update rex-client "$1" 0.1.0-1497 0.1.0-1541 '{"source":"sparkle"}'
                              'version = "0.1.0-1541"; hash = "newhash";\n')
 
 
+class BambuStudioUpdateTests(unittest.TestCase):
+    def asset_url(self, names):
+        package = (ROOT / "nix/packages/bambu-studio.nix").read_text()
+        pattern = json.loads(package.split("assetPattern = ", 1)[1].split(";", 1)[0])
+        release = {"assets": [
+            {"name": name, "browser_download_url": f"https://example.com/{name}"}
+            for name in names
+        ]}
+        info = {
+            "owner": "bambulab", "repo": "BambuStudio", "tagPrefix": "v",
+            "assetPattern": pattern,
+        }
+        script = FUNCTIONS + '''
+github_api() {
+  [[ "$1" == repos/bambulab/BambuStudio/releases/tags/v02.09.01.70 ]] || return 1
+  printf '%s' "$RELEASE"
+}
+release_asset_url "$UPDATE_INFO" 02.09.01.70
+'''
+        return subprocess.run(
+            ["bash", "-c", script],
+            env={**os.environ, "RELEASE": json.dumps(release),
+                 "UPDATE_INFO": json.dumps(info)},
+            text=True, capture_output=True, check=False,
+        )
+
+    def test_selects_ubuntu_24_appimage_across_filename_formats(self):
+        for name in (
+            "BambuStudio_ubuntu24.04-v02.08.02.61-20260820225108.AppImage",
+            "BambuStudio_ubuntu-24.04-v02.08.02.61-20260820225108.AppImage",
+            "BambuStudio_ubu24-v02.09.01.70-20261103183404.AppImage",
+        ):
+            with self.subTest(name=name):
+                result = self.asset_url([
+                    "BambuStudio_ubu22_v02.09.01.70-20261103183404.AppImage",
+                    "Bambu_Studio_mac-v02.09.01.70-20261103183404.dmg",
+                    "Bambu_Studio_win-v02.09.01.70-20261103183404.exe",
+                    "Bambu_Studio_win-v02.09.01.70-20261103183404.zip",
+                    name,
+                ])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), f"https://example.com/{name}")
+
+    def test_rejects_missing_ubuntu_24_appimage(self):
+        result = self.asset_url([
+            "BambuStudio_ubu22_v02.09.01.70-20261103183404.AppImage",
+        ])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected exactly one matching release asset", result.stderr)
+
+    def test_rejects_ambiguous_ubuntu_24_appimages(self):
+        result = self.asset_url([
+            "BambuStudio_ubu24-v02.09.01.70-first.AppImage",
+            "BambuStudio_ubu24-v02.09.01.70-second.AppImage",
+        ])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected exactly one matching release asset", result.stderr)
+
+
 class PrivateSourceTests(unittest.TestCase):
     def run_script(self, script, *args, **env):
         return subprocess.run(

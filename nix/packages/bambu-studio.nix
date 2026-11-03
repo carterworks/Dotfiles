@@ -28,7 +28,7 @@ let
       owner = "bambulab";
       repo = "BambuStudio";
       tagPrefix = "v";
-      assetPattern = "^BambuStudio_ubuntu-?24\\.04.*\\.AppImage$";
+      assetPattern = "^BambuStudio_(ubuntu-?24\\.04|ubu24)[_-].*\\.AppImage$";
     };
 
     profile = ''
