@@ -5,11 +5,11 @@
 
 pkgs.stdenvNoCC.mkDerivation rec {
   pname = "delta";
-  version = "0.23.0";
+  version = "0.24.0";
 
   src = pkgs.fetchurl {
     url = "https://releases.delta.dev/releases/stable/${version}/macos/aarch64/Delta.app.zip";
-    hash = "sha256-2/ri+IEXATFcMghTRjWbVRHA4zdDvyoxhzA1r+GSu30=";
+    hash = "sha256-7wA/Y/kRRYWyObJaPVm6I0aULHrUOdtwokslEwZ0NYc=";
   };
 
   nativeBuildInputs = [
