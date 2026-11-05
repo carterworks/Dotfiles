@@ -130,6 +130,7 @@ else
     buildInputs = [
       pkgs.alsa-lib
       pkgs.libxkbcommon
+      pkgs.openssl
       pkgs.stdenv.cc.cc.lib
       pkgs.vulkan-loader
     ];
