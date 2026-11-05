@@ -1,4 +1,4 @@
-import { copilotCachePolicy } from "./copilot.js";
+import { copilotIdlePolicy } from "./copilot.js";
 import { createScheduler } from "./scheduler.js";
 
 const invalidatingEvents = [
@@ -25,23 +25,22 @@ function sameModel(left, right) {
 }
 
 export default {
-  id: "dotfiles.cache-compaction",
+  id: "dotfiles.idle-compaction",
   async setup(ctx) {
     const options = ctx.options;
-    const policies = [copilotCachePolicy];
+    const policies = [copilotIdlePolicy];
     const warn = (error) =>
       console.warn(
-        "[cache-compaction] Operation failed:",
+        "[idle-compaction] Operation failed:",
         error?.name ?? "Error",
       );
     const scheduler = createScheduler({
-      marginMs: options.marginMs,
-      minInputTokens: options.minInputTokens,
+      maxLatenessMs: options.maxLatenessMs,
       onError: warn,
       compact: async (sessionID) => {
         await ctx.session.compact({ sessionID, delivery: "queue" });
         console.info(
-          "[cache-compaction] Admitted compaction before estimated cache expiry:",
+          "[idle-compaction] Admitted compaction at idle deadline:",
           sessionID,
         );
       },
@@ -95,15 +94,11 @@ export default {
               (candidate) => candidate.id === event.model.variant,
             );
             const settings = { ...model.settings, ...variant?.settings };
-            settings.cache = {
-              ...model.settings?.cache,
-              ...variant?.settings?.cache,
-            };
             const resolved = { ...model, settings };
-            const ttlMs = policies
+            const policy = policies
               .map((policy) => policy(resolved, options))
-              .find((ttl) => ttl !== undefined);
-            scheduler.begin(event.sessionID, event.model, ttlMs, startedAt);
+              .find((policy) => policy !== undefined);
+            scheduler.begin(event.sessionID, event.model, policy, startedAt);
           } catch (error) {
             warn(error);
           }

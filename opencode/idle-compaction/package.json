@@ -1,5 +1,5 @@
 {
-  "name": "dotfiles-cache-compaction",
+  "name": "dotfiles-idle-compaction",
   "private": true,
   "type": "module",
   "exports": "./index.js",

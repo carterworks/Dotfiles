@@ -2,15 +2,10 @@ export function createScheduler({
   compact,
   canCompact,
   onError,
-  marginMs = 60_000,
-  minInputTokens = 32_000,
+  maxLatenessMs = 60_000,
 }) {
-  for (const value of [marginMs, minInputTokens]) {
-    if (!Number.isSafeInteger(value) || value <= 0) {
-      throw new Error(
-        "Cache compaction timing and size options must be positive safe integers",
-      );
-    }
+  if (!Number.isSafeInteger(maxLatenessMs) || maxLatenessMs <= 0) {
+    throw new Error("Idle compaction lateness must be a positive safe integer");
   }
 
   const sessions = new Map();
@@ -23,9 +18,12 @@ export function createScheduler({
 
   async function fire(sessionID, state) {
     try {
-      if (Date.now() >= state.expiresAt) return;
+      if (Date.now() >= state.deadline + maxLatenessMs) return;
       if (!(await canCompact(sessionID, state.model))) return;
-      if (sessions.get(sessionID) !== state || Date.now() >= state.expiresAt)
+      if (
+        sessions.get(sessionID) !== state ||
+        Date.now() >= state.deadline + maxLatenessMs
+      )
         return;
       cancel(sessionID);
       await compact(sessionID);
@@ -38,7 +36,7 @@ export function createScheduler({
 
   function arm(sessionID, state) {
     if (!state.eligible || !state.idle || state.timer !== undefined) return;
-    const delay = state.expiresAt - marginMs - Date.now();
+    const delay = state.deadline - Date.now();
     if (delay < 0 || delay > 2_147_483_647) {
       cancel(sessionID);
       return;
@@ -50,12 +48,20 @@ export function createScheduler({
   }
 
   return {
-    begin(sessionID, model, ttlMs, startedAt = Date.now()) {
+    begin(sessionID, model, policy, startedAt = Date.now()) {
       cancel(sessionID);
-      if (disposed || !Number.isSafeInteger(ttlMs) || ttlMs <= marginMs) return;
+      if (
+        disposed ||
+        !Number.isSafeInteger(policy?.afterMs) ||
+        policy.afterMs <= 0 ||
+        !Number.isSafeInteger(policy.minInputTokens) ||
+        policy.minInputTokens <= 0
+      )
+        return;
       sessions.set(sessionID, {
         model,
-        expiresAt: startedAt + ttlMs,
+        deadline: startedAt + policy.afterMs,
+        minInputTokens: policy.minInputTokens,
         eligible: false,
         idle: false,
       });
@@ -66,7 +72,7 @@ export function createScheduler({
       const counts = [tokens?.input, tokens?.cache?.read, tokens?.cache?.write];
       state.eligible =
         counts.every((n) => Number.isFinite(n) && n >= 0) &&
-        counts.reduce((sum, n) => sum + n, 0) >= minInputTokens &&
+        counts.reduce((sum, n) => sum + n, 0) >= state.minInputTokens &&
         counts[1] + counts[2] > 0;
       if (!state.eligible) cancel(sessionID);
       else arm(sessionID, state);

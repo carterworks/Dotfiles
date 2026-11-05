@@ -4,7 +4,11 @@ import { test } from "node:test";
 import { createScheduler } from "./scheduler.js";
 
 const model = { providerID: "github-copilot", id: "gpt-6.1-sol" };
-const tokens = { input: 5_000, output: 100, cache: { read: 40_000, write: 0 } };
+const tokens = {
+  input: 5_000,
+  output: 100,
+  cache: { read: 195_000, write: 0 },
+};
 
 function fixture(t, options = {}) {
   t.mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1_000_000 });
@@ -21,7 +25,8 @@ function fixture(t, options = {}) {
     t.mock.timers.tick(ms);
     await setImmediate();
   };
-  const request = (id = "one") => scheduler.begin(id, model, 300_000);
+  const request = (id = "one") =>
+    scheduler.begin(id, model, { afterMs: 240_000, minInputTokens: 200_000 });
   const finish = (id = "one", usage = tokens) => {
     scheduler.complete(id, usage);
     scheduler.idle(id);
@@ -29,7 +34,7 @@ function fixture(t, options = {}) {
   return { scheduler, calls, errors, tick, request, finish };
 }
 
-test("compacts once at TTL minus margin, anchored to request start", async (t) => {
+test("compacts once at the direct deadline, anchored to request start", async (t) => {
   const f = fixture(t);
   f.request();
   await f.tick(30_000);
@@ -60,7 +65,7 @@ test("active sessions and sessions without cache evidence are skipped", async (t
   f.request("busy");
   f.scheduler.complete("busy", tokens);
   f.request("cold");
-  f.finish("cold", { input: 50_000, cache: { read: 0, write: 0 } });
+  f.finish("cold", { input: 250_000, cache: { read: 0, write: 0 } });
   f.request("small");
   f.finish("small", { input: 100, cache: { read: 100, write: 0 } });
   await f.tick(240_000);
@@ -70,7 +75,7 @@ test("active sessions and sessions without cache evidence are skipped", async (t
 test("cache writes also establish cache evidence", async (t) => {
   const f = fixture(t);
   f.request();
-  f.finish("one", { input: 100, cache: { read: 0, write: 40_000 } });
+  f.finish("one", { input: 100, cache: { read: 0, write: 200_000 } });
   await f.tick(240_000);
   assert.deepEqual(f.calls, ["one"]);
 });
@@ -84,7 +89,7 @@ test("cancel handles model switches, compaction, failure and deletion", async (t
   assert.deepEqual(f.calls, []);
 });
 
-test("an expired cache is never compacted after machine sleep or a long response", async (t) => {
+test("a stale deadline is skipped after machine sleep or a long response", async (t) => {
   const f = fixture(t);
   f.request();
   f.finish();
@@ -94,6 +99,46 @@ test("an expired cache is never compacted after machine sleep or a long response
   await f.tick(400_000);
   f.finish("slow");
   await f.tick(1);
+  assert.deepEqual(f.calls, []);
+});
+
+test("a delayed timer inside the lateness tolerance still compacts", async (t) => {
+  const f = fixture(t);
+  f.request();
+  f.finish();
+  t.mock.timers.setTime(Date.now() + 250_000);
+  await f.tick(1);
+  assert.deepEqual(f.calls, ["one"]);
+});
+
+test("an eligibility check finishing past the lateness tolerance is skipped", async (t) => {
+  let release;
+  const f = fixture(t, {
+    canCompact: () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  });
+  f.request();
+  f.finish();
+  await f.tick(240_000);
+  t.mock.timers.setTime(Date.now() + 60_000);
+  release(true);
+  await f.tick(1);
+  assert.deepEqual(f.calls, []);
+});
+
+test("invalid per-request policies cannot arm a timer", async (t) => {
+  const f = fixture(t);
+  for (const policy of [
+    undefined,
+    { afterMs: 0, minInputTokens: 200_000 },
+    { afterMs: 240_000, minInputTokens: -1 },
+  ]) {
+    f.scheduler.begin("one", model, policy);
+    f.finish();
+    await f.tick(240_000);
+  }
   assert.deepEqual(f.calls, []);
 });
 
@@ -169,11 +214,11 @@ test("idle hooks may arrive before the usage event", async (t) => {
   assert.deepEqual(f.calls, ["one"]);
 });
 
-test("invalid timing and size options are rejected", () => {
+test("invalid lateness options are rejected", () => {
   for (const options of [
-    { marginMs: 0 },
-    { marginMs: NaN },
-    { minInputTokens: -1 },
+    { maxLatenessMs: 0 },
+    { maxLatenessMs: NaN },
+    { maxLatenessMs: -1 },
   ]) {
     assert.throws(() => createScheduler(options), /positive/);
   }

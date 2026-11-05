@@ -4,9 +4,9 @@ import { test } from "node:test";
 import plugin from "./index.js";
 
 const ref = { providerID: "github-copilot", id: "gpt-6.1-sol" };
-const usage = { input: 5_000, cache: { read: 40_000, write: 0 } };
+const usage = { input: 5_000, cache: { read: 195_000, write: 0 } };
 
-async function fixture(t, options = { ttl: "5m" }) {
+async function fixture(t, options = { after: "4m" }) {
   t.mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1_000_000 });
   const hooks = new Map();
   const events = [];
@@ -71,8 +71,8 @@ async function fixture(t, options = { ttl: "5m" }) {
   }
   const dispatch = (kind = "primary", model = ref) =>
     hooks.get("model.request")({ sessionID: "one", kind, model });
-  async function finish(background = []) {
-    await emit("session.step.ended", { tokens: usage, finish: "stop" });
+  async function finish(background = [], tokens = usage) {
+    await emit("session.step.ended", { tokens, finish: "stop" });
     await hooks.get("experimental.idle")({ sessionID: "one", background });
   }
   async function tick(ms = 240_000) {
@@ -117,22 +117,69 @@ test("Go requests never schedule compaction", async (t) => {
 
 test("unconfigured models never schedule compaction", async (t) => {
   const f = await fixture(t, {});
-  await f.dispatch();
+  await f.dispatch("primary", { ...ref, id: "unknown" });
   await f.finish();
   await f.tick(3_600_000);
   assert.deepEqual(f.calls, []);
 });
 
-test("a thirty-minute model TTL compacts at twenty-nine minutes, not four", async (t) => {
-  const f = await fixture(t, { models: { [ref.id]: "30m" } });
+test("the default GPT timer compacts at fifty-four minutes, without subtracting a margin", async (t) => {
+  const f = await fixture(t, {});
   await f.dispatch();
   await f.finish();
   await f.tick(240_000);
   assert.deepEqual(f.calls, []);
-  await f.tick(1_499_999);
+  await f.tick(2_999_999);
   assert.deepEqual(f.calls, []);
   await f.tick(1);
   assert.equal(f.calls.length, 1);
+});
+
+test("Opus 5.5 defaults to exactly three minutes", async (t) => {
+  const f = await fixture(t, {});
+  const opus = { ...ref, id: "claude-opus-5.5" };
+  f.session.model = opus;
+  f.ctx.model.list = async () => ({ data: [opus] });
+  await f.dispatch("primary", opus);
+  await f.finish();
+  await f.tick(179_999);
+  assert.deepEqual(f.calls, []);
+  await f.tick(1);
+  assert.equal(f.calls.length, 1);
+});
+
+test("the default threshold excludes 199999 input tokens and includes 200000", async (t) => {
+  const f = await fixture(t);
+  await f.dispatch();
+  await f.finish([], { input: 5_000, cache: { read: 194_999, write: 0 } });
+  await f.tick();
+  assert.deepEqual(f.calls, []);
+  await f.dispatch();
+  await f.finish();
+  await f.tick();
+  assert.equal(f.calls.length, 1);
+});
+
+test("per-model settings control both timer and threshold", async (t) => {
+  const f = await fixture(t, {
+    after: "4m",
+    minInputTokens: 300_000,
+    models: { [ref.id]: { after: "10m", minInputTokens: 250_000 } },
+  });
+  await f.dispatch();
+  await f.finish();
+  await f.tick(600_000);
+  assert.deepEqual(f.calls, []);
+  await f.dispatch();
+  await f.finish([], { input: 5_000, cache: { read: 245_000, write: 0 } });
+  await f.tick(599_999);
+  assert.deepEqual(f.calls, []);
+  await f.tick(1);
+  assert.equal(f.calls.length, 1);
+});
+
+test("the plugin's renamed identity is stable", () => {
+  assert.equal(plugin.id, "dotfiles.idle-compaction");
 });
 
 test("subagents and sessions with background work are skipped", async (t) => {
@@ -227,16 +274,17 @@ test("cleanup cancels timers and unregisters hooks", async (t) => {
   assert.equal(f.hooks.size, 0);
 });
 
-test("model catalog TTLs and variant settings control the deadline", async (t) => {
-  const f = await fixture(t);
+test("variant native compaction is skipped", async (t) => {
+  const f = await fixture(t, {});
   const selected = { ...ref, variant: "extended" };
   f.session.model = selected;
   f.ctx.model.list = async () => ({
     data: [
       {
         ...ref,
-        settings: { cache: { ttl: "5m" } },
-        variants: [{ id: "extended", settings: { cache: { ttl: "1h" } } }],
+        variants: [
+          { id: "extended", settings: { compaction: { type: "native" } } },
+        ],
       },
     ],
   });
@@ -244,8 +292,8 @@ test("model catalog TTLs and variant settings control the deadline", async (t) =
   await f.finish();
   await f.tick(240_000);
   assert.deepEqual(f.calls, []);
-  await f.tick(3_300_000);
-  assert.equal(f.calls.length, 1);
+  await f.tick(3_600_000);
+  assert.deepEqual(f.calls, []);
 });
 
 test("a session inheriting the default model remains eligible", async (t) => {
