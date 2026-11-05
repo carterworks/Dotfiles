@@ -130,6 +130,18 @@
             shellcheck --severity=warning ${source}/check ${source}/install ${source}/update
             touch "$out"
           '';
+          install =
+            pkgs.runCommandLocal "install-check"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.python3
+                ];
+              }
+              ''
+                python3 ${source}/test-install.py
+                touch "$out"
+              '';
           update =
             pkgs.runCommandLocal "update-check"
               {

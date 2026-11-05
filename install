@@ -221,6 +221,61 @@ current_machine_name() {
   printf '%s\n' "${name}"
 }
 
+follow_rebuild_log() {
+  local line
+  local pending=""
+  local complete=false
+
+  while true; do
+    if IFS= read -r line; then
+      printf '%s\n' "${pending}${line}"
+      pending=""
+    else
+      pending+="${line}"
+      if "${complete}"; then
+        [[ -z "${pending}" ]] || printf '%s\n' "${pending}"
+        break
+      elif [[ -f "$2" ]]; then
+        complete=true
+      else
+        sleep 0.1
+      fi
+    fi
+  done <"$1"
+}
+
+# Home Manager restarts T3 and OpenCode during activation, and they signal the
+# installer they host before it can load them again. Detach activation into its
+# own session so it always finishes; the installer only follows its log. It must
+# stay in this login session: nix-darwin needs the GUI session and the
+# terminal's App Management permission to update /Applications.
+run_darwin_activation() {
+  local system_path="$1"
+  local state_dir
+
+  mkdir -p "${HOME}/Library/Logs/dotfiles-install"
+  state_dir="$(mktemp -d "${HOME}/Library/Logs/dotfiles-install/activate.XXXXXX")"
+  program_status working "Activating system"
+  log_message info "Activation log: ${state_dir}/activate.log"
+  touch "${state_dir}/activate.log"
+
+  sudo -H /usr/bin/perl -MPOSIX -e '
+    defined(my $pid = fork) or die "fork: $!\n";
+    exit 0 if $pid;
+    POSIX::setsid();
+    $SIG{$_} = "IGNORE" for qw(HUP INT TERM);
+    exec @ARGV or die "exec: $!\n";
+  ' /bin/sh -c '
+    exec </dev/null >>"$1/activate.log" 2>&1
+    NIX_REMOTE=daemon "$3" -p /nix/var/nix/profiles/system --set "$2" && "$2/sw/bin/darwin-rebuild" activate
+    printf "%s\n" "$?" > "$1/status.new"
+    /bin/mv "$1/status.new" "$1/status"
+  ' dotfiles-activate "${state_dir}" "${system_path}" "$(command -v nix-env)" || return $?
+
+  follow_rebuild_log "${state_dir}/activate.log" "${state_dir}/status"
+  return "$(<"${state_dir}/status")"
+}
+
 run_rebuild() {
   local rebuild
   local machine_name
@@ -230,15 +285,10 @@ run_rebuild() {
 
   case "$(uname -s)" in
     Darwin)
-      rebuild="$(command -v darwin-rebuild || true)"
-      if [[ -z "${rebuild}" ]]; then
-        log_message info "Bootstrapping nix-darwin from the pinned configuration"
-        system_path="$(run_with_nix_progress "Building nix-darwin" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
-        rebuild="${system_path}/sw/bin/darwin-rebuild"
-      fi
-
+      # Build as the invoking user: root cannot read a user-owned Git checkout.
+      system_path="$(run_with_nix_progress "Building system" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
       authenticate_sudo
-      run_with_nix_progress "Rebuilding system" sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
+      run_darwin_activation "${system_path}"
       ;;
     Linux)
       if [[ ! -e /etc/NIXOS && ! -e /run/current-system/nixos-version ]]; then
