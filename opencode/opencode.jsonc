@@ -26,5 +26,14 @@
       }
     }
   },
-  "plugins": [],
+  "plugins": [
+    {
+      "package": "./cache-compaction",
+      "options": {
+        "ttl": "5m",
+        "marginMs": 60000,
+        "minInputTokens": 32000
+      }
+    }
+  ]
 }
