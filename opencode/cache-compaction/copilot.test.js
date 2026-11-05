@@ -4,8 +4,13 @@ import { copilotCachePolicy } from "./copilot.js";
 
 const model = { providerID: "github-copilot", id: "gpt-6.1-sol" };
 
-test("Copilot has an explicitly estimated five-minute fallback", () => {
-  assert.equal(copilotCachePolicy(model), 300_000);
+test("models without a documented or configured TTL are skipped", () => {
+  assert.equal(copilotCachePolicy(model), undefined);
+  assert.equal(copilotCachePolicy({ ...model, id: "unknown" }), undefined);
+});
+
+test("an explicit fallback remains available as an opt-in", () => {
+  assert.equal(copilotCachePolicy(model, { ttl: "30m" }), 1_800_000);
 });
 
 test("other providers, including Go, are not eligible", () => {

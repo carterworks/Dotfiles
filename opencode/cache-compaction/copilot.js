@@ -4,8 +4,7 @@ export function copilotCachePolicy(model, options = {}) {
 
   const ttl = Object.hasOwn(options.models ?? {}, model.id)
     ? options.models[model.id]
-    : (model.settings?.cache?.ttl ??
-      (Object.hasOwn(options, "ttl") ? options.ttl : "5m"));
+    : (model.settings?.cache?.ttl ?? options.ttl);
   if (typeof ttl !== "string") return;
 
   const match = ttl.match(/^(\d+)(ms|s|m|h|d)$/);

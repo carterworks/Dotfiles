@@ -11,8 +11,10 @@ There are no runtime dependencies.
 ## Timing and safeguards
 
 - The deadline is measured from the latest primary model request's start, not
-  response completion. By default compaction is requested at four minutes:
-  an **estimated five-minute TTL**, minus a one-minute safety margin.
+  response completion. Each configured model has a source-commented TTL in
+  `opencode/opencode.jsonc`, minus a one-minute safety margin: configured GPT-5.6+
+  models compact at 29 minutes (30-minute estimate); configured Claude models at
+  four minutes (five-minute estimate). There is no implicit fallback TTL.
 - A successful response must report cache reads or writes and at least 32,000
   input tokens, including cached input. This size threshold is a heuristic, not
   a measurement of how much conversation a summary will remove. Raise it when
@@ -34,7 +36,7 @@ There are no runtime dependencies.
 
 Copilot inference responses do **not** have a verified expiry contract here.
 Cache usage proves a previous cache hit/write, not future availability. Neither
-the fallback TTL nor model metadata guarantees a hit: routing, eviction, changed
+configured TTLs nor model metadata guarantees a hit: routing, eviction, changed
 prefixes, and proxy behavior can cause earlier misses. The plugin does not change
 provider cache retention settings or parse/store raw response bodies.
 
@@ -51,11 +53,12 @@ so helper and test files cannot be discovered as plugins.
     {
       "package": "./cache-compaction",
       "options": {
-        "ttl": "5m",
         "marginMs": 60000,
         "minInputTokens": 32000,
         "models": {
-          "gpt-6.1-sol": "5m",
+          // OpenAI's GPT-5.6+ default; still an estimate through Copilot, not a verified contract.
+          // https://developers.openai.com/api/docs/guides/prompt-caching
+          "gpt-6.1-sol": "30m",
           "some-model-with-unknown-policy": false,
         },
       },
@@ -65,7 +68,12 @@ so helper and test files cannot be discovered as plugins.
 ```
 
 TTL precedence: plugin `models[modelID]` override, resolved model/variant
-`settings.cache.ttl`, then plugin `ttl` (default `"5m"`). Durations use integer
+`settings.cache.ttl`, then explicitly configured plugin `ttl` (no default).
+Models without any of these are skipped. Add a source/rationale comment whenever
+adding or changing a model timeout; distinguish upstream defaults from verified
+Copilot behavior. Do not treat "up to 24 hours" as a guaranteed cache window or
+assume VS Code's extended-retention request settings also apply to OpenCode.
+Durations use integer
 `ms`, `s`, `m`, `h`, or `d` units. `false` disables a model override or the fallback;
 invalid durations fail closed. Margin and size options must be positive integers.
 Disable the entire plugin by removing its entry or adding
