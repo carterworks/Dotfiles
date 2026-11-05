@@ -5,6 +5,7 @@
 - link:
     ~/.npmrc: npm/npmrc
     ~/.config/opencode/opencode.jsonc: opencode/opencode.jsonc
+    ~/.config/opencode/cache-compaction: opencode/cache-compaction
     ~/.config/opencode/AGENTS.md: agents/AGENTS.md
     ~/.copilot/copilot-instructions.md: agents/AGENTS.md
     ~/.agents/skills/:
