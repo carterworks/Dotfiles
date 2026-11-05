@@ -11,7 +11,7 @@ let
   vaultPath = "${config.home.homeDirectory}/Documents/Notes";
 in
 {
-  home.packages = [ obsidian-headless ];
+  home.packages = lib.mkIf pkgs.stdenv.hostPlatform.isLinux [ obsidian-headless ];
 
   systemd.user.services.obsidian-sync = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {

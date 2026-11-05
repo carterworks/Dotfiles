@@ -155,6 +155,11 @@
                 python3 ${source}/test-update.py
                 touch "$out"
               '';
+          obsidian-sync-module =
+            assert import ./nix/tests/obsidian-sync.nix { inherit (nixpkgs) lib; };
+            pkgs.runCommandLocal "obsidian-sync-module-check" { } ''
+              touch "$out"
+            '';
           rex-module =
             assert import ./nix/tests/rex.nix { inherit (nixpkgs) lib; };
             pkgs.runCommandLocal "rex-module-check" { } ''
