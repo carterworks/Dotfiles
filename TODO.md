@@ -23,6 +23,8 @@
 
 - [ ] Package the Cua Driver `darwin-universal` tarball for Carters-MacBook-Pro and install `CuaDriver.app` at `/Applications` so TCC can find it. Use the full tarball, not the `-binary` asset, which omits the app. `nix/packages/cua-driver.nix` currently ships only x86_64-linux, so OpenCode reports the shared `cua-driver` MCP entry as failed on hosts without the binary.
 - [ ] Verify `opencode2`/`t3` survive a reboot on Scylla and Prostagma (both units are enabled, active, and lingering) and deploy/verify them at login on Carters-MacBook-Pro. Scylla's manual `opencode2 serve --service` blocker is resolved.
+- [x] Split macOS `./install` into a user-level build (OSC 7501 progress; root cannot open the user-owned Git checkout) and a root activation detached into its own session, so restarting T3/OpenCode cannot kill an installer they host before Home Manager reloads them. Activation stays in the GUI login session because nix-darwin needs the terminal's App Management permission; a system launchd job fails its `/Applications` check. Output streams live and persists under `~/Library/Logs/dotfiles-install/`.
+- [ ] Validate a full `./install` from a T3/OpenCode session (requires administrator authentication) and confirm both agents reload.
 - [ ] Pair clients per host whenever that host's `t3` service is running. `t3pair` uses Tailscale when its CLI is present and otherwise pairs locally. Without Tailscale, remote clients need an SSH tunnel to the loopback-only server on port 3773. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
   - `t3pair --label phone` (scan the QR code)
   - `t3pair --label desktop` (add the environment in Settings → Connections)
