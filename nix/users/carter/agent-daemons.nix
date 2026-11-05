@@ -26,6 +26,14 @@ let
     "--port"
     (toString opencode2Port)
   ];
+  # Clients start their own detached shared server whenever none is running or
+  # its version differs. `serve --service` then exits 0 without serving, leaving
+  # the service manager respawning forever while upgrades never reach the live
+  # server. Take the shared service over before serving.
+  opencode2Service = pkgs.writeShellScript "opencode2-service" ''
+    ${opencode2}/bin/opencode2 service stop || true
+    exec ${opencode2}/bin/opencode2 ${lib.escapeShellArgs opencode2Args}
+  '';
   # Keep the port and origin stable: paired clients are scoped to the origin,
   # so changing either forces every phone and desktop to pair again.
   # Bind loopback so remote access requires Tailscale Serve or an SSH tunnel.
@@ -94,14 +102,14 @@ in
   # Leave Environment alone: the user manager already carries the Nix profile
   # and system paths, and duplicating them here drifts from the live session.
   systemd.user.services.opencode2 = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
-    mkSystemdService "OpenCode 2 background server" "${opencode2}/bin/opencode2" opencode2Args
+    mkSystemdService "OpenCode 2 background server" opencode2Service [ ]
   );
   systemd.user.services.t3 = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
     mkSystemdService "T3 Code background server" "${t3}/bin/t3" t3Args
   );
 
   launchd.agents.opencode2 = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
-    mkLaunchdAgent "opencode2" "${opencode2}/bin/opencode2" opencode2Args
+    mkLaunchdAgent "opencode2" opencode2Service [ ]
   );
   launchd.agents.t3 = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
     mkLaunchdAgent "t3" "${t3}/bin/t3" t3Args
