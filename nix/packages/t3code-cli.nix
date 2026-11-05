@@ -66,6 +66,10 @@ packageUtils.mkPlatformBinary {
 
     mkdir -p "$out/lib/t3code" "$out/bin"
     tar -xzf "$src" --strip-components=1 -C "$out/lib/t3code"
+    # The tarball also carries musl builds of its native modules, which
+    # autoPatchelf cannot satisfy against glibc and the launcher never loads
+    # on a glibc host.
+    find "$out/lib/t3code/node_modules" -depth -name '*-musl' -exec rm -rf {} +
     makeWrapper "$out/lib/t3code/t3" "$out/bin/t3"
 
     runHook postInstall
