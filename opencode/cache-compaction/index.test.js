@@ -6,7 +6,7 @@ import plugin from "./index.js";
 const ref = { providerID: "github-copilot", id: "gpt-6.1-sol" };
 const usage = { input: 5_000, cache: { read: 40_000, write: 0 } };
 
-async function fixture(t, options = {}) {
+async function fixture(t, options = { ttl: "5m" }) {
   t.mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1_000_000 });
   const hooks = new Map();
   const events = [];
@@ -113,6 +113,26 @@ test("Go requests never schedule compaction", async (t) => {
   await f.finish();
   await f.tick();
   assert.deepEqual(f.calls, []);
+});
+
+test("unconfigured models never schedule compaction", async (t) => {
+  const f = await fixture(t, {});
+  await f.dispatch();
+  await f.finish();
+  await f.tick(3_600_000);
+  assert.deepEqual(f.calls, []);
+});
+
+test("a thirty-minute model TTL compacts at twenty-nine minutes, not four", async (t) => {
+  const f = await fixture(t, { models: { [ref.id]: "30m" } });
+  await f.dispatch();
+  await f.finish();
+  await f.tick(240_000);
+  assert.deepEqual(f.calls, []);
+  await f.tick(1_499_999);
+  assert.deepEqual(f.calls, []);
+  await f.tick(1);
+  assert.equal(f.calls.length, 1);
 });
 
 test("subagents and sessions with background work are skipped", async (t) => {

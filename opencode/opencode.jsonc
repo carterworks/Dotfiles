@@ -30,9 +30,35 @@
     {
       "package": "./cache-compaction",
       "options": {
-        "ttl": "5m",
         "marginMs": 60000,
-        "minInputTokens": 32000
+        "minInputTokens": 32000,
+        "models": {
+          // OpenAI documents a 30m default for GPT-5.6+; Copilot applicability still needs validation.
+          // https://developers.openai.com/api/docs/guides/prompt-caching
+          // These are scheduling estimates, not requests to change provider retention. Compact at 29m.
+          "gpt-5.6-luna": "30m",
+          "gpt-5.6-sol": "30m",
+          "gpt-5.6-terra": "30m",
+          "gpt-6-luna": "30m",
+          "gpt-6-sol": "30m",
+          "gpt-6.1-sol": "30m",
+          "gpt-6.1-terra": "30m",
+          // Anthropic's default is 5m from request start, refreshed on reuse; compact at 4m.
+          // https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+          // Copilot's use of the optional paid 1h lifetime is not verified here.
+          "claude-haiku-4.5": "5m",
+          "claude-haiku-5.5": "5m",
+          "claude-sonnet-5": "5m",
+          "claude-sonnet-5.5": "5m",
+          "claude-opus-4.8": "5m",
+          "claude-opus-4.8-fast": "5m",
+          "claude-opus-5": "5m",
+          "claude-opus-5.5": "5m"
+          // Other models have no fallback: skip unless their catalog supplies a TTL.
+          // Gemini's "up to 24h" and VS Code's extended OpenAI retention are not minimums for OpenCode.
+          // https://docs.github.com/en/copilot/reference/ai-models/model-hosting
+          // https://code.visualstudio.com/blogs/2026/06/17/improving-token-efficiency-in-github-copilot
+        }
       }
     }
   ]
