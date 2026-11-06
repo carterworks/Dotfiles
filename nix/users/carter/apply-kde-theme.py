@@ -21,6 +21,9 @@ def apply(path, scheme, name, base):
     palette = read_config(scheme)
     # Remove the escaped group written by the first theme preview.
     current.remove_section(r"Colors:Header\]\[Inactive")
+    # Older revisions pinned Qt Quick to the software backend here, which the
+    # KDE platform theme applies to every Qt Quick app and hides shader-drawn UI.
+    current.remove_section("QtQuickRendererSettings")
     for section in palette.sections():
         if section != "General":
             current[section] = dict(palette[section])
