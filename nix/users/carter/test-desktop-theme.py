@@ -91,7 +91,12 @@ assert vicinae_theme["meta"]["variant"] == mode
 assert isinstance(vicinae_theme["meta"]["description"], str)
 assert vicinae_theme["colors"]["core"]["background"] == colors["background"]
 assert vicinae_theme["colors"]["core"]["foreground"] == colors["text"]
-assert vicinae_theme["colors"]["list"]["item"]["selection"]["background"] == colors["selection"]
+vicinae_selection = apps.get("vicinae", {}).get("selection", colors["selection"])
+assert vicinae_selection != colors["hover"], "Vicinae selection must not look like hover"
+assert vicinae_theme["colors"]["list"]["item"]["hover"]["background"] == colors["hover"]
+assert vicinae_theme["colors"]["list"]["item"]["selection"]["background"] == vicinae_selection
+low, high = sorted((luminance(colors["text"]), luminance(vicinae_selection)))
+assert (high + 0.05) / (low + 0.05) >= 4.5, "Vicinae selection text has low contrast"
 
 helix = read_toml(files["helix"])
 assert helix["theme"] == apps["helix"]
