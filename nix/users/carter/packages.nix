@@ -17,6 +17,7 @@ let
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
+  ship-of-harkinian = self.packages.${pkgs.stdenv.hostPlatform.system}.ship-of-harkinian;
   opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
   opencode2-desktop =
     inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
@@ -136,6 +137,7 @@ let
     playerctl
     protonplus
     sgdboop
+    ship-of-harkinian
     stableDiffusionCppVulkan
     systemd-lsp
     telegram-desktop
