@@ -5,6 +5,10 @@ set -euo pipefail
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NIX_ACCESS_TOKEN_ARGS=()
 
+# A run detached into its own session has no controlling terminal, so the
+# caller names the terminal that should receive OSC 7501 reports.
+STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
+
 if command -v gh >/dev/null 2>&1; then
   github_token="$(gh auth token 2>/dev/null || true)"
   if [[ -n "${github_token}" ]]; then
@@ -64,7 +68,7 @@ program_status() {
   local pairs=("state=${state}" app=dotfiles "$@" "msg=$(printf '%s' "${message}" | base64 | tr -d '\n')")
   local IFS=:
 
-  { printf '\e]7501;%s\e\\' "${pairs[*]}" >/dev/tty; } 2>/dev/null || true
+  { printf '\e]7501;%s\e\\' "${pairs[*]}" >"${STATUS_TTY}"; } 2>/dev/null || true
 }
 
 report_exit_status() {
