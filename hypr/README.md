@@ -154,8 +154,10 @@ and other existing XDG autostart apps are started by UWSM. KDE's
 display/window-management settings do not configure Hyprland; edit the Lua
 configuration instead.
 
-Vicinae uses software rendering on this host to avoid a Qt OpenGL initialization
-crash when its Wayland window opens. The override affects only Vicinae.
+Qt applications keep `QT_QPA_PLATFORMTHEME=kde` for KDE integration.
+`kde/kdeglobals` must not pin `[QtQuickRendererSettings] SceneGraphBackend`:
+the KDE platform theme applies that setting to every Qt Quick application, and
+`software` disables the shaders Vicinae and Quickshell draw with.
 
 Print Screen selects a region and opens Satty. Press Enter to copy the result,
 save it under `~/Pictures/Screenshots/`, and close the editor. Escape during
