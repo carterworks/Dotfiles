@@ -9,7 +9,6 @@
 
 let
   copypartyPort = 3210;
-  opencode2Port = 49374;
 
   tailnetDomain = "dropbear-tortoise.ts.net";
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
@@ -260,7 +259,6 @@ in
   ];
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
     9119
-    opencode2Port
   ];
 
   # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
