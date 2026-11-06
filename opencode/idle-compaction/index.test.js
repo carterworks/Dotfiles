@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { setImmediate } from "node:timers/promises";
 import { test } from "node:test";
 import plugin from "./index.js";
@@ -7,6 +8,8 @@ const ref = { providerID: "github-copilot", id: "gpt-6.1-sol" };
 const usage = { input: 5_000, cache: { read: 195_000, write: 0 } };
 
 async function fixture(t, options = { after: "4m" }) {
+  t.mock.method(fs, "mkdirSync", () => {});
+  t.mock.method(fs, "appendFileSync", () => {});
   t.mock.timers.enable({ apis: ["Date", "setTimeout"], now: 1_000_000 });
   const hooks = new Map();
   const events = [];
@@ -316,5 +319,158 @@ test("lookup failures do not break model dispatch or reuse an earlier timer", as
   await f.dispatch();
   await f.finish();
   await f.tick();
+  assert.deepEqual(f.calls, []);
+});
+
+test("default logging includes admissions and errors, but not diagnostics", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const warn = t.mock.method(console, "warn", () => {});
+  const f = await fixture(t);
+  await f.dispatch();
+  await f.finish([], { input: 2, cache: { read: 88_312, write: 15_349 } });
+  await f.tick();
+  assert.equal(info.mock.calls.length, 0);
+  await f.dispatch();
+  await f.finish();
+  await f.tick();
+  assert.equal(info.mock.calls.length, 1);
+  f.ctx.model.list = async () => {
+    throw new Error("private response body");
+  };
+  await f.dispatch();
+  assert.equal(warn.mock.calls.length, 1);
+  assert.ok(
+    !JSON.stringify(warn.mock.calls[0].arguments).includes("private response body"),
+  );
+});
+
+test("debug logging explains the real session's size rejection", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const f = await fixture(t, { logLevel: "debug" });
+  await f.dispatch();
+  await f.finish([], { input: 2, cache: { read: 88_312, write: 15_349 } });
+  await f.tick(3_600_000);
+  const logs = info.mock.calls.map((call) => JSON.parse(call.arguments[1]));
+  assert.ok(logs.some((log) => log.event === "ready"));
+  assert.ok(
+    logs.some(
+      (log) =>
+        log.event === "skipped" &&
+        log.sessionID === "one" &&
+        log.reason === "below-token-threshold" &&
+        log.inputTokens === 103_663 &&
+        log.minInputTokens === 200_000,
+    ),
+  );
+  assert.ok(!logs.some((log) => log.event === "scheduled"));
+  assert.deepEqual(f.calls, []);
+});
+
+test("debug logging includes scheduling, invalidation, and live rejection reasons", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const f = await fixture(t, { after: "4m", logLevel: "debug" });
+  await f.dispatch();
+  await f.finish();
+  await f.emit("session.model.selected");
+  await f.dispatch();
+  await f.finish();
+  f.agent.model = { ...ref, id: "other" };
+  await f.tick();
+  const logs = info.mock.calls.map((call) => JSON.parse(call.arguments[1]));
+  assert.ok(
+    logs.some((log) => log.event === "scheduled" && log.deadline === 1_240_000),
+  );
+  assert.ok(
+    logs.some(
+      (log) => log.event === "cancelled" && log.reason === "session.model.selected",
+    ),
+  );
+  assert.ok(
+    logs.some(
+      (log) => log.event === "skipped" && log.reason === "compaction-model-mismatch",
+    ),
+  );
+});
+
+test("error logging suppresses admissions without suppressing errors", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const warn = t.mock.method(console, "warn", () => {});
+  const f = await fixture(t, { after: "4m", logLevel: "error" });
+  await f.dispatch();
+  await f.finish();
+  await f.tick();
+  assert.equal(f.calls.length, 1);
+  assert.equal(info.mock.calls.length, 0);
+  f.ctx.model.list = async () => {
+    throw new Error("unavailable");
+  };
+  await f.dispatch();
+  assert.equal(warn.mock.calls.length, 1);
+});
+
+test("invalid log levels fall back to admissions and errors", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const f = await fixture(t, { after: "4m", logLevel: "verbose" });
+  await f.dispatch();
+  await f.finish();
+  await f.tick();
+  assert.equal(info.mock.calls.length, 1);
+});
+
+for (const [reason, options, change] of [
+  ["subagent", {}, (f) => {
+    f.session.parentID = "parent";
+  }],
+  ["model-not-found", {}, (f) => {
+    f.ctx.model.list = async () => ({ data: [] });
+  }],
+  ["unsupported-provider", {}, (f) => {
+    f.session.model = { ...ref, providerID: "opencode-go" };
+  }],
+  ["native-compaction", {}, (f) => {
+    f.session.model = {
+      ...ref,
+      settings: { compaction: { type: "native" } },
+    };
+  }],
+  ["model-disabled", { models: { [ref.id]: false } }, () => {}],
+  ["unsupported-or-invalid-policy", { after: "invalid" }, () => {}],
+]) {
+  test(`debug logging identifies ${reason}`, async (t) => {
+    const info = t.mock.method(console, "info", () => {});
+    const f = await fixture(t, { ...options, logLevel: "debug" });
+    change(f);
+    if (reason !== "model-not-found")
+      f.ctx.model.list = async () => ({ data: [f.session.model] });
+    await f.dispatch("primary", f.session.model);
+    const logs = info.mock.calls.map((call) => JSON.parse(call.arguments[1]));
+    assert.ok(logs.some((log) => log.event === "skipped" && log.reason === reason));
+  });
+}
+
+test("debug logging identifies background work and cleanup", async (t) => {
+  const info = t.mock.method(console, "info", () => {});
+  const f = await fixture(t, { logLevel: "debug" });
+  await f.dispatch();
+  await f.finish([{ kind: "shell" }]);
+  await f.dispatch();
+  await f.finish();
+  await f.cleanup();
+  await f.tick(3_600_000);
+  const logs = info.mock.calls.map((call) => JSON.parse(call.arguments[1]));
+  assert.ok(
+    logs.some(
+      (log) =>
+        log.event === "skipped" &&
+        log.reason === "background-work" &&
+        log.backgroundJobs === 1,
+    ),
+  );
+  assert.ok(
+    logs.some(
+      (log) => log.event === "cancelled" && log.reason === "plugin-unloaded",
+    ),
+  );
+  assert.ok(logs.some((log) => log.event === "stopped"));
   assert.deepEqual(f.calls, []);
 });

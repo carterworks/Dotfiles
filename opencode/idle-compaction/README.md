@@ -6,7 +6,7 @@ uncached input when you return; it does not preserve the old cache indefinitely.
 
 Only `github-copilot` is supported. OpenCode Go and other providers are untouched.
 Requires OpenCode 2.2.5 or later; the `experimental.idle` hook is experimental.
-There are no runtime dependencies.
+There are no external runtime dependencies.
 
 ## Timing and safeguards
 
@@ -54,6 +54,7 @@ so helper and test files cannot be discovered as plugins.
     {
       "package": "./idle-compaction",
       "options": {
+        "logLevel": "info",
         "minInputTokens": 200000,
         "models": {
           // User-selected policy inspired by Claude Code's 54m/1h schedule, not a Copilot TTL.
@@ -87,9 +88,40 @@ TTLs do not override these timers or configure provider retention. The old `ttl`
 Disable the entire plugin by removing its entry or adding
 `"-dotfiles.idle-compaction"` after it.
 
-The plugin logs admission, not completion, with the `[idle-compaction]` prefix.
-Use OpenCode's `session.compaction.ended` / `session.compaction.failed` events to
-verify the result. It never logs prompts, response bodies, or credentials.
+### Logging
+
+Set `options.logLevel` to control logs with the `[idle-compaction]` prefix:
+
+- `error`: operation failures only.
+- `info` (default): admissions and operation failures.
+- `debug`: also logs plugin readiness/shutdown, request tracking, scheduled
+  deadlines, cancellations, and skip reasons. Your global config currently uses
+  this level for diagnosis; switch it back to `info` when finished.
+
+Invalid levels fall back to `info`. Each line contains a JSON event with a session
+ID when available. Size rejections include the response's input-plus-cache count
+and configured minimum, not cumulative session usage. Other reasons identify
+missing cache evidence, invalid usage/policy, unsupported or disabled models,
+native compaction, background work, invalidating events, overdue timers, and
+live session/model/location checks.
+
+Logs are written to `~/.local/share/opencode/log/idle-compaction.log` (or
+`$XDG_DATA_HOME/opencode/log/idle-compaction.log`) as well as the console. T3
+discards its child server's console output after startup, so use the file when
+diagnosing T3 sessions. New files are owner-readable/writable only. File failures
+fall back to console output and do not stop scheduling. The file is append-only;
+no automatic rotation is performed.
+
+Diagnostic events use the console's info output; the plugin option controls their
+verbosity independently of OpenCode's server log level. For example:
+
+```text
+[idle-compaction] {"event":"skipped","sessionID":"ses_…","reason":"below-token-threshold","inputTokens":103663,"minInputTokens":200000}
+```
+
+Admission is not completion. Use OpenCode's `session.compaction.ended` /
+`session.compaction.failed` events to verify the result. Logs never include
+prompts, response bodies, credentials, or error messages/stacks.
 
 ## Background compaction and prefix reuse
 
@@ -116,6 +148,7 @@ reuse them. This is not guaranteed for conversations far below that threshold.
 - `copilot.js` resolves Copilot-specific timer and size policy without I/O.
 - `scheduler.js` owns deadlines and one-shot admission, independent of providers
   and OpenCode. Its external dependencies are injected callbacks.
+- `logger.js` filters and persists privacy-safe diagnostic events.
 - `index.js` adapts OpenCode hooks/events to the scheduler and checks live state.
 
 Add a future provider as a separate policy in `index.js`'s `policies` list with

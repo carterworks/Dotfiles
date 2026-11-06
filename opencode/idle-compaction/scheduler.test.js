@@ -223,3 +223,37 @@ test("invalid lateness options are rejected", () => {
     assert.throws(() => createScheduler(options), /positive/);
   }
 });
+
+test("diagnostics distinguish invalid usage, missing cache evidence, and late deadlines", async (t) => {
+  const logs = [];
+  const f = fixture(t, {
+    onDiagnostic: (event, details) => logs.push({ event, ...details }),
+  });
+  f.request("invalid");
+  f.finish("invalid", { input: 250_000 });
+  f.request("cold");
+  f.finish("cold", { input: 250_000, cache: { read: 0, write: 0 } });
+  f.request("late");
+  f.finish("late");
+  t.mock.timers.setTime(Date.now() + 400_000);
+  await f.tick(1);
+  f.request("slow");
+  await f.tick(400_000);
+  f.finish("slow");
+  for (const [sessionID, reason] of [
+    ["invalid", "invalid-token-usage"],
+    ["cold", "no-cache-evidence"],
+    ["late", "timer-too-late"],
+    ["slow", "deadline-passed"],
+  ]) {
+    assert.ok(
+      logs.some(
+        (log) =>
+          log.event === "skipped" &&
+          log.sessionID === sessionID &&
+          log.reason === reason,
+      ),
+    );
+  }
+  assert.deepEqual(f.calls, []);
+});

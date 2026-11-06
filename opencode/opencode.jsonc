@@ -30,6 +30,7 @@
     {
       "package": "./idle-compaction",
       "options": {
+        "logLevel": "debug",
         // Match Claude Code's default size gate; per-model minInputTokens overrides this.
         // https://code.claude.com/docs/en/settings-reference#idlecompaction
         "minInputTokens": 200000,
