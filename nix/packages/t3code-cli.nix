@@ -53,6 +53,7 @@ packageUtils.mkPlatformBinary {
   ];
   buildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     pkgs.stdenv.cc.cc.lib
+    pkgs.vulkan-loader
   ];
 
   dontUnpack = true;
@@ -68,8 +69,9 @@ packageUtils.mkPlatformBinary {
     tar -xzf "$src" --strip-components=1 -C "$out/lib/t3code"
     # The tarball also carries musl builds of its native modules, which
     # autoPatchelf cannot satisfy against glibc and the launcher never loads
-    # on a glibc host.
-    find "$out/lib/t3code/node_modules" -depth -name '*-musl' -exec rm -rf {} +
+    # on a glibc host. koffi names its variant directory musl_x64 instead of
+    # suffixing the package name.
+    find "$out/lib/t3code/node_modules" -depth \( -name '*-musl' -o -name 'musl_*' \) -exec rm -rf {} +
     makeWrapper "$out/lib/t3code/t3" "$out/bin/t3"
 
     runHook postInstall
