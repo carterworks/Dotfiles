@@ -1,16 +1,10 @@
 {
   config,
-  inputs,
   pkgs,
   ...
 }:
-
-let
-  opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
-in
 {
   imports = [
-    ../../users/carter/agent-daemons.nix
     ../../users/carter/obsidian-sync.nix
   ];
 
@@ -21,7 +15,6 @@ in
     packages = [
       pkgs.age
       pkgs.fnox
-      opencode2
     ];
   };
 
