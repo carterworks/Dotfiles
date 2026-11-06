@@ -83,6 +83,9 @@ in
           "process"
         ]
     );
+    # Darker than `colors.selection` so the focused row reads against
+    # `background`, while staying above 4.5:1 against `text`.
+    vicinae.selection = "#b4c2d3";
     herdrColors = {
       mauve = "#b48ead";
       green = "#96b17f";

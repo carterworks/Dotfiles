@@ -97,6 +97,7 @@ let
         zip -q "$out" colors.tdesktop-theme background.png
       '';
   cliSettings = builtins.fromJSON (builtins.readFile ../../../opencode/cli.json);
+  vicinaeSelection = (theme.apps.vicinae or { }).selection or colors.selection;
   herdrColors = theme.apps.herdrColors // {
     accent = colors.accent;
     panel_bg = colors.background;
@@ -514,13 +515,14 @@ in
           selection = { background = "${colors.selection}", foreground = "${colors.text}" }
 
           [colors.list.item.hover]
+          background = "${colors.hover}"
           foreground = "${colors.text}"
           secondary_foreground = "${colors.text}"
 
           [colors.list.item.selection]
-          background = "${colors.selection}"
+          background = "${vicinaeSelection}"
           foreground = "${colors.text}"
-          secondary_background = "${colors.selection}"
+          secondary_background = "${vicinaeSelection}"
           secondary_foreground = "${colors.text}"
         '';
       };
