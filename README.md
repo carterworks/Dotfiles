@@ -40,6 +40,18 @@ Those names must match the flake host names. Multiple names may point to the sam
 
 On a Mac without nix-darwin, the installer builds the selected configuration from this flake and uses its pinned `darwin-rebuild` to perform the first activation. Only Nix itself must already be installed.
 
+## El Toro
+
+`eltoro` is a remote NixOS LXC. Build it locally and activate it on the
+container over SSH:
+
+```bash
+./install-eltoro
+```
+
+See [El Toro](docs/eltoro.md) for onboarding, settings, TTS, and the host-side
+firewall setup.
+
 ## Rex
 
 For the Rex macOS client and gated Linux server setup, see [Rex](docs/rex.md).

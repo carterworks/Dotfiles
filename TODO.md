@@ -21,6 +21,10 @@
 
 - [ ] Verify both hosts resume syncing after a reboot and that Scylla appears in the vault's version history as device `scylla`.
 
+## El Toro
+
+- [ ] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo. The `hermes-agent` input is locked to the rev the standalone repo ran; reassess the newer upstream packaging (reports `0.0.0`) before `./update` bumps it.
+
 ## Agent daemons
 
 - [ ] Before re-enabling idle-compaction, restore and validate the user-selected timers in `opencode/opencode.jsonc` (54m for configured GPT-5.6+ models; 3m for Claude; 200k-token default with per-model overrides) and verify that a real Copilot session emits `session.compaction.ended` after admission and that the summary request reports cache reads. These are policies, not Copilot expiry guarantees; 54m exceeds OpenAI's documented 30m minimum.

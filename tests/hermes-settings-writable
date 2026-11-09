@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Check permissions without changing settings or exposing their contents.
+set -euo pipefail
+ssh "${1:-root@eltoro}" 'bash -s' <<'EOF'
+set -euo pipefail
+check='test -w /var/lib/hermes/.hermes; exec 3<> /var/lib/hermes/.hermes/config.yaml'
+runuser -u hermes -- bash -ec "$check"
+echo 'PASS: interactive Hermes settings writable'
+for unit in hermes-gateway hermes-dashboard; do
+  pid=$(systemctl show "$unit" -p MainPID --value)
+  test "$pid" -gt 0
+  nsenter -t "$pid" -m -- runuser -u hermes -- bash -ec "$check"
+  echo "PASS: $unit settings writable"
+  nsenter -t "$pid" -m -- runuser -u hermes -- bash -ec '
+    for file in fnox.toml .env auth.json; do
+      test -e "/var/lib/hermes/.hermes/$file"
+      test ! -w "/var/lib/hermes/.hermes/$file"
+    done
+  '
+  echo "PASS: $unit credentials protected"
+done
+EOF
