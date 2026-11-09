@@ -59,7 +59,6 @@ let
     astro-language-server
     ast-grep
     bash-language-server
-    brave
     btop
     bun
     codex
