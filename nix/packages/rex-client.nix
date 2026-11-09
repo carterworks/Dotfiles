@@ -1,7 +1,7 @@
 { pkgs, lib }:
 
 let
-  version = "0.1.0-1758";
+  version = "0.1.0-1853";
 in
 pkgs.stdenvNoCC.mkDerivation {
   pname = "rex-client";
@@ -9,7 +9,7 @@ pkgs.stdenvNoCC.mkDerivation {
 
   src = pkgs.requireFile {
     name = "Rex-${version}.dmg";
-    hash = "sha256-F5wsVwdCL2djYKLrsmT9gYnvXpypiVFAhjRR7H3bPSk=";
+    hash = "sha256-4uXEAh3+nZtiZd0aZBxvxzOpslIVkUVy6ngOCzATsKU=";
     message = "Configure private Rex sources outside the repository, then run ./update --fetch rex-client. See docs/rex.md.";
   };
 

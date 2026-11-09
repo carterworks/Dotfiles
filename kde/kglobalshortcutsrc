@@ -414,12 +414,6 @@ switch to next activity=none,none,Switch to Next Activity
 switch to previous activity=none,none,Switch to Previous Activity
 toggle do not disturb=none,none,Toggle do not disturb
 
-[services][brave-agent.desktop]
-_launch=Meta+Shift+B
-
-[services][brave-browser.desktop]
-_launch=none
-
 [services][com.mitchellh.ghostty.desktop]
 _launch=Meta+Shift+Return
 

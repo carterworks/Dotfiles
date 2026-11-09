@@ -1,4 +1,15 @@
 {
+  nixpkgs.overlays = [
+    (final: prev: {
+      fnox = prev.fnox.overrideAttrs (old: {
+        buildInputs = old.buildInputs ++ [
+          final.aws-lc
+          final.sqlcipher
+        ];
+      });
+    })
+  ];
+
   environment.interactiveShellInit = ''
     if [ -n "$REX_BIN_DIR" ]; then
       export PATH="$REX_BIN_DIR:$PATH"

@@ -7,6 +7,8 @@
 
 ## Temporary pins and workarounds
 
+- [ ] Remove the `fnox` dependency overlay in `nix/modules/nix.nix` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs. Its Cargo dependencies require both system libraries under nixpkgs' Cargo setup hook; OpenSSL alone does not satisfy them.
+
 - [ ] `atuin`: `carters-macbook-pro.nix` disables its nixpkgs check phase because `e2e_ai_sessions` fails on hosts with a live Pi session (`a_diverged_copy_resumes_only_as_chosen`, `a_session_gone_on_with_elsewhere_catches_up_where_it_came_from`). Remove the overlay once upstream fixes those tests or they stop depending on local sessions.
 
 - [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it. Retested 2026-11-01 with nixpkgs patchelf 0.19.2: stripping still truncates the SEA `NOTE` segment and `t3 --version` aborts.
