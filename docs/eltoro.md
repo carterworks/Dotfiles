@@ -45,17 +45,21 @@ Garbage collection runs weekly, deleting store paths older than 7 days.
 
 ## First-run agent onboarding
 
+Run onboarding as the `hermes` user so it writes the service's
+`/var/lib/hermes/.hermes/config.yaml`:
+
 ```sh
 ssh root@eltoro   # resolves via the tailnet (the LAN IP is firewalled off)
-hermes auth login   # or however the agent wants to authenticate
-hermes              # interactive onboarding -> creates /root/.hermes/config.yaml
+su hermes -c 'hermes auth login'   # or however the agent wants to authenticate
+su hermes -c 'hermes'              # interactive onboarding
 systemctl start hermes-gateway hermes-dashboard
 ```
 
 No LiteLLM/MCP servers are configured — authenticate when needed.
 
-Running `hermes` as root is what leaves settings root-owned; prefer
-`su hermes -c 'hermes'` once the gateway exists (see
+Running `hermes` as root can create root-owned settings under `/root/.hermes`
+or, if `HERMES_HOME` points at the service home, under
+`/var/lib/hermes/.hermes`; prefer `su hermes -c 'hermes'` for admin (see
 [Changing settings](#changing-settings)).
 
 ## Changing settings
@@ -66,9 +70,10 @@ the CLI, gateway, and dashboard; NixOS repairs its ownership on deployment, on
 boot, and once a minute without overwriting its contents. Credentials
 (`fnox.toml`, `.env`, and `auth.json`) remain read-only inside the services.
 
-The periodic repair matters: running `hermes` **as root** (onboarding,
-`hermes model`, an interactive TUI) rewrites those settings as `0600
-root:hermes`, which the unprivileged gateway cannot read. It then silently
+The periodic repair matters: running `hermes` **as root** with `HERMES_HOME`
+pointed at the service home (for example `hermes model` or an interactive TUI)
+rewrites those settings as `0600 root:hermes`, which the unprivileged gateway
+cannot read. It then silently
 falls back to a default config and fails every turn with `No LLM provider
 configured`, so Discord stops replying. The gateway does not exit when this
 happens, so it used to stay broken until the next deploy; it now self-heals
@@ -88,6 +93,27 @@ Check settings permissions without modifying them:
 
 ```sh
 bash tests/hermes-settings-writable
+```
+
+## Secrets and environment
+
+The systemd units declare their non-secret environment directly in
+`nix/machines/eltoro.nix`: `HOME`, `HERMES_HOME`, `MESSAGING_CWD`, `PATH`,
+`PYTHONPATH`, and `HERMES_YOLO_MODE`.
+
+Secrets come from `fnox`, not from Nix or Git. Both units run through
+`fnox -c /var/lib/hermes/.hermes/fnox.toml exec --`, which decrypts the
+age-encrypted `fnox.toml` and injects its values into the child process
+environment at start. The age key lives at
+`/var/lib/hermes/.config/fnox/age.txt`. `fnox.toml`, `.env`, and `auth.json`
+are read-only inside the service namespace.
+
+If onboarding or a wizard writes a new secret into the plaintext `.env`,
+re-import it and restart the services:
+
+```sh
+su hermes -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
+systemctl restart hermes-gateway hermes-dashboard
 ```
 
 ## Local TTS (KittenTTS)

@@ -141,9 +141,9 @@ let
       ${pkgs.ipset}/bin/ipset add egress-allowed "$c" -exist
     done
   '';
-  # Root-run hermes (the documented `ssh root@eltoro; hermes`
-  # onboarding path, `hermes model`, an interactive TUI) rewrites
-  # mutable settings as 0600 root:hermes. The unprivileged
+  # A root-run hermes with HERMES_HOME pointed at the service home
+  # (`hermes model`, an interactive TUI) rewrites mutable settings as
+  # 0600 root:hermes. The unprivileged
   # gateway/dashboard then cannot read them: the gateway logs
   # "Permission denied", silently falls back to a default config,
   # and dies with "No LLM provider configured" — Discord goes
@@ -388,7 +388,7 @@ in
   #
   # Secrets come from fnox (age-encrypted fnox.toml) via the fnoxCmd wrapper;
   # if a new secret is added through the wizard it lands in the plaintext .env,
-  # so re-import it: fnox import -i /var/lib/hermes/.hermes/.env --provider age --force
+  # so re-import it: cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force
   systemd.services.hermes-gateway = {
     description = "Hermes Agent Gateway";
     after = [ "network-online.target" ];
