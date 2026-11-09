@@ -38,6 +38,7 @@ in
 }
 // lib.optionalAttrs (system == "aarch64-darwin") {
   delta = localPackage ./delta.nix;
+  vorssaint = localPackage ./vorssaint.nix;
 }
 // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
   rex-client = localPackage ./rex-client.nix;
