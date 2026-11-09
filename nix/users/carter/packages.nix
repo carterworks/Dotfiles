@@ -144,7 +144,6 @@ let
     vicinae
     wallust
     wl-clipboard
-    xan
   ];
 in
 {
