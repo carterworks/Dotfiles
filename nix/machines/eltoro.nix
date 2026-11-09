@@ -186,8 +186,14 @@ in
   # ~/.hermes plus the age key at ~/.config/fnox/age.txt.
   # Deploys still come in over root ssh (key-only); interactive
   # admin is done via `su hermes -c '...'` (fish shell).
-  users.groups.hermes = { };
+  #
+  # Pin the identity: the firewall rules match the hermes UID and
+  # credential files are owned by it. Letting NixOS reallocate the
+  # system UID between generations left stale iptables rules for the
+  # old UID, which bypassed the egress and tailnet restrictions.
+  users.groups.hermes.gid = 993;
   users.users.hermes = {
+    uid = 995;
     isSystemUser = true;
     group = "hermes";
     home = "/var/lib/hermes";
@@ -205,6 +211,9 @@ in
     # Settings are mutable state, including after root-run onboarding.
     "z /var/lib/hermes/.hermes/config.yaml 0600 hermes hermes -"
     "z /var/lib/hermes/.hermes/SOUL.md 0600 hermes hermes -"
+    "z /var/lib/hermes/.hermes/fnox.toml 0600 hermes hermes -"
+    "z /var/lib/hermes/.hermes/auth.json 0600 hermes hermes -"
+    "z /var/lib/hermes/.config/fnox/age.txt 0600 hermes hermes -"
     "z /var/lib/hermes/.hermes/.env 0640 root hermes -"
     "d /var/lib/hermes/workspace 0750 hermes hermes -"
   ];
