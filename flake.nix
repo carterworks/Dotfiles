@@ -60,6 +60,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
+    # Locked to the rev the standalone eltoro repo ran; see TODO.md before
+    # letting ./update bump it.
+    hermes-agent.url = "github:NousResearch/hermes-agent";
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -127,7 +130,7 @@
             touch "$out"
           '';
           shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-            shellcheck --severity=warning ${source}/check ${source}/install ${source}/update
+            shellcheck --severity=warning ${source}/check ${source}/install ${source}/install-eltoro ${source}/update ${source}/tests/hermes-settings-writable
             touch "$out"
           '';
           install =
@@ -140,6 +143,18 @@
               }
               ''
                 python3 ${source}/test-install.py
+                touch "$out"
+              '';
+          install-eltoro =
+            pkgs.runCommandLocal "install-eltoro-check"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.python3
+                ];
+              }
+              ''
+                python3 ${source}/test-install-eltoro.py
                 touch "$out"
               '';
           update =
@@ -185,6 +200,11 @@
           ./nix/modules/rex.nix
         ];
       };
+      eltoro = mkSystem "eltoro" {
+        system = "x86_64-linux";
+        profile = "root";
+        gui = false;
+      };
       carters-macbook-pro = mkSystem "carters-macbook-pro" {
         system = "aarch64-darwin";
         profile = "carter";
@@ -196,7 +216,7 @@
     {
       packages = packageSets;
 
-      nixosConfigurations = { inherit prostagma scylla; };
+      nixosConfigurations = { inherit eltoro prostagma scylla; };
       darwinConfigurations = {
         "Carters-MacBook-Pro" = carters-macbook-pro;
         "Carters-MacBook-Pro-2" = carters-macbook-pro;
@@ -295,6 +315,7 @@
           obsidian-headless
           fff-mcp
           ;
+        eltoro = eltoro.config.system.build.toplevel;
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
       };

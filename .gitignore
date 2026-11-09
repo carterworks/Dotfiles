@@ -3,3 +3,4 @@
 .osgrep
 node_modules/
 /sources.private.json
+fnox.toml
