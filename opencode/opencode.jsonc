@@ -25,40 +25,5 @@
         "disabled": false
       }
     }
-  },
-  "plugins": [
-    {
-      "package": "./idle-compaction",
-      "options": {
-        "logLevel": "debug",
-        // Match Claude Code's default size gate; per-model minInputTokens overrides this.
-        // https://code.claude.com/docs/en/settings-reference#idlecompaction
-        "minInputTokens": 200000,
-        "models": {
-          // User-selected 54m idle policy, inspired by Claude Code's 54m/1h schedule.
-          // https://code.claude.com/docs/en/changelog#2-1-299
-          // Not a Copilot TTL guarantee: OpenAI's documented 30m minimum does not establish 54m warmth.
-          // https://developers.openai.com/api/docs/guides/prompt-caching
-          "gpt-5.6-luna": { "after": "54m" },
-          "gpt-5.6-sol": { "after": "54m" },
-          "gpt-5.6-terra": { "after": "54m" },
-          "gpt-6-luna": { "after": "54m" },
-          "gpt-6-sol": { "after": "54m" },
-          "gpt-6.1-sol": { "after": "54m" },
-          "gpt-6.1-terra": { "after": "54m" },
-          // User-selected 3m timer leaves 2m within Anthropic's default 5m cache lifetime.
-          // https://platform.claude.com/docs/en/build-with-claude/prompt-caching
-          // Copilot applicability is unverified. Each model can also override minInputTokens.
-          "claude-haiku-4.5": { "after": "3m" },
-          "claude-haiku-5.5": { "after": "3m" },
-          "claude-sonnet-5": { "after": "3m" },
-          "claude-sonnet-5.5": { "after": "3m" },
-          "claude-opus-4.8": { "after": "3m" },
-          "claude-opus-4.8-fast": { "after": "3m" },
-          "claude-opus-5": { "after": "3m" },
-          "claude-opus-5.5": { "after": "3m" }
-        }
-      }
-    }
-  ]
+  }
 }
