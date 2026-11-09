@@ -23,7 +23,8 @@
 
 ## El Toro
 
-- [ ] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo. The `hermes-agent` input is locked to the rev the standalone repo ran; reassess the newer upstream packaging (reports `0.0.0`) before `./update` bumps it.
+- [x] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
+- [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before `./update` bumps the pinned rev.
 
 ## Agent daemons
 
