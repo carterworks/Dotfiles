@@ -26,6 +26,12 @@
 - [x] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
 - [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before `./update` bumps the pinned rev.
 
+## Claude Code
+
+Claude Code is installed only on Scylla from `numtide/llm-agents.nix` and mirrors OpenCode's shared skills, MCP servers, and `agents/AGENTS.md`.
+
+- [ ] Authenticate the `cloudflare` MCP server in Claude Code with `/mcp`; `claude mcp list` reports it needs authentication.
+
 ## Agent daemons
 
 - [ ] Before re-enabling idle-compaction, restore and validate the user-selected timers in `opencode/opencode.jsonc` (54m for configured GPT-5.6+ models; 3m for Claude; 200k-token default with per-model overrides) and verify that a real Copilot session emits `session.compaction.ended` after admission and that the summary request reports cache reads. These are policies, not Copilot expiry guarantees; 54m exceeds OpenAI's documented 30m minimum.
