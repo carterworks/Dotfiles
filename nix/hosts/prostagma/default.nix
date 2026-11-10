@@ -1,7 +1,6 @@
 {
   inputs,
   lib,
-  modulesPath,
   pkgs,
   ...
 }:
@@ -163,7 +162,6 @@ in
     ../../modules/nixos/common.nix
     ../../modules/nixos/server.nix
     inputs.copyparty.nixosModules.default
-    (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware.nix
     ./app-storage.nix
     ./binary-cache.nix
@@ -196,7 +194,6 @@ in
 
   proxmoxLXC = {
     manageNetwork = false;
-    manageHostName = true;
     privileged = true;
   };
 
