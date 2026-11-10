@@ -21,12 +21,6 @@ let
         "--why=Coding agent is running"
         "--mode=block"
       ];
-  theme = {
-    fonts = {
-      monospace = "Iosevka";
-      sansSerif = "Inter";
-    };
-  };
 in
 {
   imports = [
@@ -36,24 +30,8 @@ in
     ./obsidian-sync.nix
   ];
 
-  # Upstream's Home Manager module supports x86_64-linux only; macOS installs
-  # the same package as a system app instead.
-  # installModel downloads the speech model from the module's own service, so
-  # a fresh host can dictate immediately; it is a no-op once the model is
-  # present and checksum-verified.
-  programs.hex = {
-    enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
-    autostart = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
-    installModel = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
-    package = lib.mkIf pkgs.stdenv.hostPlatform.isLinux pkgs.hex;
-    # The Hyprland bind in hypr/bindings.lua names the portal shortcut by this
-    # trigger, so changing it means changing that bind too.
-    shortcut = lib.mkIf pkgs.stdenv.hostPlatform.isLinux "option+space";
-  };
-
   dotfiles.desktopTheme = {
     name = "nord-light";
-    zenProfile = lib.mkIf pkgs.stdenv.hostPlatform.isLinux ".config/zen/jhvzidh2.Default Profile";
     obsidianVaults = [ "Documents/Notes" ];
   };
 
@@ -70,30 +48,6 @@ in
     enableFishIntegration = true;
     enableZshIntegration = true;
   };
-  gtk = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-    enable = true;
-    font = {
-      name = theme.fonts.sansSerif;
-      size = 12;
-    };
-    theme = {
-      name = "Breeze";
-      package = pkgs.kdePackages.breeze-gtk;
-    };
-    iconTheme = {
-      name = "Papirus";
-      package = pkgs.papirus-icon-theme;
-    };
-    cursorTheme = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
-      size = 24;
-    };
-    gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
-    gtk3.extraConfig.gtk-application-prefer-dark-theme = false;
-    gtk4.theme = config.gtk.theme;
-    gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
-  };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
@@ -102,36 +56,6 @@ in
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
   xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
-  xdg.configFile."autostart/vicinae.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-    force = true;
-    text = ''
-      [Desktop Entry]
-      Type=Application
-      Name=Vicinae
-      Exec=vicinae server
-      Terminal=false
-      NoDisplay=true
-      X-GNOME-Autostart-enabled=true
-    '';
-  };
-  # This desktop is already configured. Closing Vicinae's welcome window does
-  # not persist completion; seed its mutable state once, without replacing it.
-  home.activation.vicinaeOnboarding = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.python3}/bin/python3 ${../../users/carter/complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
-    ''
-  );
-  xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-    force = true;
-    text = ''
-      [Desktop Entry]
-      Type=Application
-      Name=Steam
-      Exec=steam -silent
-      Terminal=false
-      X-GNOME-Autostart-enabled=true
-    '';
-  };
 
   programs.fish = {
     enable = true;
