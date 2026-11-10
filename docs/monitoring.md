@@ -91,11 +91,17 @@ or a deploy; nothing in the repository does them.
    [Secrets](secrets.md). A token is at most 64 characters:
 
    ```bash
-   token() { openssl rand -hex 24 | tr -d '\n' | base64 -w0 | sfnox set "$1" -p "$2" >/dev/null; }
+   token() { nix run nixpkgs#openssl -- rand -hex 24 | tr -d '\n' | base64 -w0 | sfnox set "$1" -p "$2" >/dev/null; }
    token BESZEL_TOKEN_PROSTAGMA prostagma
    token BESZEL_TOKEN_SCYLLA beszel-scylla
    token BESZEL_TOKEN_ELTORO beszel-eltoro
+   for k in BESZEL_TOKEN_PROSTAGMA BESZEL_TOKEN_SCYLLA BESZEL_TOKEN_ELTORO; do
+     printf '%s ' "$k"; sfnox get "$k" | base64 -d | wc -c
+   done
    ```
+
+   Each token must be 48 bytes; a 0 means the first command failed and an
+   empty token was stored, so make that one again.
 
 7. **Owner:** set the key, the one-line change: in
    `nix/modules/nixos/beszel-agent.nix`, replace `default = null;` with
@@ -134,9 +140,11 @@ fingerprint stays pinned.
 | GPU | Intel, from sysfs | AMD, from sysfs | no |
 | ZFS pools | no | yes | no |
 
-Every agent runs as a dynamic, unprivileged `beszel-agent` user in the module's
+Every agent runs as an unprivileged `beszel-agent` user in the module's
 sandbox (no capabilities, read-only system and home directories, its own user
-namespace), outside eltoro's egress fence. What each host adds:
+namespace), outside eltoro's egress fence. The user is dynamic, except on
+prostagma, where the nixpkgs module makes it a system user for the D-Bus
+policy to name. What each host adds:
 
 - **prostagma:** the `docker` group, for the Docker socket. **Access to that
   socket is equivalent to root on prostagma**: the agent only reads from it,

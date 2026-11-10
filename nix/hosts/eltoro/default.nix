@@ -113,6 +113,11 @@ in
 
   nixpkgs.hostPlatform = "x86_64-linux";
 
+  nix.settings.auto-optimise-store = true;
+  # The 32 GB disk filled with paths the shared 7-day window kept.
+  nix.gc.options = lib.mkForce "--delete-older-than 3d";
+  services.journald.settings.Journal.SystemMaxUse = "200M";
+
   networking.hostName = "eltoro";
   i18n.defaultLocale = "en_US.UTF-8";
 
@@ -245,6 +250,7 @@ in
     uv
     fnox # secret manager: resolves /root/.hermes/fnox.toml via age
     pkgs.age # age-keygen; fnox reads the key from ~/.config/fnox/age.txt
+    ipset # the post-deploy fence check in docs/eltoro.md lists egress-allowed
   ];
 
   # hard resource ceiling for the whole hermes family (both units
