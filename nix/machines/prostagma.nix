@@ -209,11 +209,6 @@ in
     privileged = true;
   };
 
-  prostagma.appStorage = {
-    enable = true;
-    mode = "external";
-  };
-
   prostagma.podmaker.enable = true;
 
   virtualisation.docker = {
