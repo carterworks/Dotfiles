@@ -22,6 +22,10 @@ sudo() {
 NIX_ENV = '''#!/bin/sh
 printf 'nix-env %s\\n' "$*"
 '''
+# run_darwin_activation detaches through /usr/bin/perl, which only macOS has.
+needs_system_perl = unittest.skipUnless(
+    Path("/usr/bin/perl").exists(), "needs the system perl"
+)
 
 
 class DarwinRebuildTests(unittest.TestCase):
@@ -59,6 +63,7 @@ run_rebuild
             self.assertIn('darwinConfigurations."Test-Mac".system', result.stderr)
             self.assertEqual(result.stdout, "activate:/nix/store/system\n")
 
+    @needs_system_perl
     def test_activation_sets_profile_activates_and_returns_status(self):
         with tempfile.TemporaryDirectory() as home:
             result = self.run_script(MOCK_SUDO + '''
@@ -73,6 +78,7 @@ run_darwin_activation "$HOME/system with spaces"
             self.assertEqual((log.parent / "status").read_text(), "7\n")
             self.assertIn("activated", result.stdout)
 
+    @needs_system_perl
     def test_output_arrives_before_activation_completes(self):
         with tempfile.TemporaryDirectory() as home:
             result = self.run_script(MOCK_SUDO + '''
@@ -114,6 +120,7 @@ run_darwin_activation "$HOME/system with spaces"
 ''', home)
             self.assertEqual(result.returncode, 9, result.stderr)
 
+    @needs_system_perl
     def test_activation_survives_installer_process_group_termination(self):
         with tempfile.TemporaryDirectory() as home:
             installer = self.run_script(
