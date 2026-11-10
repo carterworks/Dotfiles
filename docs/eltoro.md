@@ -105,6 +105,13 @@ the system has switched, so do not roll back, and inspect
 `hermes-settings-repair.service` does fail on a refusal, so it shows in
 `systemctl --failed`.
 
+Text to speech is off by disabling the `tts` toolset on each platform, as
+`hermes`: `hermes tools disable tts --platform <name>`, done for Discord and the CLI.
+Hermes has no "off" provider value, so `tts.provider` still names KittenTTS,
+which this generation no longer has, and is unused. `/voice on` in Discord
+would still attempt TTS directly and fail for lack of the provider (read from
+Hermes's source, not tested).
+
 Allowlists in `config.yaml` are editable settings, not a containment boundary.
 The system-level network, privilege, and resource restrictions still apply.
 
