@@ -163,6 +163,7 @@ in
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware/prostagma.nix
     ./prostagma/app-storage.nix
+    ./prostagma/binary-cache.nix
     ./prostagma/podmaker.nix
     ./prostagma/media-apps.nix
     ./prostagma/sso.nix
