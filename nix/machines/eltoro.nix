@@ -25,8 +25,21 @@ let
   # quiet. tmpfiles' `z` cannot repair this (it will not walk
   # ownership back off root), so re-assert it explicitly.
   # Never follow a symlink; never touch contents.
+  #
+  # Hermes owns /var/lib/hermes, so it can swap .hermes for a symlink
+  # to anywhere, and --no-dereference guards only the last component.
+  # Working from inside the checked directory pins it: a swap after
+  # the check no longer changes which files the chown reaches.
   hermesSettingsRepair = pkgs.writeShellScript "hermes-settings-repair" ''
-    for settings in /var/lib/hermes/.hermes/config.yaml /var/lib/hermes/.hermes/SOUL.md; do
+    dir=/var/lib/hermes/.hermes
+    if [ ! -e "$dir" ] && [ ! -L "$dir" ]; then
+      exit 0
+    fi
+    if ! cd "$dir" || [ "$(pwd -P)" != "$dir" ] || [ "$(${pkgs.coreutils}/bin/stat -c %U .)" != hermes ]; then
+      echo "hermes-settings-repair: $dir is not a real directory owned by hermes; refusing" >&2
+      exit 1
+    fi
+    for settings in config.yaml SOUL.md; do
       if [ -f "$settings" ] && [ ! -L "$settings" ]; then
         ${pkgs.coreutils}/bin/chown --no-dereference hermes:hermes "$settings"
       fi
