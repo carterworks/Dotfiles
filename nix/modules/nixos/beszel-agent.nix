@@ -34,9 +34,15 @@ in
       };
     };
 
-    systemd.services.beszel-agent.serviceConfig.LoadCredential = "token:${
-      config.dotfiles.fnox.secrets."BESZEL_TOKEN_${lib.toUpper host}".path
-    }";
+    systemd.services.beszel-agent.serviceConfig = {
+      LoadCredential = "token:${config.dotfiles.fnox.secrets."BESZEL_TOKEN_${lib.toUpper host}".path}";
+      # The module drops the user namespace whenever service status is
+      # skipped, which no collector here needs; only the ZFS tools fail inside
+      # one. It also allows /dev/zfs but keeps PrivateDevices, which hides the
+      # device, and without it the agent reports no pools.
+      PrivateUsers = lib.mkForce (!config.boot.zfs.enabled);
+      PrivateDevices = lib.mkIf config.boot.zfs.enabled (lib.mkForce false);
+    };
 
     dotfiles.fnox.secrets."BESZEL_TOKEN_${lib.toUpper host}" = {
       path = "/run/secrets/beszel/${host}-token";

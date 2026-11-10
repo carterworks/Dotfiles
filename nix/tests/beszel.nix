@@ -2,14 +2,19 @@ let
   inherit (import ../lib/fleet.nix) tailnetDomain;
   hubName = "beszel.${tailnetDomain}";
   # vlan 1 stands in for the tailnet, vlan 2 for the LAN.
+  # Nodes are numbered in name order.
   addresses = {
-    prostagma = [
+    eltoro = [
       "192.168.1.1"
       "192.168.2.1"
     ];
-    scylla = [
+    prostagma = [
       "192.168.1.2"
       "192.168.2.2"
+    ];
+    scylla = [
+      "192.168.1.3"
+      "192.168.2.3"
     ];
   };
   hubTailnetAddress = builtins.head addresses.prostagma;
@@ -37,6 +42,15 @@ let
         pkgs.openssh
         pkgs.openssl
       ];
+    };
+
+  remoteAgent =
+    { lib, ... }:
+    {
+      imports = [ common ];
+      # Serve terminates TLS on the real tailnet.
+      services.beszel.agent.environment.HUB_URL = lib.mkForce "http://${hubName}";
+      networking.hosts.${hubTailnetAddress} = [ hubName ];
     };
 in
 {
@@ -103,14 +117,14 @@ in
         };
       };
 
-    scylla =
-      { lib, ... }:
-      {
-        imports = [ common ];
-        # Serve terminates TLS on the real tailnet.
-        services.beszel.agent.environment.HUB_URL = lib.mkForce "http://${hubName}";
-        networking.hosts.${hubTailnetAddress} = [ hubName ];
-      };
+    eltoro = remoteAgent;
+
+    # ZFS, as on the real scylla, with a pool on a file made by the test.
+    scylla = {
+      imports = [ remoteAgent ];
+      boot.supportedFilesystems = [ "zfs" ];
+      networking.hostId = "8425e349";
+    };
   };
 
   testScript = ''
@@ -164,10 +178,10 @@ in
 
 
     def listens_on_nothing():
-        for machine in [prostagma, scylla]:
+        for machine in agents:
             pid = machine.succeed("systemctl show -P MainPID beszel-agent.service").strip()
             machine.fail(f"ss -Hltnup | grep -q 'pid={pid},'")
-        for client, host in [(scylla, "prostagma"), (prostagma, "scylla")]:
+        for client, host in [(scylla, "prostagma"), (prostagma, "scylla"), (prostagma, "eltoro")]:
             for address in addresses[host]:
                 client.fail(f"curl -sS --max-time 5 telnet://{address}:45876 </dev/null")
 
@@ -181,12 +195,14 @@ in
         )
 
 
+    agents = [prostagma, scylla, eltoro]
     start_all()
-    prostagma.wait_for_unit("multi-user.target")
-    scylla.wait_for_unit("multi-user.target")
+    for machine in agents:
+        machine.wait_for_unit("multi-user.target")
+    scylla.succeed("truncate -s 128M /root/pool.img", "zpool create testpool /root/pool.img")
 
     # The pipeline docs/monitoring.md gives the owner, with values made here.
-    for machine in [prostagma, scylla]:
+    for machine in agents:
         machine.succeed("mkdir -p /etc/ssh && ssh-keygen -q -t ed25519 -N ''' -f /etc/ssh/ssh_host_ed25519_key")
     store_script = """
       set -euo pipefail
@@ -206,10 +222,13 @@ in
     [providers.beszel-scylla]
     type = "age"
     recipients = ["$admin", "$prostagma", "SCYLLA_KEY"]
+    [providers.beszel-eltoro]
+    type = "age"
+    recipients = ["$admin", "$prostagma", "ELTORO_KEY"]
     EOF
       token() { openssl rand -hex 24 | tr -d '\\n' | base64 -w0 | fnox --no-daemon -c fnox.toml set "$1" -p "$2" >/dev/null; }
       token BESZEL_TOKEN_PROSTAGMA prostagma
-      token BESZEL_TOKEN_ELTORO prostagma
+      token BESZEL_TOKEN_ELTORO beszel-eltoro
       token BESZEL_TOKEN_SCYLLA beszel-scylla
       secret() { base64 -w0 | fnox --no-daemon -c fnox.toml set "$1" -p prostagma >/dev/null; }
       for name in JWT_SECRET SESSION_SECRET STORAGE_ENCRYPTION_KEY OIDC_HMAC_SECRET; do
@@ -217,12 +236,14 @@ in
       done
       openssl genrsa 2048 2>/dev/null | secret AUTHELIA_OIDC_ISSUER_PRIVATE_KEY
     """
-    scylla_key = scylla.succeed("cat /etc/ssh/ssh_host_ed25519_key.pub").strip()
-    prostagma.succeed(store_script.replace("SCYLLA_KEY", scylla_key))
+    for name, machine in [("SCYLLA_KEY", scylla), ("ELTORO_KEY", eltoro)]:
+        store_script = store_script.replace(name, machine.succeed("cat /etc/ssh/ssh_host_ed25519_key.pub").strip())
+    prostagma.succeed(store_script)
     store = prostagma.succeed("cat /root/fnox.toml")
-    scylla.succeed(f"cat > /root/fnox.toml <<'EOF'\n{store}EOF")
+    for machine in [scylla, eltoro]:
+        machine.succeed(f"cat > /root/fnox.toml <<'EOF'\n{store}EOF")
     # These failed at boot, before their secrets were in the store.
-    for machine in [prostagma, scylla]:
+    for machine in agents:
         machine.succeed("systemctl restart beszel-agent.service")
     prostagma.succeed("systemctl restart authelia-main.service")
     prostagma.wait_for_open_port(9091, "127.0.0.1")
@@ -286,16 +307,29 @@ in
     with subtest("a disconnected agent listens on nothing"):
         listens_on_nothing()
 
-    with subtest("with the hub's key, both agents connect and the hub records them"):
+    with subtest("with the hub's key, every agent connects and the hub records it"):
         key = json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/beszel/info"))["key"]
-        use_key(prostagma, key)
-        use_key(scylla, key)
+        for machine in agents:
+            use_key(machine, key)
         prostagma.wait_until_succeeds(
             f"curl -sSf {as_carter} {api}/collections/systems/records"
-            " | jq -e '[.items[] | select(.status == \"up\") | .name] | sort == [\"prostagma\", \"scylla\"]'",
+            " | jq -e '[.items[] | select(.status == \"up\") | .name] | sort == [\"eltoro\", \"prostagma\", \"scylla\"]'",
             timeout=120,
         )
-        assert systems()["eltoro"] != "up"
+
+    with subtest("each agent's sandbox still lets it collect"):
+        for machine, private_users in [(prostagma, "yes"), (eltoro, "yes"), (scylla, "no")]:
+            assert machine.succeed("systemctl show -P PrivateUsers beszel-agent.service").strip() == private_users, machine.name
+        prostagma.wait_until_succeeds(
+            f"curl -sSf {as_carter} {api}/collections/systems/records"
+            " | jq -e '[.items[] | select(.name == \"eltoro\")][0].info | .mp > 0 and .dp > 0'",
+            timeout=120,
+        )
+        prostagma.wait_until_succeeds(
+            f"curl -sSf -G {as_carter} -d perPage=500 {api}/collections/zfs_pools/records"
+            " | jq -e '[.items[] | .name] | index(\"testpool\") != null'",
+            timeout=180,
+        )
 
     with subtest("prostagma's agent reports its services but cannot read the journal"):
         prostagma.wait_until_succeeds(
@@ -340,7 +374,7 @@ in
         for host in ["prostagma", "scylla", "eltoro"]:
             token = prostagma.succeed(f"cat /run/secrets/beszel/{host}-token").strip()
             prostagma.fail(f"grep -rqF {token} /var/log/caddy")
-            for machine in [prostagma, scylla]:
+            for machine in agents:
                 machine.fail(f"journalctl -o cat | grep -qF {token}")
   '';
 }
