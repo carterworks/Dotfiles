@@ -222,8 +222,9 @@ hand, or the Proxmox firewall. Deploy by hand with the checklist below:
 - The first switch to the chain-based fence, from the generation before it. Its
   one-time migration needs the pre-flight `OUTPUT` check. Do it before the cache
   key is set, because setting the key turns on unattended upgrades. eltoro made
-  this switch on 2026-11-10 without the checklist, by accident; whether it
-  keeps that generation is an open decision in [Rollout](rollout.md).
+  this switch on 2026-11-10 without the checklist, by accident, and keeps that
+  generation: two deploys from `main` that day passed every post-deploy check
+  below.
 - Any fence change you want to watch land, with a snapshot to return to.
 
 After an unattended fence change, the post-deploy checks below still confirm it
