@@ -54,6 +54,8 @@ in
     pkgs.iosevka-bin
   ];
 
+  lib.dotfiles = { inherit link linkEach; };
+
   home.file =
     linkEach ".agents/skills" "agents/skills/personal"
     // linkEach ".agents/skills" "agents/skills/generated"

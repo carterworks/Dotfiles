@@ -34,6 +34,54 @@ let
     };
   };
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
+
+  inherit (config.lib.dotfiles) link linkEach;
+  kdeConfigFiles = [
+    "arkrc"
+    "baloofilerc"
+    "baloofileinformationrc"
+    "bluedevilglobalrc"
+    "dolphinrc"
+    "drkonqirc"
+    "gwenviewrc"
+    "kactivitymanagerdrc"
+    "kactivitymanagerd-statsrc"
+    "kconf_updaterc"
+    "kded5rc"
+    "kded6rc"
+    "kglobalshortcutsrc"
+    "khelpcenterrc"
+    "kio_fishrc"
+    "kiorc"
+    "kscreenlockerrc"
+    "ksmserverrc"
+    "ktimezonedrc"
+    "kwalletrc"
+    "kwinrc"
+    "kwinrulesrc"
+    "kwinoutputconfig.json"
+    "okularpartrc"
+    "okularrc"
+    "plasma-localerc"
+    "plasmanotifyrc"
+    "plasma-org.kde.plasma.desktop-appletsrc"
+    "plasmaparc"
+    "plasmarc"
+    "plasmashellrc"
+    "powerdevilrc"
+    "powermanagementprofilesrc"
+    "spectaclerc"
+    "systemmonitorrc"
+    "trashrc"
+    "xdg-desktop-portal-kderc"
+    "kdedefaults/kcminputrc"
+    "kdedefaults/kdeglobals"
+    "kdedefaults/ksplashrc"
+    "kdedefaults/kwinrc"
+    "kdedefaults/package"
+    "kdedefaults/plasmarc"
+    "KDE/UserFeedback.conf"
+  ];
 in
 {
   imports = [
@@ -57,6 +105,22 @@ in
   };
 
   dotfiles.desktopTheme.zenProfile = ".config/zen/jhvzidh2.Default Profile";
+
+  # kde/kdeglobals stays unlinked: desktopThemeKde edits the live file.
+  home.file =
+    lib.filterAttrs (name: _: lib.hasSuffix ".lua" name) (linkEach ".config/hypr" "hypr")
+    // linkEach ".config/quickshell" "quickshell"
+    // lib.genAttrs' kdeConfigFiles (file: lib.nameValuePair ".config/${file}" (link "kde/${file}"))
+    // {
+      ".claude/CLAUDE.md".source = ../../../agents/AGENTS.md;
+      ".config/quickshell/wallpaper.jpg" = link "assets/wallpapers/01-miasma.jpg";
+      ".config/vicinae/settings.json" = link "vicinae-config.jsonc";
+      ".local/share/color-schemes/CosmicDark.colors" =
+        link "kde/local-share/color-schemes/CosmicDark.colors";
+      ".local/share/color-schemes/CosmicLight.colors" =
+        link "kde/local-share/color-schemes/CosmicLight.colors";
+      ".local/share/user-places.xbel" = link "kde/local-share/user-places.xbel";
+    };
 
   gtk = {
     enable = true;
@@ -113,8 +177,6 @@ in
   };
 
   home.packages = [ pkgs.claude-code ];
-
-  home.file.".claude/CLAUDE.md".source = ../../../agents/AGENTS.md;
 
   # Claude Code only reads ~/.claude/skills, while OpenCode reads the shared
   # ~/.agents/skills and its legacy ~/.config/opencode/skills.
