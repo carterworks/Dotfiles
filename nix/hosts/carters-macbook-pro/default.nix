@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   self,
@@ -27,6 +28,13 @@ let
   };
 in
 {
+  imports = [
+    ../../modules/common.nix
+    inputs.home-manager.darwinModules.home-manager
+    ../../modules/workstation.nix
+    inputs.determinate.darwinModules.default
+  ];
+
   home-manager.users.cmcbride = ../../modules/home/workstation.nix;
 
   nixpkgs.hostPlatform = "aarch64-darwin";

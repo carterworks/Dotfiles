@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   pkgs,
   lib,
   ...
@@ -24,10 +23,8 @@ let
 in
 {
   imports = [
-    inputs.hex.homeManagerModules.hex
     ./agent-daemons.nix
     ./desktop-theme
-    ./obsidian-sync.nix
   ];
 
   dotfiles.desktopTheme = {
