@@ -164,8 +164,6 @@ in
         ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
         iptables  -w -N ${chain}
         ip6tables -w -N ${chain}
-        ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited
         for ipt in iptables ip6tables; do
           $ipt -w -A ${chain} -m owner ! --uid-owner hermes -j ACCEPT
           $ipt -w -A ${chain} -o lo -j ACCEPT
