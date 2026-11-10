@@ -16,7 +16,7 @@ import subprocess
 # Tools that reach the network, a host or a credential. Each run gets a stub for
 # every one; a test replaces the stubs it needs to observe.
 GUARDED = ("nixos-rebuild", "nix", "ssh", "sudo", "gh", "nix-env", "curl")
-TOOLS = ("base64", "bash", "cat", "date", "dirname", "env", "grep", "jq", "kill",
+TOOLS = ("base64", "bash", "cat", "date", "dirname", "env", "grep", "jq", "kill", "ln",
          "mkdir", "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
 UNEXPECTED = '#!/bin/sh\necho "unexpected call: ${0##*/} $*" >&2\nexit 97\n'
 PROBE = 'for tool in ' + " ".join(GUARDED) + '; do printf "%s=%s\\n" "$tool" "$(command -v "$tool")"; done\n'

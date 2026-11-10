@@ -209,13 +209,18 @@ run_rebuild() {
   local rebuild
   local machine_name
   local system_path
+  local out_dir
 
   machine_name="$(current_machine_name)"
+  # The out-link keeps the built system from garbage collection until it is
+  # activated. After a failed activation it stays behind, still rooting the
+  # system, until the temporary directory is cleaned.
+  out_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-install.XXXXXX")"
 
   case "$(uname -s)" in
     Darwin)
       # Build as the invoking user: root cannot read a user-owned Git checkout.
-      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --out-link "${out_dir}/system" "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
       authenticate_sudo
       run_darwin_activation "${system_path}"
       ;;
@@ -231,7 +236,7 @@ run_rebuild() {
         exit 1
       fi
 
-      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --no-link "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --out-link "${out_dir}/system" "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
       authenticate_sudo
       program_status working "Switching system"
       sudo "${rebuild}" switch --store-path "${system_path}"
@@ -241,6 +246,7 @@ run_rebuild() {
       exit 1
       ;;
   esac
+  rm -rf "${out_dir}"
 }
 
 # Build here and activate on the target, which substitutes what it can itself.
