@@ -235,5 +235,12 @@ cache_private_release '{"privateUrlTemplateKey":"rex.clientUrlTemplate","fileNam
         self.assertEqual(result.stdout.strip(), "expectedhash")
 
 
+class HeldInputTests(unittest.TestCase):
+    def test_hermes_agent_rev_survives_updating_all_inputs(self):
+        lock = json.loads((ROOT / "flake.lock").read_text())
+        node = lock["nodes"][lock["nodes"]["root"]["inputs"]["hermes-agent"]]
+        self.assertEqual(node["original"].get("rev"), node["locked"]["rev"])
+
+
 if __name__ == "__main__":
     unittest.main()

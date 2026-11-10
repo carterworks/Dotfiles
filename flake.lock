@@ -287,6 +287,7 @@
       "original": {
         "owner": "NousResearch",
         "repo": "hermes-agent",
+        "rev": "4e865d42d137494d659cbd241f51a7d0fd4fbcba",
         "type": "github"
       }
     },
