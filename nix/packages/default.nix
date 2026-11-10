@@ -14,7 +14,7 @@ let
   localPackage = path: pkgs.callPackage path { };
   agent-browser = inputs.numtide-llm-agents.packages.${system}.agent-browser;
   herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
-  hunk = inputs.hunk.packages.${system}.default;
+  hunk = inputs.numtide-llm-agents.packages.${system}.hunk;
 in
 {
   dotbot = pkgs.dotbot;

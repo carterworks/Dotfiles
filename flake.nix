@@ -55,11 +55,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
-    hunk = {
-      url = "github:modem-dev/hunk";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.systems.follows = "systems";
-    };
     # Locked to the rev the standalone eltoro repo ran; see TODO.md before
     # letting ./update bump it.
     hermes-agent.url = "github:NousResearch/hermes-agent";
