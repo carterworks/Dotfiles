@@ -44,9 +44,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
-    # Locked to the rev the standalone eltoro repo ran; see TODO.md before
-    # letting ./update bump it.
-    hermes-agent.url = "github:NousResearch/hermes-agent";
+    # Held at the rev the standalone eltoro repo ran, so ./update leaves it
+    # alone; see TODO.md. Bump it by editing the rev here, then run
+    # `nix flake update hermes-agent`.
+    hermes-agent.url = "github:NousResearch/hermes-agent/4e865d42d137494d659cbd241f51a7d0fd4fbcba";
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
