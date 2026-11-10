@@ -173,8 +173,4 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      # Without --force the push only fast-forwards, and creates release if it
-      # is missing. A newer run may have moved release past this commit first.
-      - run: |
-          git push origin "$GITHUB_SHA:refs/heads/release" \
-            || { git fetch -q origin release && git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; }
+      - run: .github/advance-release "$GITHUB_SHA"
