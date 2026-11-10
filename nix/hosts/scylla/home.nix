@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   ...
@@ -8,7 +7,6 @@
 
 let
   home = config.home.homeDirectory;
-  claude-code = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.claude-code;
 
   claudeMcpServers = {
     context7 = {
@@ -37,7 +35,7 @@ let
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
 in
 {
-  home.packages = [ claude-code ];
+  home.packages = [ pkgs.claude-code ];
 
   home.file.".claude/CLAUDE.md".source = ../../../agents/AGENTS.md;
 

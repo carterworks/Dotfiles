@@ -12,9 +12,7 @@ let
     config.allowUnfree = true;
   };
   localPackage = path: pkgs.callPackage path { };
-  agent-browser = inputs.numtide-llm-agents.packages.${system}.agent-browser;
-  herdr = inputs.numtide-llm-agents.packages.${system}.herdr;
-  hunk = inputs.numtide-llm-agents.packages.${system}.hunk;
+  inherit (inputs.numtide-llm-agents.packages.${system}) agent-browser herdr hunk;
 in
 {
   dotbot = pkgs.dotbot;
