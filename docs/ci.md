@@ -222,7 +222,8 @@ gh workflow enable nightly.yml --repo carterworks/dotfiles
 ```
 
 Pausing stops updates, not `release`: every green Fleet run for your own
-pushes to `main` still advances it.
+pushes to `main` still advances it. The rollout pauses it from the merge until
+the servers' hand deploys are done ([Rollout](rollout.md), stages 2 and 3).
 
 ## When it goes red
 

@@ -2,7 +2,8 @@
 
 The owner's steps from "pull request #3 is ready" to "the fleet runs
 unattended", in order. Each step names what to do and links to the runbook
-section that has the commands; this page has none of its own. You can stop
+section that has the commands; this page has none of its own beyond pausing
+Nightly. You can stop
 safely at the end of any stage. **No return** marks a step that cannot simply be
 undone.
 
@@ -72,11 +73,16 @@ Nothing here deploys anything.
 
 ## 2. Merge
 
-1. Approve and merge pull request #3. **No return** in one sense: from now on
-   Nightly updates `main` and merges the result on its own every night
+1. Approve and merge pull request #3. **No return** in one sense: from now on,
+   except while paused below, Nightly updates `main` and merges the result on
+   its own every night
    ([CI, the nightly loop](ci.md#the-nightly-loop)). No server changes yet:
    without the cache's secrets, runs report "Cache push skipped" and `release`
    does not exist.
+2. Right away, pause Nightly until the hand deploys are done, so prostagma's
+   first deploy carries this branch and nothing else, and a failure points at
+   one change: `gh workflow disable nightly.yml --repo carterworks/dotfiles`
+   ([CI, by hand](ci.md#by-hand)).
 
 ## 3. Deploy the servers by hand
 
@@ -95,6 +101,7 @@ Nothing here deploys anything.
 4. Approve the `svc:beszel` Service and grant it in the tailnet policy, then
    open the dashboard ([Monitoring](monitoring.md#first-deployment) steps 2
    and 3).
+5. Turn Nightly back on: `gh workflow enable nightly.yml --repo carterworks/dotfiles`.
 
 ## 4. Binary cache and `release`
 
