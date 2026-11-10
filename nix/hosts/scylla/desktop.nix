@@ -30,6 +30,7 @@ in
     dolphin-emu
     google-chrome
     heroic
+    kdePackages.karousel
     papirus-icon-theme
     playerctl
     protonplus
@@ -51,12 +52,48 @@ in
     XCURSOR_SIZE = "24";
   };
 
-  programs.fish.enable = true;
-
-  programs.gnupg.agent = {
+  services.desktopManager.plasma6 = {
     enable = true;
-    pinentryPackage = pkgs.pinentry-qt;
   };
+  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+    konsole
+    elisa
+    kate
+  ];
+
+  xdg.portal = {
+    enable = true;
+    xdgOpenUsePortal = true;
+    config = {
+      common.default = [ "gtk" ];
+      kde.default = [
+        "kde"
+        "gtk"
+      ];
+    };
+    extraPortals = with pkgs; [
+      kdePackages.xdg-desktop-portal-kde
+      xdg-desktop-portal-gtk
+    ];
+  };
+
+  services.displayManager = {
+    defaultSession = "hyprland-uwsm";
+    autoLogin.enable = true;
+    autoLogin.user = "carter";
+    plasma-login-manager.enable = true;
+  };
+
+  programs.dconf.profiles.user.databases = [
+    {
+      settings = {
+        "org/gnome/desktop/interface" = {
+          "color-scheme" = "prefer-light";
+          "icon-theme" = "Papirus";
+        };
+      };
+    }
+  ];
 
   services.sunshine = {
     enable = true;
@@ -82,37 +119,5 @@ in
         }
       ];
     };
-  };
-
-  programs.nix-ld = {
-    enable = true;
-    libraries = with pkgs; [
-      zlib
-      zstd
-      stdenv.cc.cc
-      curl
-      openssl
-      attr
-      libssh
-      bzip2
-      libxml2
-      acl
-      libsodium
-      util-linux
-      xz
-      systemd
-    ];
-  };
-
-  users.groups.games = { };
-
-  users.users.carter = {
-    isNormalUser = true;
-    linger = true;
-    extraGroups = [
-      "wheel"
-      "games"
-      "uinput"
-    ];
   };
 }
