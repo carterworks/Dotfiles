@@ -49,6 +49,7 @@ in
       networking.hosts.${allowedDns} = [ "discord.com" ];
 
       environment.systemPackages = [
+        pkgs.ipset
         pkgs.iptables
         pkgs.socat
       ];
@@ -107,6 +108,13 @@ in
         blocked("hermes", "TCP6", "[${peerIp6}]:80")
         # Unlike IPv4, the IPv6 tailnet rule has no uid exemption.
         blocked("root", "TCP6", "[${peerIp6}]:80")
+
+        # Users other than hermes are as unrestricted as root.
+        allowed("nobody", "TCP4", "${unlisted}:80")
+        allowed("nobody", "TCP6", "[${internetIp6}]:80")
+        allowed("nobody", "TCP4", "${peerIp4}:80")
+        blocked("nobody", "TCP6", "[${peerIp6}]:80")
+        allowed("nobody", "TCP4", "${magicDns}:5300")
 
         allowed("hermes", "TCP4", "${magicDns}:53")
         allowed("hermes", "UDP4", "${magicDns}:53")
@@ -206,6 +214,44 @@ in
             eltoro.succeed(f"{ipt} -w -A OUTPUT -o eth1 -m owner ! --uid-owner 1234 -j ACCEPT")
         eltoro.succeed("systemctl reload firewall")
         assert_rules_once()
+        assert_fence()
+
+    with subtest("a switch from the generation before the chain leaves only the chain"):
+        for ipt in ("iptables", "ip6tables"):
+            eltoro.succeed(f"{ipt} -w -D OUTPUT -j hermes-egress", f"{ipt} -w -F hermes-egress", f"{ipt} -w -X hermes-egress")
+        # Verbatim from that generation's extraCommands, with eth1 for its eth0.
+        eltoro.succeed(
+            "iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+            "iptables  -w -A OUTPUT -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT",
+            "iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT",
+            "iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT",
+            "iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited",
+            "ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+            "ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited",
+            "iptables  -w -A OUTPUT -o eth1 -m owner ! --uid-owner hermes -j ACCEPT",
+            "iptables  -w -A OUTPUT -o eth1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT",
+            "iptables  -w -A OUTPUT -o eth1 -m set --match-set egress-allowed dst -j ACCEPT",
+            "iptables  -w -A OUTPUT -o eth1 -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited",
+            "ip6tables -w -A OUTPUT -o eth1 -m owner ! --uid-owner hermes -j ACCEPT",
+            "ip6tables -w -A OUTPUT -o eth1 -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited",
+        )
+        eltoro.succeed("systemctl reload firewall")
+        for save in ("iptables-save", "ip6tables-save"):
+            hooks = [rule for rule in output_rules(save) if rule.startswith("-A OUTPUT ")]
+            assert hooks == ["-A OUTPUT -j hermes-egress"], f"{save}: {hooks}"
+        assert_rules_once()
+        assert_fence()
+
+    with subtest("an empty allowlist lets hermes reach nothing on the uplink"):
+        eltoro.succeed("systemctl stop egress-allowlist.timer", "ipset flush egress-allowed")
+        blocked("hermes", "TCP4", "${allowedDns}:80")
+        blocked("hermes", "TCP4", "${allowedCidr}:80")
+        allowed("root", "TCP4", "${allowedDns}:80")
+        # The set as a fresh start creates it, before any refresh has run.
+        eltoro.succeed("systemctl stop firewall", "ipset destroy egress-allowed", "systemctl start firewall")
+        blocked("hermes", "TCP4", "${allowedDns}:80")
+        blocked("hermes", "TCP4", "${allowedCidr}:80")
+        eltoro.succeed("systemctl start egress-allowlist egress-allowlist.timer")
         assert_fence()
 
     with subtest("start and stop are idempotent"):
