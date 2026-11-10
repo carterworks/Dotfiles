@@ -41,6 +41,46 @@ fine inside the tailnet.
 Steps marked **You** need your accounts or a deploy, so only you can do them.
 Run the rest wherever the step says.
 
+## 0. GitHub Environment, before merging the CI workflows (**You**)
+
+GitHub's branch rule on this Environment is the only thing that keeps the
+secrets of steps 3 and 4 from a workflow edited on another branch. A job that
+names a missing Environment creates it, empty and without a rule, so create it
+before `.github/workflows/fleet.yml` reaches `main`.
+
+In the repository's **Settings → Environments**, select **New environment**,
+name it `binary-cache` and **Configure environment**. Under **Deployment
+branches and tags**, choose **Selected branches and tags**, then **Add
+deployment branch or tag rule**: **Ref type** Branch, **Name pattern** `main`,
+**Add rule**. Add no other rule.
+
+Or, from a machine where `gh` is logged in:
+
+```sh
+gh api -X PUT repos/carterworks/dotfiles/environments/binary-cache \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+gh api -X POST repos/carterworks/dotfiles/environments/binary-cache/deployment-branch-policies \
+  -f name=main -f type=branch
+```
+
+Check it; the second command must print `main branch` and nothing else:
+
+```sh
+gh api repos/carterworks/dotfiles/environments/binary-cache --jq .deployment_branch_policy
+gh api repos/carterworks/dotfiles/environments/binary-cache/deployment-branch-policies --jq '.branch_policies[] | .name + " " + .type'
+```
+
+Also check that no repository-level secret has the name of one of the three
+Environment secrets. The workflows pass repository secrets on with
+`secrets: inherit`, so a repository secret named `ATTIC_TOKEN`,
+`TS_OAUTH_CLIENT_ID` or `TS_OAUTH_SECRET` would reach runs on every branch.
+This must print nothing:
+
+```sh
+gh secret list --repo carterworks/dotfiles | grep -E '^(ATTIC_TOKEN|TS_OAUTH_CLIENT_ID|TS_OAUTH_SECRET)\b'
+```
+
 ## 1. First deployment (**You**)
 
 On prostagma, in the dotfiles checkout, on a branch that contains this change:
@@ -115,7 +155,9 @@ Commit, then deploy every Linux host: `./install` on scylla, then
 `stalled-download-timeout = 30`, `fallback = true` in `nix.conf`); the
 MacBook's must not. prostagma and eltoro also gain `nixos-upgrade.timer` and
 from then on upgrade themselves every night (see
-[Server auto-upgrade](auto-upgrade.md)).
+[Server auto-upgrade](auto-upgrade.md)). Until CI first creates `release`
+(after steps 3 and 4), that upgrade fails every night because the branch does
+not exist. That is harmless; it only shows in `systemctl --failed`.
 
 Check on any Linux host:
 
@@ -133,7 +175,7 @@ whatever is pushed with the key every host trusts, so whoever holds the token
 can put any binary on scylla, prostagma and eltoro at their next rebuild. It is
 valid for 90 days.
 
-Create the `binary-cache` GitHub Environment first (step 4). Then, from a
+The `binary-cache` GitHub Environment must already exist (step 0). Then, from a
 machine where `gh` is logged in and `ssh prostagma` works, mint the token and
 store it there in one pipe, so it never reaches the screen:
 
@@ -183,8 +225,15 @@ cache adds (step 3), so any change to it must keep all of these:
 - **Pinned and minimal.** Every action is pinned by full commit SHA. Attic is
   the flake-pinned client (`nix run --inputs-from . nixpkgs#attic-client --`).
   The workflow sets `permissions: contents: read`, and only a job that needs
-  more gets more. The Nix sandbox stays on. The secrets reach only the
-  Tailscale and push steps, which run after the build.
+  more gets more. The Nix sandbox stays on. Secret values reach only the
+  Tailscale and push steps, which run after the build; the push step writes
+  the token to Attic's config file with a shell builtin, so it is in no
+  process's arguments. The Tailscale action puts the OAuth secret on
+  `tailscale up`'s command line itself; that is outside this repository.
+  The action's binary cache is off (`use-cache: "false"`): a cache hit
+  installs the cached `tailscale` binaries as root unverified.
+- **No repository secrets of the same names.** Every workflow call uses
+  `secrets: inherit`, which hands repository secrets to every branch (step 0).
 - **Tailnet access limited to `tag:ci`.** The Tailscale OAuth client may only
   create keys for `tag:ci`, and those keys are ephemeral and preauthorised, so
   each runner leaves the tailnet when its job ends. The action (v4.4.0) adds
@@ -194,15 +243,20 @@ cache adds (step 3), so any change to it must keep all of these:
   hosts' pushes succeeded. Missing secrets or an unreachable cache leave the
   build green and `release` where it was; a push that fails turns the job red.
 
-### GitHub Environment (**You**)
+### Why an OAuth client and not workload identity
 
-In the repository's **Settings → Environments**, create `binary-cache`. Under
-**Deployment branches and tags**, choose **Selected branches and tags** and add
-`main` only. Step 3 and the Tailscale policy below store the secrets there.
-
-If the Environment already exists, the first Fleet run on `main` created it,
-empty and without rules, because a job names it. Set the branch rule before
-adding any secret.
+The pinned action can also log in with GitHub's OIDC token (`audience`), and a
+Tailscale federated identity can bind that to this repository, the
+`binary-cache` Environment and `refs/heads/main`, which would remove
+`TS_OAUTH_SECRET` and let Tailscale itself refuse other runs. Tailscale's
+documentation does not say whether federated identities are available on a
+Personal tailnet, so the workflow keeps the OAuth client. Switching later
+means `id-token: write` on the three host jobs only (a job of their own, apart
+from the Mac and the checks), `audience` in place of `oauth-secret`, and a
+federated identity with subject
+`repo:carterworks/Dotfiles:environment:binary-cache`, the custom claims
+`repository_id` and `ref: refs/heads/main`, the `auth_keys` scope and the tag
+`tag:ci`.
 
 Once all three secrets are set, the next Fleet run on `main` pushes and creates
 `release`; nothing in the workflow changes. To start one at once:

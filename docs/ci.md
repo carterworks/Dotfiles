@@ -8,6 +8,20 @@ builds software. Two workflows do it:
 | [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux, checks-mac); `release` | `build`: `contents: read`; `release`: `contents: write` |
 | [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read` |
 
+## Trust roots
+
+- **Whatever can push to this repository can reach `main`**, and whatever
+  reaches `release` runs as root on prostagma and eltoro within hours. Nothing
+  reviews a push to `main`; Nightly pushes there itself.
+- **The `binary-cache` Environment's branch rule is defence in depth, not the
+  boundary.** It keeps the cache secrets from runs on other branches, but anyone
+  who can push can push to `main`.
+- **Audit who and what holds push access**: your SSH keys and personal access
+  tokens, the repository's deploy keys, GitHub Apps and collaborators, and any
+  automation or AI agent that can push. Each one can put code on the servers.
+- Protecting `main` with a branch rule would also stop Nightly's own push; it
+  would need a bypass for GitHub Actions.
+
 ## From a push to a server
 
 1. A push to any branch builds the three NixOS hosts, the Mac and the flake
@@ -38,6 +52,20 @@ An unreachable cache does not make a build wrong, so the job stays green, but
 nothing it built is in the cache, so `release` waits for the next green run
 on `main`.
 
+### When `release` does not move
+
+GitHub refuses the workflow token some pushes that touch
+`.github/workflows/`. A trial showed it accepts fast-forwarding a branch across
+existing commits that change workflow files, and creating one on such a
+history, so this should not happen; if it does, the `release` job or
+Nightly's promote job fails with "release did not move" and the push output
+says why. Move it yourself after checking that the commit's Fleet run pushed
+all three hosts:
+
+```sh
+git push git@github.com:carterworks/dotfiles.git <commit>:refs/heads/release
+```
+
 ## The nightly loop
 
 At 07:17 UTC, 00:17 in Denver in winter and 01:17 in summer, Nightly:
@@ -54,9 +82,10 @@ At 07:17 UTC, 00:17 in Denver in winter and 01:17 in summer, Nightly:
 6. writes a summary of what it attempted and what happened, and fails the run
    if anything needs you.
 
-When `./update` exits 1, the items that failed are left out, the rest are
+When `./update` exits 3, some items failed: they are left out, the rest are
 built and merged as usual, and the run still ends red with the failed items
-named, so GitHub's failure email tells you.
+named, so GitHub's failure email tells you. Any other failure means the updater
+itself broke; nothing is built or merged.
 
 A push made with the workflow's own token starts no other workflow, so moving
 `main` does not run Fleet again: Nightly has already built, pushed and
@@ -71,6 +100,20 @@ GitHub turns off a public repository's schedules after 60 days without
 activity. Nightly's own commits normally prevent that; if the Actions tab says
 Nightly is disabled, turn it back on there.
 
+### What the gate catches
+
+`release` moves only when every host evaluates and builds and every check
+passes, including the VM tests such as eltoro's egress fence. It does not
+catch:
+
+- an upstream that is backdoored but still builds and passes;
+- behaviour no check exercises;
+- a data migration within a major version (a database schema an app upgrades
+  on start);
+- **container images at all.** CI never pulls or runs them: an image update is
+  only a new string in the configuration. Images tagged `latest` get a new
+  digest nearly every night.
+
 ### When `main` moves during a nightly
 
 Nightly moves `main` only by fast-forward from the commit it updated. If you
@@ -84,17 +127,20 @@ to save at most a day.
 
 ## What you set up once
 
-Follow [binary-cache.md](binary-cache.md) steps 1 to 4: deploy the cache, create
-it, mint the push token, create the `binary-cache` Environment limited to
-`main`, write the tailnet policy and create the OAuth client. Nothing in the
-workflows changes afterwards; the next run on `main` pushes.
+1. **Before merging these workflows**, create the `binary-cache` Environment
+   limited to `main`: step 0 of [binary-cache.md](binary-cache.md). Until it
+   exists, the first Fleet run on `main` would create it empty and without a
+   branch rule.
+2. Under **Settings → Actions → General → Approval for running fork pull
+   request workflows from contributors**, choose **Require approval for all
+   external contributors**.
+3. Follow [binary-cache.md](binary-cache.md) steps 1 to 4: deploy the cache,
+   create it, mint the push token, write the tailnet policy and create the
+   OAuth client. Nothing in the workflows changes afterwards; the next run on
+   `main` pushes.
 
 Until then, every run on `main` reports "Cache push skipped" and `release` does
 not exist yet.
-
-The first run on `main` after these workflows merge creates an empty
-`binary-cache` Environment with no rules, because a job names it. Set its
-branch rule to `main` before adding any secret to it.
 
 ## By hand
 
@@ -111,6 +157,9 @@ Pause and resume it:
 gh workflow disable nightly.yml --repo carterworks/dotfiles
 gh workflow enable nightly.yml --repo carterworks/dotfiles
 ```
+
+Pausing stops updates, not `release`: every green Fleet run for your own
+pushes to `main` still advances it.
 
 ## When it goes red
 
@@ -139,7 +188,11 @@ kind of failure it was.
   the README), fix on `main`, and run Nightly again.
 - **These updates failed**: `./update` could not update the items named; the
   rest were merged. Run `./update` locally to see why, fix or hold the item.
+- **./update --apply failed**: the updater broke; nothing was built or merged.
+  Its log is in the update job.
 - **main did not move**: see "When `main` moves during a nightly".
+- **main moved but release could not be moved**: see "When `release` does not
+  move".
 - **The binary cache was unreachable**: `main` moved, `release` did not. Check
   atticd on prostagma ([binary-cache.md](binary-cache.md), "Size cap" and
   "Behaviour when the cache is down"), then run Fleet on `main` by hand
@@ -150,23 +203,37 @@ kind of failure it was.
 
 ## Moving `release` back
 
-Workflows only fast-forward `release`. In an emergency, move it back by hand to
-a commit the servers ran before:
+The fastest brake is on the servers: `sudo systemctl stop nixos-upgrade.timer`
+on prostagma and eltoro stops tonight's upgrade whatever `release` says.
+
+To move `release` itself back, in this order, because disabling a workflow
+does not cancel a run already going, and any Fleet run or re-run on `main`
+fast-forwards `release` straight back to `main`:
 
 ```sh
 gh workflow disable nightly.yml --repo carterworks/dotfiles
+gh run list --repo carterworks/dotfiles --status in_progress --json databaseId --jq '.[].databaseId' \
+  | xargs -r -n1 gh run cancel --repo carterworks/dotfiles
+gh run list --repo carterworks/dotfiles --status queued --json databaseId --jq '.[].databaseId' \
+  | xargs -r -n1 gh run cancel --repo carterworks/dotfiles
 git push --force git@github.com:carterworks/dotfiles.git <good-commit>:refs/heads/release
 ```
 
 Then revert the bad change on `main`. The revert's green run fast-forwards
 `release` past it, since `<good-commit>` is its ancestor; then enable Nightly
-again. The cache keeps a path 14 days after it was last fetched, so a server
-going back further than that may build.
+again.
+
+- Switching a server back can break a service whose data the newer version
+  already migrated; check before forcing an old commit on prostagma.
+- The cache keeps a path 14 days after it was last fetched, so a server going
+  back further than that may build.
+- Do not force-push `main` while a run is going: a run that started before it
+  can still move `release` to a commit that is no longer in `main`.
 
 ## Safety
 
 The repository is public, so the design assumes anyone can read every
-workflow and open pull requests.
+workflow and open pull requests. The trust roots above come first.
 
 - **Which runs reach the cache secrets.** Only the scylla, prostagma and eltoro
   build jobs, and only in a run for `main`: a push to `main`, a dispatch of
@@ -174,18 +241,31 @@ workflow and open pull requests.
   name the `binary-cache` Environment, and GitHub hands its secrets only to
   jobs running for `main`, so a workflow edited on any other branch that names
   it is refused. The Mac, the checks, `release`, `promote`, `update` and
-  `report` never see them. Inside a job, only the Tailscale step and the push
-  step receive them, both after the build.
+  `report` never see them.
+- **Who holds the push token.** Inside a host job, only the Tailscale step and
+  the push step receive secret values; the step before them sees only whether
+  they are set. The push step writes the token to Attic's config file with a
+  shell builtin, so it is in no process's arguments. The Tailscale action
+  passes the OAuth secret to `tailscale up` on its command line; that is the
+  action's code, outside this repository. In a nightly, the Attic client is
+  built from the update's new lock, so freshly updated upstream code that no
+  check has gated handles the token, while the checks and the Mac job may still
+  be running. Each host also pushes before the gate, so a nightly that later
+  fails leaves signed but unreferenced paths in the cache until they expire.
 - **Which runs cannot.** Pushes to other branches, dispatches on other
   branches, and every pull request.
-- **No `pull_request_target`, no `workflow_run`, no `pull_request`.** No
-  workflow runs on pull requests at all.
-- **A malicious pull request from a fork** runs nothing here, so it can neither
-  read a secret nor write to the repository nor reach the tailnet. Its code
+- **No `pull_request_target` and no `workflow_run`.** This repository's
+  workflows have no pull-request trigger.
+- **A pull request from a fork** can add its own workflow with
+  `on: pull_request`, and GitHub runs it, after your approval for a first-time
+  contributor (for every outside contributor once set-up item 2 is done). Such
+  a run gets a read-only token and no secrets, cannot name the Environment,
+  cannot reach the cache or the tailnet, and cannot write to `main`'s Actions
+  cache (what it saves is scoped to the pull request). Its code
   reaches `main` only if you merge it, and then it runs like any other commit
-  on `main`. Review the workflows, `.github/ci.nix` and `./update` in particular,
-  since a merged change to them runs with the cache token and with write
-  access.
+  on `main`. Review the workflows, `.github/ci.nix`, `.github/advance-release`
+  and `./update` in particular, since a merged change to them runs with the
+  cache token and with write access.
 - **A compromised action.** Every action is pinned by full commit SHA, so a
   moved tag or a new release changes nothing until the pin is edited. The
   pinned code itself runs with the job's token and, in the three NixOS jobs on
@@ -193,9 +273,11 @@ workflow and open pull requests.
   that job could read from the runner. The worst it could do: steal the push
   token (root on every Linux host at their next upgrade, see
   [binary-cache.md](binary-cache.md) step 3); join the tailnet as `tag:ci`,
-  which reaches only `prostagma:8199`; and read the repository. Only the
-  `release` and `promote` jobs can write to the repository, and they run
-  `actions/checkout` and `actions/download-artifact` and nothing else.
+  which reaches only `prostagma:8199`; and read the repository. The Tailscale
+  action's binary cache is off, so a job without secrets cannot plant the
+  `tailscale` binaries a job with secrets installs as root. Only the `release`
+  and `promote` jobs can write to the repository, and they run
+  `actions/checkout`, `actions/download-artifact` and Git.
 - **The nightly runs only code from `main`.** A schedule always runs the
   default branch's file, and `update` refuses to run for any other ref, so a
   copy of Nightly on another branch does nothing. The job that writes
@@ -205,4 +287,13 @@ workflow and open pull requests.
 - **What it trusts.** Merging updates unattended means a compromised upstream
   (nixpkgs, a flake input, a pinned release or image) reaches the servers
   without a human reading it, exactly as if you ran `./update --apply` and
-  deployed. Pausing Nightly is the switch for that.
+  deployed. Pausing Nightly stops that, but not your own pushes.
+
+### Accepted limits
+
+- The Mac jobs gate the servers' updates: a Mac-only breakage holds `release`.
+- If one host's push fails, `release` waits for the next nightly with changes,
+  your next push, or a Fleet run started by hand.
+- Re-running an old Fleet run weeks later can reuse its earlier "pushed"
+  results after the cache has expired those paths, and move `release` to a
+  commit a server would partly build.
