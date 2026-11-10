@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -342,6 +343,127 @@ cache_private_release '{"privateUrlTemplateKey":"rex.clientUrlTemplate","fileNam
 ''')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "expectedhash")
+
+
+class NewestTagTests(unittest.TestCase):
+    def newest(self, tag, tags):
+        return bash('''
+skopeo() { [[ "$*" == "list-tags docker://ghcr.io/o/app" ]] && printf '%s' "$TAGS"; }
+newest_tag ghcr.io/o/app "$TAG"
+''', TAG=tag, TAGS=json.dumps({"Tags": tags}))
+
+    def test_takes_the_newest_tag_of_the_same_shape(self):
+        result = self.newest("2.3.4.5307", [
+            "2.3.4.5307", "2.10.0.6000", "2.9.9.5999", "2.11", "3", "rolling",
+            "2.12.0.6100-develop", "sha256-abc.sig",
+        ])
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, "2.10.0.6000"))
+
+    def test_keeps_a_v_prefix(self):
+        result = self.newest("v3.5.2", ["v3.5.2", "v3.10.0", "3.11.0"])
+        self.assertEqual(result.stdout.strip(), "v3.10.0")
+
+    def test_a_prerelease_moves_to_its_release(self):
+        result = self.newest("1.0.0-rc.2", ["1.0.0-rc.2", "1.0.0-rc.10", "1.0.0", "0.9.0"])
+        self.assertEqual(result.stdout.strip(), "1.0.0")
+        result = self.newest("1.0.0-rc.2", ["1.0.0-rc.2", "1.0.0-rc.10"])
+        self.assertEqual(result.stdout.strip(), "1.0.0-rc.10")
+
+    def test_a_variant_suffix_is_kept(self):
+        result = self.newest("3.12-alpine", ["3.12-alpine", "3.13", "3.13-alpine", "3.14-slim"])
+        self.assertEqual(result.stdout.strip(), "3.13-alpine")
+
+    def test_ambiguous_newest_fails(self):
+        for tag, tags in (
+            ("1.6.0", ["1.6.0", "1.06.0"]),
+            ("2.36.1", ["2.36.1", "2026.11.1"]),
+            ("1.5.0", ["1.4.0"]),
+            ("1.0.0", ["latest"]),
+        ):
+            with self.subTest(tags=tags):
+                self.assertNotEqual(self.newest(tag, tags).returncode, 0)
+
+
+# Registry stand-in: each tag's manifest is its name, so a digest names its tag.
+FAKE_SKOPEO = r'''
+nix() { echo /fake-skopeo; }
+skopeo() {
+  case "$1 $2" in
+    "list-tags docker://ghcr.io/o/app") echo '{"Tags":["1.0","1.2","1.10","latest"]}' ;;
+    "list-tags docker://ghcr.io/o/dated") echo '{"Tags":["1.0","2026.11"]}' ;;
+    "list-tags docker://ghcr.io/o/untagged") return 1 ;;
+    "list-tags docker://ghcr.io/o/major") echo '{"Tags":["1.0","2.0"]}' ;;
+    "inspect --raw")
+      case "$3" in
+        *@sha256:*) [[ -n "${MANIFEST[${3##*@}]:-}" ]] ;;
+        *) printf '{"tag":"%s"}\n' "${3##*:}" ;;
+      esac ;;
+    *) return 1 ;;
+  esac
+}
+digest() { printf 'sha256:%s' "$(printf '{"tag":"%s"}\n' "$1" | sha256sum | cut -d' ' -f1)"; }
+declare -A MANIFEST
+for tag in 1.0 1.2 1.10 2.0 latest 2026.11; do MANIFEST[$(digest "${tag}")]=1; done
+'''
+
+
+class ImageTests(unittest.TestCase):
+    def update(self, hosts, apply=True):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "nix/hosts/server").mkdir(parents=True)
+            (root / "nix/hosts/server/apps.nix").write_text(hosts)
+            result = bash(FAKE_SKOPEO + f'''
+APPLY={"true" if apply else "false"}
+OLD="sha256:$(printf '%064d' 0)"
+update_images
+printf '%s\\n' "${{CHANGES[@]}}" "${{NOTES[@]/#/note: }}"
+''', cwd=root)
+            return result, (root / "nix/hosts/server/apps.nix").read_text()
+
+    def digest(self, tag):
+        return "sha256:" + hashlib.sha256(f'{{"tag":"{tag}"}}\n'.encode()).hexdigest()
+
+    def test_moves_a_version_tag_to_the_newest_digest(self):
+        old = "sha256:" + "0" * 64
+        result, hosts = self.update(f'image = "ghcr.io/o/app:1.0@{old}";\n')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(hosts, f'image = "ghcr.io/o/app:1.10@{self.digest("1.10")}";\n')
+        self.assertIn(f"ghcr.io/o/app 1.0@{old[:19]} -> 1.10@{self.digest('1.10')[:19]}",
+                      result.stdout)
+
+    def test_latest_keeps_its_tag_and_takes_the_new_digest(self):
+        old = "sha256:" + "0" * 64
+        result, hosts = self.update(f'image = "ghcr.io/o/untagged:latest@{old}";\n')
+        self.assertEqual(result.stdout.strip(), f"ghcr.io/o/untagged latest@{old[:19]} -> "
+                         f"latest@{self.digest('latest')[:19]}")
+        self.assertEqual(hosts,
+                         f'image = "ghcr.io/o/untagged:latest@{self.digest("latest")}";\n')
+
+    def test_ambiguous_newest_refreshes_only_the_digest_and_says_so(self):
+        old = "sha256:" + "0" * 64
+        result, hosts = self.update(f'image = "ghcr.io/o/dated:1.0@{old}";\n')
+        self.assertEqual(hosts, f'image = "ghcr.io/o/dated:1.0@{self.digest("1.0")}";\n')
+        self.assertIn("note: ghcr.io/o/dated: newest tag 2026.11 may follow another "
+                      "numbering scheme; refreshed the digest of 1.0 only", result.stdout)
+
+    def test_a_major_version_move_is_noted(self):
+        result, _ = self.update(f'image = "ghcr.io/o/major:1.0@sha256:{"0" * 64}";\n')
+        self.assertIn("note: ghcr.io/o/major: 1.0 -> 2.0 is a new major version", result.stdout)
+
+    def test_an_image_written_twice_is_left_alone(self):
+        old = "sha256:" + "0" * 64
+        hosts = f'a = "ghcr.io/o/app:1.0@{old}";\nb = "ghcr.io/o/app:1.0@{old}";\n'
+        result, after = self.update(hosts)
+        self.assertEqual(after, hosts)
+        self.assertIn("appears more than once", result.stderr)
+
+    def test_dry_run_reports_without_rewriting(self):
+        old = "sha256:" + "0" * 64
+        hosts = f'image = "ghcr.io/o/app:1.0@{old}";\n'
+        result, after = self.update(hosts, apply=False)
+        self.assertEqual(after, hosts)
+        self.assertIn("ghcr.io/o/app 1.0@", result.stdout)
 
 
 class HeldInputTests(unittest.TestCase):
