@@ -3,6 +3,7 @@
 {
   imports = [
     ../common.nix
+    ./beszel-agent.nix
     ./binary-cache.nix
     inputs.home-manager.nixosModules.home-manager
   ];
