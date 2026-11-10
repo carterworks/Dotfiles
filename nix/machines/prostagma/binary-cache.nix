@@ -55,7 +55,10 @@ in
     unitConfig.ConditionPathExists = "!${secretFile}";
     path = [ pkgs.openssl ];
     serviceConfig.Type = "oneshot";
+    # Without pipefail a failed openssl still writes an empty secret, which the
+    # condition above would then keep forever.
     script = ''
+      set -o pipefail
       umask 077
       install -d -m 0700 "$(dirname ${secretFile})"
       secret="$(openssl genrsa -traditional 4096 | base64 -w0)"

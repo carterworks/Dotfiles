@@ -99,6 +99,23 @@ pkgs.testers.runNixOSTest {
         server.wait_for_unit("atticd.service")
         assert secret == server.succeed("sha256sum /var/lib/secrets/attic/environment")
 
+    with subtest("a failed secret generation leaves no secret behind"):
+        dropin = "/run/systemd/system/atticd-secret.service.d"
+        server.succeed(
+            "systemctl stop atticd.service",
+            "rm /var/lib/secrets/attic/environment",
+            "printf '#!/bin/sh\\nexit 1\\n' > /run/failing-openssl",
+            "chmod +x /run/failing-openssl",
+            f"mkdir -p {dropin}",
+            f"printf '[Service]\\nBindReadOnlyPaths=/run/failing-openssl:${pkgs.lib.getExe pkgs.openssl}\\n' > {dropin}/fail.conf",
+            "systemctl daemon-reload",
+        )
+        server.fail("systemctl start atticd-secret.service")
+        server.succeed("test ! -e /var/lib/secrets/attic/environment")
+        server.succeed(f"rm -r {dropin}", "systemctl daemon-reload", "systemctl start atticd.service")
+        server.wait_for_unit("atticd.service")
+        server.succeed("grep -q '^ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64=.' /var/lib/secrets/attic/environment")
+
     with subtest("the server waits for app storage and keeps its data there"):
         server.succeed("systemctl show -p After --value atticd.service | grep -q prostagma-app-storage.service")
         server.succeed("stat -c '%U' /srv/apps/attic | grep -qx atticd")
