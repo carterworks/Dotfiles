@@ -399,7 +399,12 @@ in
         assert_fence()
 
     with subtest("an empty allowlist lets hermes reach nothing on the uplink"):
-        eltoro.succeed("systemctl stop egress-allowlist.timer", "ipset flush egress-allowed")
+        # Stop the service too: a refresh the timer had just started would
+        # refill the set behind the flush.
+        eltoro.succeed(
+            "systemctl stop egress-allowlist.timer egress-allowlist.service",
+            "ipset flush egress-allowed",
+        )
         blocked("hermes", "TCP4", "${allowedDns}:80")
         blocked("hermes", "TCP4", "${allowedCidr}:80")
         allowed("root", "TCP4", "${allowedDns}:80")
