@@ -171,7 +171,7 @@ in
     ./sso.nix
   ];
 
-  home-manager.users.carter = import ./home.nix;
+  home-manager.users.carter = ./home.nix;
 
   nix.settings = {
     auto-optimise-store = true;
