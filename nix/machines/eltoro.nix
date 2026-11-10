@@ -34,7 +34,13 @@ let
   '';
 
   hermesService = lib.recursiveUpdate {
-    after = [ "network-online.target" ];
+    # The egress fence is the agent's security boundary: never run
+    # without it, and stop along with it.
+    requires = [ "firewall.service" ];
+    after = [
+      "network-online.target"
+      "firewall.service"
+    ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     unitConfig.ConditionPathExists = "/var/lib/hermes/.hermes/config.yaml";
