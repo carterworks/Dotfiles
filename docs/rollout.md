@@ -21,8 +21,10 @@ undone.
 3. **Backups of prostagma's `/srv/apps`.** The cache's signing key, the Beszel
    hub's key and every agent token live there. The runbooks assume "whatever
    backs up `/srv/apps`", and none says what that is or how it is protected.
-4. **A branch rule on `main`.** Nothing reviews a push to `main`; a rule would
-   need a bypass for Nightly's own push ([CI, trust roots](ci.md#trust-roots)).
+4. **A branch rule on `main`.** Nothing reviews a push to `main`, and GitHub
+   takes no bypass for GitHub Actions on a personal repository, so a rule
+   would need Nightly to push with another credential
+   ([CI, trust roots](ci.md#trust-roots)).
 5. **Short account passwords.** Change them only if a person chose them
    ([Secrets](secrets.md#what-the-public-repository-reveals)).
 6. **`opencode2` on the LAN.** On both workstations it listens on every
@@ -67,9 +69,11 @@ Nothing here deploys anything.
    `hermes` ([El Toro, changing settings](eltoro.md#changing-settings)). Its
    `tts.provider` still names KittenTTS, which the running generation no
    longer has.
-7. Protect `release` with two rulesets, and make the workflow token read-only
-   by default ([CI, items 3 and 4](ci.md#what-you-set-up-once)). `release` does
-   not exist yet; the rulesets apply from the moment it is created.
+7. Forbid rewinding and deleting `release` with the `release: no rewrite`
+   ruleset, and make the workflow token read-only by default
+   ([CI, items 3 and 4](ci.md#what-you-set-up-once)). `release` does not exist
+   yet; the ruleset applies from the moment it is created. It does not stop
+   anyone who can push from creating or fast-forwarding `release`.
 
 ## 2. Merge
 
