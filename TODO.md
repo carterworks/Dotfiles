@@ -24,8 +24,9 @@
 - [x] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
 - [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before `./update` bumps the pinned rev.
 - [ ] After eltoro first switches to the chain-based egress firewall, delete the one-time migration block in `nix/machines/eltoro/egress.nix` that strips the old generation's rules from `OUTPUT`. Remove or rewrite the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests in the same change; both exercise that block.
+- [ ] Deploy the hardened egress fence and settings repair to eltoro following "Deploying fence changes" in `docs/eltoro.md` (snapshot, pre-flight `OUTPUT` check, then the post-deploy checks).
 - [ ] Close DNS exfiltration from eltoro: hermes can send arbitrary names to the local resolver and MagicDNS, which forward them upstream as other users. Needs a filtering resolver.
-- [ ] Stop the `hermes` CLI from being a root code-execution path: run as root with `HERMES_HOME` at the service home, it reads configuration hermes can write. Until fixed, admins must use `runuser -u hermes -- hermes …` (see `docs/eltoro.md`).
+- [ ] Stop the `hermes` CLI from being a root code-execution path: run as root with `HERMES_HOME` at the service home, it reads configuration hermes can write. Until fixed, admins must use `runuser --pty -u hermes -- hermes …` (see `docs/eltoro.md`).
 - [ ] When deploying the KittenTTS removal, turn TTS off in eltoro's `/var/lib/hermes/.hermes/config.yaml`; its `tts.provider` still selects `kittentts`, which no longer exists.
 
 ## Claude Code

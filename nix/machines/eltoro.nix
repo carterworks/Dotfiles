@@ -135,7 +135,7 @@ in
   # password login. Its state lives in /var/lib/hermes:
   # ~/.hermes plus the age key at ~/.config/fnox/age.txt.
   # Deploys still come in over root ssh (key-only); interactive
-  # admin is done via `runuser -u hermes -- …`. Never run the hermes
+  # admin is done via `runuser --pty -u hermes -- …`. Never run the hermes
   # CLI as root: it would read configuration that hermes can write,
   # which may let the agent run code as root.
   #
@@ -281,7 +281,7 @@ in
   # Secrets come from fnox (age-encrypted fnox.toml) via the fnoxCmd wrapper;
   # if a new secret is added through the wizard it lands in the plaintext .env,
   # so re-import it as hermes:
-  # runuser -u hermes -- sh -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
+  # runuser --pty -u hermes -- sh -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
   systemd.services.hermes-gateway = hermesService {
     description = "Hermes Agent Gateway";
     environment = {
