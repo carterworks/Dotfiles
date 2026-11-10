@@ -49,6 +49,14 @@ class KdeTheme(unittest.TestCase):
         self.assertEqual(self.run_script().returncode, 0)
         self.assertIn("Show hidden files = true", self.live.read_text())
 
+    def test_removes_software_rendering_override(self):
+        self.live.unlink()
+        self.live.write_text(self.original + "[QtQuickRendererSettings]\nSceneGraphBackend=software\n")
+        self.assertEqual(self.run_script().returncode, 0)
+        config = configparser.ConfigParser()
+        config.read(self.live)
+        self.assertFalse(config.has_section("QtQuickRendererSettings"))
+
     def test_invalid_config_is_not_overwritten(self):
         self.live.unlink()
         self.live.write_text("not an INI file")
