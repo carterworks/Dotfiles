@@ -161,6 +161,7 @@ pkgs.testers.runNixOSTest {
             f"sed -i 's|${placeholderKey}|{public_key}|' /etc/nix/nix.conf",
             "systemctl restart nix-daemon.service",
         )
+        client.succeed("nix config show stalled-download-timeout | grep -qx 30")
         client.succeed(f"{substitute} {private}")
         client.succeed(f"test -s {private}")
         assert "fleet:" in client.succeed(f"nix path-info --sigs {private}")
