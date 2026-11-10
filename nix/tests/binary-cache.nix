@@ -80,16 +80,27 @@ pkgs.testers.runNixOSTest {
         return f"curl -sSf --max-time 5 {url}/fleet/{store_hash}.narinfo"
 
 
+    # Each login uses the scope the runbook gives that step's token.
+    def login(name, permissions, validity="1h"):
+        token = server.succeed(f"atticd-atticadm make-token --sub {name} --validity {validity} {permissions}").strip()
+        client.succeed(f"attic login {name} {url} {token}")
+
+
+    def cache_key(name):
+        info = client.succeed(f"attic cache info {name}:fleet 2>&1")
+        return info.split("Public Key: ")[1].split()[0]
+
+
     def create_cache():
+        login("setup", "--create-cache fleet --pull fleet")
         client.succeed(
-            "attic cache create test:fleet --public"
+            "attic cache create setup:fleet --public"
             " --upstream-cache-key-name cache.nixos.org-1"
             " --upstream-cache-key-name niks3.numtide.com-1"
             " --upstream-cache-key-name vicinae.cachix.org-1"
             " --upstream-cache-key-name nix-community.cachix.org-1"
         )
-        info = client.succeed("attic cache info test:fleet 2>&1")
-        return info.split("Public Key: ")[1].split()[0]
+        return cache_key("setup")
 
 
     start_all()
@@ -142,22 +153,17 @@ pkgs.testers.runNixOSTest {
         client.succeed(f"curl -sS --max-time 5 -o /dev/null {url}/")
 
     with subtest("a cache can be created and a path pushed"):
-        token = server.succeed(
-            "atticd-atticadm make-token --sub test --validity 1h"
-            " --create-cache fleet --configure-cache fleet --configure-cache-retention fleet"
-            " --pull fleet --push fleet"
-        ).strip()
-        client.succeed(f"attic login test {url} {token}")
         public_key = create_cache()
+        login("ci", "--pull fleet --push fleet", validity="90d")
         private = client.succeed(f"{build} private").strip()
-        client.succeed(f"attic push test:fleet {private}")
+        client.succeed(f"attic push ci:fleet {private}")
         client.succeed(narinfo(private))
         server.succeed(f"{chunks} | grep -q .")
 
     with subtest("a push without a push token is rejected"):
         rejected = client.succeed(f"{build} rejected").strip()
-        pull_token = server.succeed("atticd-atticadm make-token --sub pull-only --validity 1h --pull fleet").strip()
-        client.succeed(f"attic login anonymous {url}", f"attic login pull-only {url} {pull_token}")
+        login("pull-only", "--pull fleet")
+        client.succeed(f"attic login anonymous {url}")
         for name in ["anonymous", "pull-only"]:
             status, output = client.execute(f"attic push {name}:fleet {rejected} 2>&1")
             assert status != 0 and "User does not have permission" in output, output
@@ -168,7 +174,7 @@ pkgs.testers.runNixOSTest {
         client.succeed(
             "nix-store --generate-binary-cache-key cache.nixos.org-1 /root/upstream.sk /root/upstream.pk",
             f"nix store sign --key-file /root/upstream.sk {upstream}",
-            f"attic push test:fleet {upstream}",
+            f"attic push ci:fleet {upstream}",
         )
         client.fail(narinfo(upstream))
 
@@ -211,7 +217,8 @@ pkgs.testers.runNixOSTest {
         client.wait_until_succeeds(narinfo(private))
 
     with subtest("garbage collection removes an expired path"):
-        client.succeed("attic cache configure test:fleet --retention-period 1s")
+        login("retention", "--configure-cache fleet --configure-cache-retention fleet")
+        client.succeed("attic cache configure retention:fleet --retention-period 1s")
         time.sleep(3)
         server.succeed("systemctl restart atticd.service")
         server.wait_for_unit("atticd.service")
@@ -229,8 +236,22 @@ pkgs.testers.runNixOSTest {
         server.wait_for_unit("atticd.service")
         client.wait_until_succeeds(f"curl -sS --max-time 5 -o /dev/null {url}/")
         assert create_cache() != public_key
-        client.succeed(f"attic push test:fleet {private}")
+        client.succeed(f"attic push ci:fleet {private}")
         client.succeed(narinfo(private))
+
+    with subtest("the runbook's revocation invalidates the CI token"):
+        secret = server.succeed("sha256sum /var/lib/secrets/attic/environment")
+        server.succeed(
+            "rm /var/lib/secrets/attic/environment",
+            "systemctl restart atticd.service",
+        )
+        server.wait_for_unit("atticd.service")
+        assert secret != server.succeed("sha256sum /var/lib/secrets/attic/environment")
+        status, output = client.execute(f"attic push ci:fleet {rejected} 2>&1")
+        assert status != 0 and "User does not have permission" in output, output
+        client.fail(narinfo(rejected))
+        login("ci", "--pull fleet --push fleet", validity="90d")
+        client.succeed(f"attic push ci:fleet {rejected}")
 
     with subtest("an unreachable cache delays a build but does not break it"):
         client.succeed("iptables -I OUTPUT -d ${serverTailnetAddress} -j DROP")
