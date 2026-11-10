@@ -129,14 +129,13 @@ in
         blocked("hermes", "TCP4", "${peerIp4}:80")
         allowed("root", "TCP4", "${peerIp4}:80")
         blocked("hermes", "TCP6", "[${peerIp6}]:80")
-        # Unlike IPv4, the IPv6 tailnet rule has no uid exemption.
-        blocked("root", "TCP6", "[${peerIp6}]:80")
+        allowed("root", "TCP6", "[${peerIp6}]:80")
 
         # Users other than hermes are as unrestricted as root.
         allowed("nobody", "TCP4", "${unlisted}:80")
         allowed("nobody", "TCP6", "[${internetIp6}]:80")
         allowed("nobody", "TCP4", "${peerIp4}:80")
-        blocked("nobody", "TCP6", "[${peerIp6}]:80")
+        allowed("nobody", "TCP6", "[${peerIp6}]:80")
         allowed("nobody", "TCP4", "${magicDns}:5300")
 
         allowed("hermes", "TCP4", "${magicDns}:53")
@@ -161,7 +160,7 @@ in
 
 
     def assert_rules_once():
-        for save, count in (("iptables-save", 8), ("ip6tables-save", 7)):
+        for save, count in (("iptables-save", 8), ("ip6tables-save", 5)):
             rules = output_rules(save)
             assert len(rules) == count, f"{save}: expected {count} rules, got {rules}"
             assert len(set(rules)) == count, f"{save}: duplicate rules in {rules}"
@@ -219,9 +218,6 @@ in
         "ip -n peer addr add ${magicDns}/32 dev peer0",
         "ip -n peer -6 addr add ${peerIp6}/48 dev peer0 nodad",
         "ip -n peer link set peer0 up",
-        # The real tailscale0 is a layer-3 tun with no neighbour discovery; on a
-        # veth the IPv6 tailnet REJECT would eat eltoro's neighbour advertisements.
-        "ip -n peer -6 neigh replace fd7a:115c:a1e0::1 lladdr $(cat /sys/class/net/tailscale0/address) dev peer0 nud permanent",
         peer_listener("peer-80", "TCP6-LISTEN:80,reuseaddr"),
         peer_listener("peer-53", "TCP4-LISTEN:53,reuseaddr"),
         peer_listener("peer-53u", "UDP4-RECVFROM:53,bind=${magicDns}"),
