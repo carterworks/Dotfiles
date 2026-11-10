@@ -3,60 +3,39 @@
 set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NIX_ACCESS_TOKEN_ARGS=()
 
 # A run detached into its own session has no controlling terminal, so the
 # caller names the terminal that should receive OSC 7501 reports.
 STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
 
-if command -v gh >/dev/null 2>&1; then
-  github_token="$(gh auth token 2>/dev/null || true)"
-  if [[ -n "${github_token}" ]]; then
-    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
-  fi
-fi
-
 APPLY=false
+MAJORS=false
+HELD=false
+GITHUB_TOKEN_VALUE=""
+SKILLS=(agent-browser-skill:agent-browser herdr-skill:herdr hunk-skill:hunk-review)
+CHANGES=()
+NOTES=()
+FAILURES=()
+PARTIAL=false
+SKOPEO=""
 
-has_gum() {
-  command -v gum >/dev/null 2>&1
+# Progress goes to stderr so stdout carries only the summary.
+log() {
+  printf '%s\n' "$*" >&2
 }
 
-log_message() {
-  local level="$1"
-  shift
-
-  if has_gum; then
-    gum log --level "${level}" "$*"
-  else
-    case "${level}" in
-      error|warn)
-        printf '%s\n' "$*" >&2
-        ;;
-      *)
-        printf '%s\n' "$*"
-        ;;
-    esac
-  fi
+changed() {
+  CHANGES+=("$1")
 }
 
-section() {
-  local title="$1"
-
-  if has_gum; then
-    gum style --bold --foreground 255 --background 62 --padding "0 1" --margin "1 0" "${title}"
-  else
-    printf '\n== %s ==\n' "${title}"
-  fi
+note() {
+  NOTES+=("$1")
+  log "$1"
 }
 
-show_log() {
-  local logfile="$1"
-
-  if [[ -s "${logfile}" ]]; then
-    printf '\n' >&2
-    cat "${logfile}" >&2
-  fi
+failed() {
+  FAILURES+=("$1")
+  log "$1: $2"
 }
 
 # Report state to the terminal with OSC 7501:
@@ -74,89 +53,59 @@ program_status() {
 report_exit_status() {
   local status=$?
 
+  # set -e exits with the failing command's own status, which may be 3 too.
+  if (( status == 3 )) && [[ "${PARTIAL}" != true ]]; then
+    status=1
+  fi
   case "${status}" in
     0) program_status "done" "Dotfiles update complete" ;;
     130) program_status idle "Dotfiles update cancelled" ;;
     *) program_status error "Dotfiles update failed" ;;
   esac
+  exit "${status}"
 }
 
-run_quiet_step() {
-  local title="$1"
-  shift
-
-  local logfile
-  local pid
+# Nix repeats its flake-config warnings on every call; show a command's stderr
+# only when it fails.
+quiet() {
+  local err
   local status=0
 
-  program_status working "${title}"
-  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-update.XXXXXX")"
-  "$@" >"${logfile}" 2>&1 &
-  pid=$!
-
-  if has_gum; then
-    gum spin --spinner dot --title "${title}" -- bash -c 'pid="$1"; while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done' _ "${pid}"
-  else
-    log_message info "${title}"
+  err="$(mktemp "${TMPDIR:-/tmp}/dotfiles-update.XXXXXX")"
+  "$@" 2>"${err}" || status=$?
+  if (( status != 0 )); then
+    cat "${err}" >&2
   fi
-
-  if wait "${pid}"; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if (( status == 0 )); then
-    rm -f "${logfile}"
-    log_message info "${title} complete"
-    return 0
-  fi
-
-  log_message error "${title} failed"
-  show_log "${logfile}"
-  rm -f "${logfile}"
+  rm -f "${err}"
   return "${status}"
-}
-
-warn_if_git_dirty() {
-  if command -v git >/dev/null 2>&1 && [[ -n "$(git -C "${BASEDIR}" status --short 2>/dev/null)" ]]; then
-    log_message warn "Git tree is dirty; Nix may warn during evaluation"
-  fi
-}
-
-confirm_apply() {
-  local count="$1"
-
-  if [[ "${APPLY}" == true ]]; then
-    return 0
-  fi
-
-  if has_gum && [[ -t 0 ]]; then
-    program_status blocked "Apply ${count} package update(s)?" kind=permission
-    if gum confirm "Apply ${count} package update(s)?"; then
-      return 0
-    fi
-    return 1
-  fi
-
-  log_message info "Re-run with --apply to bump versions and hashes"
-  return 1
 }
 
 require_tool() {
   local tool="$1"
 
   if ! command -v "${tool}" >/dev/null 2>&1; then
-    log_message error "${tool} is required to run this updater"
-    exit 1
+    log "${tool} is required to run this updater"
+    exit 2
   fi
 }
 
+github_token() {
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    printf '%s' "${GH_TOKEN}"
+  elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    printf '%s' "${GITHUB_TOKEN}"
+  elif command -v gh >/dev/null 2>&1; then
+    gh auth token 2>/dev/null || true
+  fi
+}
+
+# The token reaches curl on stdin and Nix through the environment, never argv,
+# where any local user could read it.
 github_api() {
   local endpoint="$1"
 
-  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    gh api "${endpoint}"
+  if [[ -n "${GITHUB_TOKEN_VALUE}" ]]; then
+    curl -fsSL -H @- "https://api.github.com/${endpoint}" <<<"Authorization: Bearer ${GITHUB_TOKEN_VALUE}"
   else
     curl -fsSL "https://api.github.com/${endpoint}"
   fi
@@ -167,25 +116,13 @@ private_source() {
   local file="${DOTFILES_PRIVATE_SOURCES_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles-private/sources.json}"
 
   if [[ ! -r "${file}" ]]; then
-    log_message error "Private source configuration is missing; see docs/rex.md"
+    log "Private source configuration is missing; see docs/rex.md"
     return 1
   fi
   jq -er --arg key "${key}" 'getpath($key | split(".")) | select(type == "string" and startswith("https://"))' "${file}"
 }
 
-# Print the version record every source resolves to: the revision the package
-# pins (a tag version, or a commit for branch sources) and its display version.
-version_record() {
-  local revision="$1"
-  local version="${2:-$1}"
-
-  if [[ -z "${revision}" || "${revision}" == null ]]; then
-    return 1
-  fi
-  jq -cn --arg revision "${revision}" --arg version "${version}" '{ revision: $revision, version: $version }'
-}
-
-latest_update() {
+latest_version() {
   local update_info="$1"
   local source
 
@@ -199,7 +136,7 @@ latest_update() {
       else
         url="$(jq -r '.url' <<<"${update_info}")"
       fi
-      version_record "$(curl -fsSL "${url}" | python3 -c '
+      curl -fsSL "${url}" | python3 -c '
 import sys
 import xml.etree.ElementTree as ET
 
@@ -212,7 +149,7 @@ build = item.findtext(namespace + "version")
 if not version or not build:
     sys.exit("Sparkle release is missing its version or build")
 print(version + "-" + build)
-')"
+'
       ;;
     github-release)
       # Scan the release list rather than /releases/latest: a monorepo's latest
@@ -231,7 +168,7 @@ print(version + "-" + build)
         # The channel is interpolated into a regex below; keep it a SemVer
         # identifier.
         if [[ ! "${channel}" =~ ^[0-9A-Za-z][0-9A-Za-z-]*$ ]]; then
-          log_message error "${repo}: invalid prerelease channel '${channel}'"
+          log "${repo}: invalid prerelease channel '${channel}'"
           return 1
         fi
         # SemVer 2.0.0 prerelease tags are <version>-<identifier>[.<identifier>...]
@@ -240,42 +177,23 @@ print(version + "-" + build)
         pattern="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}(\\.[0-9A-Za-z-]+)*$"
         prereleases=true
       fi
-      version_record "$(
-        github_api "repos/${owner}/${repo}/releases?per_page=100" \
-          | jq -r --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
-              [
-                .[]
-                | select((.draft | not) and ($prereleases or (.prerelease | not)))
-                | .tag_name
-                | select(startswith($prefix))
-                | .[($prefix | length):]
-                | select($pattern == "" or test($pattern))
-              ][0] // empty
-            '
-      )"
+      github_api "repos/${owner}/${repo}/releases?per_page=100" \
+        | jq -er --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
+            [
+              .[]
+              | select((.draft | not) and ($prereleases or (.prerelease | not)))
+              | .tag_name
+              | select(startswith($prefix))
+              | .[($prefix | length):]
+              | select($pattern == "" or test($pattern))
+            ][0] // empty
+          '
       ;;
     npm)
-      latest_update "$(jq -c '{
-        source: "json",
-        url: ("https://registry.npmjs.org/" + .package),
-        query: (".[\"dist-tags\"][\"" + (.channel // "latest") + "\"]")
-      }' <<<"${update_info}")"
-      ;;
-    json)
-      local url query
-      url="$(jq -r '.url' <<<"${update_info}")"
-      query="$(jq -r '.query' <<<"${update_info}")"
-      version_record "$(curl -fsSL "${url}" | jq -r "${query}")"
-      ;;
-    github-branch)
-      local owner repo branch commit
-      owner="$(jq -r '.owner' <<<"${update_info}")"
-      repo="$(jq -r '.repo' <<<"${update_info}")"
-      branch="$(jq -r '.branch' <<<"${update_info}")"
-      commit="$(github_api "repos/${owner}/${repo}/commits/${branch}")"
-      version_record \
-        "$(jq -r '.sha' <<<"${commit}")" \
-        "0-unstable-$(jq -r '.commit.committer.date | split("T")[0]' <<<"${commit}")"
+      local package channel
+      package="$(jq -r '.package' <<<"${update_info}")"
+      channel="$(jq -r '.channel // "latest"' <<<"${update_info}")"
+      curl -fsSL "https://registry.npmjs.org/${package}" | jq -er --arg channel "${channel}" '."dist-tags"[$channel] // empty'
       ;;
     *)
       return 1
@@ -305,61 +223,58 @@ package_systems() {
   for system in "${SYSTEMS[@]}"; do
     # Some systems take a package of the same name from a flake input, which
     # this updater does not own; only systems with update metadata are ours.
-    if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateInfo.source" >/dev/null 2>&1; then
+    if nix eval --raw ".#packages.${system}.${pkg}.updateInfo.source" >/dev/null 2>&1; then
       printf '%s\n' "${system}"
     fi
   done
 }
 
-# Rewrite version and every per-platform hash in a package expression. URLs and
-# current hashes come from the flake itself, so no URL scheme is duplicated here.
+# Rewrite the version and every per-platform hash in a package expression, then
+# check the flake evaluates to them. URLs and current hashes come from the flake
+# itself, so no URL scheme is duplicated here.
 apply_update() {
   local pkg="$1"
   local file="$2"
   local current="$3"
   local latest="$4"
   local update_info="$5"
-
-  local system oldurl oldhash newurl newhash content i old_asset new_asset
-  local -a pkg_systems=()
-  local -a old_hashes=()
+  shift 5
+  local systems=("$@")
+  local system oldurl newurl oldhash newhash content i
   local -a new_hashes=()
 
-  mapfile -t pkg_systems < <(package_systems "${pkg}")
-  if (( ${#pkg_systems[@]} == 0 )); then
-    return 1
-  fi
-
-  if jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
-    newurl="$(release_asset_url "${update_info}" "${latest}")" || return 1
-  fi
-
-  for system in "${pkg_systems[@]}"; do
-    oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.url")"
-    oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
-    if ! jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
-      newurl="${oldurl//${current}/${latest}}"
+  content="$(<"${file}")"
+  for system in "${systems[@]}"; do
+    oldhash="$(quiet nix eval --raw ".#packages.${system}.${pkg}.src.outputHash")" || return 1
+    if [[ "$(jq -r '.strategy // ""' <<<"${update_info}")" == require-file ]]; then
+      newhash="$(cache_private_release "${update_info}" "${latest}")" || return 1
+    else
+      oldurl="$(quiet nix eval --raw ".#packages.${system}.${pkg}.src.url")" || return 1
+      if jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
+        newurl="$(release_asset_url "${update_info}" "${latest}")" || return 1
+        content="${content//${oldurl##*/}/${newurl##*/}}"
+      else
+        newurl="${oldurl//${current}/${latest}}"
+      fi
+      newhash="$(quiet nix store prefetch-file --json "${newurl}" | jq -er '.hash')" || return 1
     fi
-    newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
-    old_hashes+=("${oldhash}")
+    content="${content//${oldhash}/${newhash}}"
     new_hashes+=("${newhash}")
   done
-
-  content="$(cat "${file}")"
-  for i in "${!old_hashes[@]}"; do
-    content="${content//${old_hashes[$i]}/${new_hashes[$i]}}"
-  done
-  if jq -e '.assetPattern' <<<"${update_info}" >/dev/null; then
-    old_asset="${oldurl##*/}"
-    new_asset="${newurl##*/}"
-    content="${content//${old_asset}/${new_asset}}"
-  fi
   content="${content//version = \"${current}\"/version = \"${latest}\"}"
   printf '%s\n' "${content}" >"${file}"
 
   if jq -e '.flakeInput' <<<"${update_info}" >/dev/null; then
     update_flake_input "${current}" "${latest}" "${update_info}" || return 1
   fi
+
+  for i in "${!systems[@]}"; do
+    if [[ "$(quiet nix eval --raw ".#packages.${systems[$i]}.${pkg}.version")" != "${latest}" \
+      || "$(quiet nix eval --raw ".#packages.${systems[$i]}.${pkg}.src.outputHash")" != "${new_hashes[$i]}" ]]; then
+      log "${pkg}: ${systems[$i]} does not evaluate to ${latest} after the rewrite"
+      return 1
+    fi
+  done
 }
 
 # Bump a flake input pinned to the release tag that matches the package.
@@ -376,13 +291,13 @@ update_flake_input() {
   old_ref="github:${owner}/${repo}/${prefix}${current}"
   new_ref="github:${owner}/${repo}/${prefix}${latest}"
 
-  content="$(cat "${BASEDIR}/flake.nix")"
+  content="$(<"${BASEDIR}/flake.nix")"
   if [[ "${content}" != *"\"${old_ref}\""* ]]; then
-    log_message error "flake.nix does not pin ${input} to ${old_ref}"
+    log "flake.nix does not pin ${input} to ${old_ref}"
     return 1
   fi
   printf '%s\n' "${content//\"${old_ref}\"/\"${new_ref}\"}" >"${BASEDIR}/flake.nix"
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update "${input}"
+  quiet nix flake update "${input}"
 }
 
 cache_private_release() (
@@ -399,366 +314,427 @@ cache_private_release() (
   trap 'rm -rf "${tempdir}"' EXIT
   file="${tempdir}/${filename}"
   curl -fsSL "${url}" -o "${file}" || return 1
-  hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" hash file --type sha256 --sri "${file}")" || return 1
+  hash="$(quiet nix hash file --type sha256 --sri "${file}")" || return 1
   if [[ -n "${expected_hash}" && "${hash}" != "${expected_hash}" ]]; then
-    log_message error "Private download does not match the pinned hash; refusing to import it"
+    log "Private download does not match the pinned hash; refusing to import it"
     return 1
   fi
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store add-file --name "${filename}" "${file}" >/dev/null || return 1
+  quiet nix store add-file --name "${filename}" "${file}" >/dev/null || return 1
   printf '%s\n' "${hash}"
 )
-
-apply_private_update() {
-  local pkg="$1"
-  local file="$2"
-  local current="$3"
-  local latest="$4"
-  local system="$5"
-  local update_info="$6"
-  local oldhash newhash content
-
-  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")" || return 1
-  newhash="$(cache_private_release "${update_info}" "${latest}")" || return 1
-  content="$(cat "${file}")"
-  content="${content//${oldhash}/${newhash}}"
-  content="${content//version = \"${current}\"/version = \"${latest}\"}"
-  printf '%s\n' "${content}" >"${file}"
-}
 
 fetch_private_package() {
   local pkg="$1"
   local update_info version hash
 
-  update_info="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages.${CURRENT_SYSTEM}.${pkg}.updateInfo")" || return 1
+  update_info="$(quiet nix eval --json ".#packages.${CURRENT_SYSTEM}.${pkg}.updateInfo")" || return 1
   if [[ "$(jq -r '.strategy' <<<"${update_info}")" != require-file ]]; then
-    log_message error "${pkg}: --fetch requires a private require-file package"
+    log "${pkg}: --fetch requires a private require-file package"
     return 1
   fi
-  version="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.version")" || return 1
-  hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.src.outputHash")" || return 1
+  version="$(quiet nix eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.version")" || return 1
+  hash="$(quiet nix eval --raw ".#packages.${CURRENT_SYSTEM}.${pkg}.src.outputHash")" || return 1
   cache_private_release "${update_info}" "${version}" "${hash}" >/dev/null
 }
 
-refresh_private_rex_flake() {
-  local destination="${1:-${XDG_DATA_HOME:-${HOME}/.local/share}/dotfiles-private/rex-flake}"
-  local url source
-
-  if [[ -e "${destination}" && ! -L "${destination}" ]]; then
-    log_message error "Private Rex flake destination is not a symlink; refusing to replace it"
-    return 1
-  fi
-  url="$(private_source rex.serverFlakeUrl)" || return 1
-  source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake archive --refresh --no-write-lock-file --json "${url}" | jq -er '.path')" || return 1
-  mkdir -p "$(dirname "${destination}")"
-  nix-store --realise "${source}" --add-root "${destination}" --indirect >/dev/null
+# Print each root input whose locked revision differs between two lock files.
+changed_inputs() {
+  jq -nr --slurpfile old "$1" --slurpfile new "$2" '
+    def revisions:
+      .nodes as $nodes
+      | $nodes.root.inputs
+      | with_entries(.value = ($nodes[.value].locked
+          | "\(.rev[0:7] // .narHash[7:19]) (\(.lastModified // 0 | todate[0:10]))"));
+    ($old[0] | revisions) as $before
+    | $new[0] | revisions | to_entries[]
+    | select($before[.key] != .value)
+    | "\(.key) \($before[.key] // "none") -> \(.value)"
+  '
 }
 
-nixpkgs_tool() {
-  local tool="$1"
-  local flake_ref expression
+skill_version() {
+  local name
 
-  flake_ref="$(jq -Rn --arg value "path:${BASEDIR}" '$value')"
-  expression="let flake = builtins.getFlake ${flake_ref}; in flake.inputs.nixpkgs.legacyPackages.${CURRENT_SYSTEM}.${tool}"
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --impure --no-link --print-out-paths --expr "${expression}"
-}
-
-apply_npm_lock_update() {
-  local pkg="$1"
-  local file="$2"
-  local current="$3"
-  local latest="$4"
-  local system="$5"
-  local update_info="$6"
-  local oldurl oldhash old_deps_hash newurl newhash npm_package npm_path prefetch_path new_deps_hash content tempdir
-
-  oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.url")"
-  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.outputHash")"
-  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.npmDeps.outputHash")"
-  newurl="${oldurl//${current}/${latest}}"
-  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
-  npm_package="$(jq -r '.package' <<<"${update_info}")"
-
-  tempdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-npm-update.XXXXXX")"
-  if ! curl -fsSL "https://registry.npmjs.org/${npm_package}/${latest}" \
-    | jq '{ name, version, main, bin, engines, dependencies }' >"${tempdir}/package.json"; then
-    rm -rf "${tempdir}"
-    return 1
-  fi
-
-  npm_path="$(nixpkgs_tool nodejs)" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-  if ! (cd "${tempdir}" && "${npm_path}/bin/npm" install --package-lock-only --ignore-scripts --no-audit --no-fund >/dev/null); then
-    rm -rf "${tempdir}"
-    return 1
-  fi
-
-  prefetch_path="$(nixpkgs_tool prefetch-npm-deps)" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-  new_deps_hash="$("${prefetch_path}/bin/prefetch-npm-deps" "${tempdir}/package-lock.json")" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-
-  content="$(cat "${file}")"
-  content="${content//${oldhash}/${newhash}}"
-  content="${content//${old_deps_hash}/${new_deps_hash}}"
-  content="${content//version = \"${current}\"/version = \"${latest}\"}"
-  printf '%s\n' "${content}" >"${file}"
-  mv "${tempdir}/package.json" "${BASEDIR}/nix/packages/${pkg}/package.json"
-  mv "${tempdir}/package-lock.json" "${BASEDIR}/nix/packages/${pkg}/package-lock.json"
-  rm -rf "${tempdir}"
-}
-
-apply_pnpm_git_update() {
-  local pkg="$1"
-  local file="$2"
-  local current_revision="$3"
-  local latest_revision="$4"
-  local current_version="$5"
-  local latest_version="$6"
-  local system="$7"
-  local update_info="$8"
-  local owner repo oldhash old_deps_hash newhash content backup logfile new_deps_hash
-  local fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-
-  owner="$(jq -r '.owner' <<<"${update_info}")"
-  repo="$(jq -r '.repo' <<<"${update_info}")"
-  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
-  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.pnpmDeps.outputHash")"
-  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --unpack --json \
-    "https://github.com/${owner}/${repo}/archive/${latest_revision}.tar.gz" | jq -r '.hash')" || return 1
-
-  backup="$(mktemp "${file}.XXXXXX")"
-  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-pnpm-update.XXXXXX")"
-  cp "${file}" "${backup}"
-  content="$(cat "${file}")"
-  content="${content//${current_revision}/${latest_revision}}"
-  content="${content//${oldhash}/${newhash}}"
-  content="${content//${old_deps_hash}/${fake_hash}}"
-  content="${content//version = \"${current_version}\"/version = \"${latest_version}\"}"
-  printf '%s\n' "${content}" >"${file}"
-
-  if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-  new_deps_hash="$(sed -n 's/^[[:space:]]*got:[[:space:]]*//p' "${logfile}" | tail -n1)"
-  if [[ "${new_deps_hash}" != sha256-* ]]; then
-    show_log "${logfile}"
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-
-  content="$(cat "${file}")"
-  content="${content//${fake_hash}/${new_deps_hash}}"
-  printf '%s\n' "${content}" >"${file}"
-  if ! nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
-    show_log "${logfile}"
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-  rm -f "${backup}" "${logfile}"
+  name="$(quiet nix eval --raw ".#checks.${CURRENT_SYSTEM}.$1.generated.name")" || return 1
+  name="${name#*-skill-}"
+  printf '%s\n' "${name%.md}"
 }
 
 regenerate_skill() {
-  local package="$1"
-  local name="$2"
-  local generated
-  local generated_source
-  local skill="${BASEDIR}/agents/skills/generated/${name}/SKILL.md"
+  local check="$1"
+  local before="$2"
+  local skill="agents/skills/generated/${3}/SKILL.md"
+  local generated after
 
-  generated="$(mktemp "${skill}.XXXXXX")"
-  if generated_source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link --print-out-paths ".#${package}")" \
-    && cp "${generated_source}" "${generated}"; then
-    mv "${generated}" "${skill}"
+  program_status working "Regenerating ${skill}"
+  if generated="$(quiet nix build --no-link --print-out-paths ".#checks.${CURRENT_SYSTEM}.${check}.generated")" \
+    && after="$(skill_version "${check}")"; then
+    if ! cmp -s "${generated}" "${skill}"; then
+      cp "${generated}" "${skill}"
+      chmod 644 "${skill}"
+      changed "${skill} ${before} -> ${after}"
+    fi
   else
-    rm -f "${generated}"
+    failed "${skill}" "could not build it"
+  fi
+}
+
+# Update every input, then the files generated from tools the inputs provide.
+update_inputs() {
+  local lock_before entry line
+  local -a skill_versions=()
+
+  for entry in "${SKILLS[@]}"; do
+    skill_versions+=("$(skill_version "${entry%%:*}" || echo unknown)")
+  done
+
+  log "Updating flake inputs"
+  program_status working "Updating flake inputs"
+  lock_before="$(mktemp "${TMPDIR:-/tmp}/dotfiles-update-lock.XXXXXX")"
+  cp flake.lock "${lock_before}"
+  if quiet nix flake update; then
+    while IFS= read -r line; do
+      changed "${line}"
+    done < <(changed_inputs "${lock_before}" flake.lock)
+  else
+    failed "flake inputs" "nix flake update failed"
+  fi
+  rm -f "${lock_before}"
+
+  for entry in "${!SKILLS[@]}"; do
+    regenerate_skill "${SKILLS[${entry}]%%:*}" "${skill_versions[${entry}]}" "${SKILLS[${entry}]#*:}"
+  done
+}
+
+update_package() {
+  local file="$1"
+  local pkg current latest update_info backup
+  local -a systems
+
+  pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
+  [[ -n "${pkg}" ]] || return 0
+  mapfile -t systems < <(package_systems "${pkg}")
+  if (( ${#systems[@]} == 0 )); then
+    log "${pkg}: no flake package with update metadata; skipping"
+    return 0
+  fi
+
+  if ! current="$(quiet nix eval --raw ".#packages.${systems[0]}.${pkg}.version")" \
+    || ! update_info="$(quiet nix eval --json ".#packages.${systems[0]}.${pkg}.updateInfo")"; then
+    failed "${pkg}" "could not evaluate its version and update metadata"
+    return 0
+  fi
+  if jq -e '.privateUrlKey' <<<"${update_info}" >/dev/null \
+    && ! private_source "$(jq -r '.privateUrlKey' <<<"${update_info}")" >/dev/null 2>&1; then
+    log "${pkg}: private source configuration unavailable; see docs/rex.md; skipping"
+    return 0
+  fi
+  if ! latest="$(latest_version "${update_info}")"; then
+    failed "${pkg}" "could not discover the latest upstream version"
+    return 0
+  fi
+  if [[ "${current}" == "${latest}" ]]; then
+    log "${pkg}: up to date (${current})"
+    return 0
+  fi
+  if [[ "$(jq -r '.held // false' <<<"${update_info}")" == true && "${HELD}" != true ]]; then
+    note "${pkg}: ${current} -> ${latest} is held; read its release notes, then take it with ./update --apply --held"
+    return 0
+  fi
+  if [[ "${APPLY}" != true ]]; then
+    log "${pkg}: update available (${current} -> ${latest})"
+    changed "${pkg} ${current} -> ${latest}"
+    return 0
+  fi
+
+  log "${pkg}: updating ${current} -> ${latest}"
+  program_status working "Updating ${pkg} to ${latest}"
+  backup="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-update-backup.XXXXXX")"
+  cp "${file}" flake.nix flake.lock "${backup}/"
+  if apply_update "${pkg}" "${file}" "${current}" "${latest}" "${update_info}" "${systems[@]}"; then
+    changed "${pkg} ${current} -> ${latest}"
+  else
+    cp "${backup}/${file##*/}" "${file}"
+    cp "${backup}/flake.nix" "${backup}/flake.lock" .
+    failed "${pkg}" "could not update to ${latest}; left at ${current}"
+  fi
+  rm -rf "${backup}"
+}
+
+update_packages() {
+  local -a files=("${BASEDIR}"/nix/packages/*.nix)
+  local index
+
+  mapfile -t SYSTEMS < <(quiet nix eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
+  for index in "${!files[@]}"; do
+    program_status working "Checking packages" "progress=$(( index * 100 / ${#files[@]} ))"
+    update_package "${files[$index]}"
+  done
+}
+
+skopeo() {
+  "${SKOPEO}" "$@"
+}
+
+# The digest a registry reports for a reference is the sha256 of its raw
+# manifest (the multi-platform index when there is one).
+image_digest() {
+  printf 'sha256:%s\n' "$(skopeo inspect --raw "docker://$1" | sha256sum | cut -d' ' -f1)"
+}
+
+tag_shape() {
+  sed -E 's/[.]/\\./g; s/[0-9]+/[0-9]+/g' <<<"$1"
+}
+
+# Below 1.0 a release that changes the second number is the one that may
+# break, so 0.5 and 0.6 are different majors while 1.5 and 1.6 are not.
+tag_major() {
+  [[ "$1" =~ ^v?([0-9]+)(\.([0-9]+))? ]] || return 1
+  if (( 10#${BASH_REMATCH[1]} == 0 )); then
+    printf '0.%s\n' "$(( 10#${BASH_REMATCH[3]:-0} ))"
+  else
+    printf '%s\n' "$(( 10#${BASH_REMATCH[1]} ))"
+  fi
+}
+
+# Print the newest tag shaped like the given one, compared as versions, or
+# print why there is no unambiguous newest tag and fail. With a third argument,
+# consider only tags of that major.
+newest_tag() {
+  local repository="$1"
+  local tag="$2"
+  local major="${3:-}"
+  local release="${tag%%-*}"
+  local shape newest second current_major newest_major
+  local -a candidates
+
+  shape="$(tag_shape "${tag}")"
+  # A pre-release may move on to its release; any other suffix, such as
+  # -alpine, names a variant the image must keep.
+  if [[ "${tag}" == *-* && "${tag#*-}" =~ ^(alpha|beta|rc|pre|preview|dev|nightly) ]]; then
+    shape="$(tag_shape "${release}")(-$(tag_shape "${tag#*-}"))?"
+  fi
+  # A suffix sorts after its release under sort -V; as ~ it sorts before it.
+  mapfile -t candidates < <(
+    skopeo list-tags "docker://${repository}" \
+      | jq -r '.Tags[]' \
+      | grep -E "^${shape}$" \
+      | sed 's/-/~/' | sort -V | sed 's/~/-/' \
+      | while read -r candidate; do
+          if [[ -z "${major}" || "$(tag_major "${candidate}")" == "${major}" ]]; then
+            printf '%s\n' "${candidate}"
+          fi
+        done
+  )
+  if (( ${#candidates[@]} == 0 )); then
+    echo "no tags shaped like ${tag}"
     return 1
   fi
+  newest="${candidates[-1]}"
+  second=""
+  if (( ${#candidates[@]} > 1 )); then
+    second="${candidates[-2]}"
+  fi
+  if [[ -n "${second}" && "$(sed -E 's/(^|[^0-9])0+([0-9])/\1\2/g' <<<"${newest}")" == "$(sed -E 's/(^|[^0-9])0+([0-9])/\1\2/g' <<<"${second}")" ]]; then
+    echo "${newest} and ${second} are the same version"
+    return 1
+  fi
+  current_major="$(grep -oE '[0-9]+' <<<"${tag}" | head -n1)"
+  newest_major="$(grep -oE '[0-9]+' <<<"${newest}" | head -n1)"
+  # A different number of digits usually means another numbering scheme, such
+  # as dates, sharing the shape.
+  if (( ${#current_major} != ${#newest_major} )); then
+    echo "newest tag ${newest} may follow another numbering scheme"
+    return 1
+  fi
+  if [[ "$(printf '%s\n' "${tag}" "${newest}" | sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')" != "${newest}" ]]; then
+    echo "newest tag ${newest} is older than ${tag}"
+    return 1
+  fi
+  printf '%s\n' "${newest}"
+}
+
+# Move an image to the newest tag of the same shape (or, for tags that are not
+# versions, such as latest, to the tag's current digest) and rewrite its one
+# occurrence under nix/hosts.
+update_image() {
+  local reference="$1"
+  local name="${reference%@*}"
+  local digest="${reference#*@}"
+  local repository="${name%:*}"
+  local tag="${name##*:}"
+  local new_tag="${tag}"
+  local new_digest new_reference file content reason
+
+  if [[ "$(grep -rhoF --include='*.nix' "\"${reference}\"" nix/hosts | wc -l)" != 1 ]]; then
+    failed "${repository}" "${reference} appears more than once under nix/hosts"
+    return 0
+  fi
+  if [[ "${tag}" =~ ^v?[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
+    if reason="$(newest_tag "${repository}" "${tag}")"; then
+      new_tag="${reason}"
+      # A major usually migrates the application's data one way, so an
+      # unattended run stays within the current one.
+      if [[ "$(tag_major "${new_tag}")" != "$(tag_major "${tag}")" ]]; then
+        if [[ "${MAJORS}" == true ]]; then
+          note "${repository}: ${tag} -> ${new_tag} is a new major version"
+        else
+          note "${repository}: ${tag} -> ${new_tag} is a new major version, held; take it with ./update --apply --majors"
+          new_tag="$(newest_tag "${repository}" "${tag}" "$(tag_major "${tag}")")" || new_tag="${tag}"
+        fi
+      fi
+    else
+      note "${repository}: ${reason}; refreshed the digest of ${tag} only"
+    fi
+  fi
+  if ! new_digest="$(image_digest "${repository}:${new_tag}")" \
+    || ! skopeo inspect --raw "docker://${repository}@${new_digest}" >/dev/null; then
+    failed "${repository}" "could not resolve ${new_tag}"
+    return 0
+  fi
+  new_reference="${repository}:${new_tag}@${new_digest}"
+  if [[ "${new_reference}" == "${reference}" ]]; then
+    log "${repository}: up to date (${tag})"
+    return 0
+  fi
+
+  if [[ "${APPLY}" == true ]]; then
+    file="$(grep -rlF --include='*.nix' "\"${reference}\"" nix/hosts)"
+    content="$(<"${file}")"
+    printf '%s\n' "${content//\"${reference}\"/\"${new_reference}\"}" >"${file}"
+  fi
+  changed "${repository} ${tag}@${digest:0:19} -> ${new_tag}@${new_digest:0:19}"
+}
+
+update_images() {
+  local reference
+  local -a references
+
+  mapfile -t references < <(grep -rhoE --include='*.nix' '"[^" ]+:[^" @]+@sha256:[0-9a-f]{64}"' nix/hosts 2>/dev/null | tr -d '"' | sort -u)
+  (( ${#references[@]} > 0 )) || return 0
+  # Reached through the flake's nixpkgs so the updater needs no container tools.
+  if ! SKOPEO="$(quiet nix build --no-link --print-out-paths --inputs-from . 'nixpkgs#skopeo^out')/bin/skopeo"; then
+    failed "images" "could not build skopeo"
+    return 0
+  fi
+  for reference in "${references[@]}"; do
+    program_status working "Checking ${reference%%:*}"
+    update_image "${reference}"
+  done
 }
 
 usage() {
   cat <<EOF
-Update flake inputs and manually packaged binaries.
+Update flake inputs, generated skill files, manually packaged binaries and
+pinned container images.
 
-Usage: ./update [--apply | --fetch PACKAGE]
+Usage: ./update [--apply [--majors] [--held] | --fetch PACKAGE]
 
-  --apply   Bump version and hashes for any out-of-date package.
+  (none)    Report the package and image updates available; change nothing.
+  --apply   Update every flake input, regenerate the skill files and bump
+            every out-of-date package and image. Never prompts. Prints one
+            line per change on stdout (name old -> new), then "note:" lines.
+            Exits 3 if some items failed and the updates that succeeded
+            stay in the tree, and 1 if the updater itself failed.
+  --majors  Also move images to a new major version. Without it, an image
+            stays within its major (below 1.0, the second number) and a
+            "note:" line names the newer major.
+  --held    Also bump packages marked held (held = true in updateInfo).
+            Without it, a held package stays put and a "note:" line names
+            the newer version. Read its release notes first.
   --fetch PACKAGE
             Cache a pinned private download without updating any files or inputs.
   -h, --help
+
+The GitHub token comes from GH_TOKEN, GITHUB_TOKEN or \`gh auth token\`.
 EOF
 }
 
-FETCH_PACKAGE=""
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --apply)
-      APPLY=true
-      shift
-      ;;
-    --fetch)
-      if [[ $# -lt 2 || "$2" == -* ]]; then
-        log_message error "--fetch requires a package name"
-        exit 1
-      fi
-      FETCH_PACKAGE="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      log_message error "Unknown option: $1"
-      usage
-      exit 1
-      ;;
-  esac
-done
+main() {
+  local fetch_package=""
 
-if [[ "${APPLY}" == true && -n "${FETCH_PACKAGE}" ]]; then
-  log_message error "Use --apply or --fetch, not both"
-  exit 1
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --apply)
+        APPLY=true
+        shift
+        ;;
+      --majors)
+        MAJORS=true
+        shift
+        ;;
+      --held)
+        HELD=true
+        shift
+        ;;
+      --fetch)
+        if [[ $# -lt 2 || "$2" == -* ]]; then
+          log "--fetch requires a package name"
+          exit 2
+        fi
+        fetch_package="$2"
+        shift 2
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        log "Unknown option: $1"
+        usage >&2
+        exit 2
+        ;;
+    esac
+  done
+
+  if [[ "${APPLY}" == true && -n "${fetch_package}" ]]; then
+    log "Use --apply or --fetch, not both"
+    exit 2
+  fi
+
+  require_tool nix
+  require_tool curl
+  require_tool jq
+  CURRENT_SYSTEM="$(nix eval --impure --raw --expr builtins.currentSystem)"
+  GITHUB_TOKEN_VALUE="$(github_token)"
+  if [[ -n "${GITHUB_TOKEN_VALUE}" ]]; then
+    export NIX_CONFIG="${NIX_CONFIG:+${NIX_CONFIG}$'\n'}access-tokens = github.com=${GITHUB_TOKEN_VALUE}"
+  fi
+
+  cd "${BASEDIR}"
+  trap report_exit_status EXIT
+
+  if [[ -n "${fetch_package}" ]]; then
+    program_status working "Caching ${fetch_package}"
+    fetch_private_package "${fetch_package}"
+    exit 0
+  fi
+
+  if [[ "${APPLY}" == true ]]; then
+    update_inputs
+  fi
+  update_packages
+  update_images
+
+  if (( ${#CHANGES[@]} > 0 )); then
+    printf '%s\n' "${CHANGES[@]}"
+  fi
+  if (( ${#NOTES[@]} > 0 )); then
+    printf 'note: %s\n' "${NOTES[@]}"
+  fi
+  if (( ${#CHANGES[@]} == 0 )); then
+    log "Everything is up to date"
+  fi
+  if [[ "${APPLY}" != true && ${#CHANGES[@]} -gt 0 ]]; then
+    log "Re-run with --apply to update"
+  fi
+  if (( ${#FAILURES[@]} > 0 )); then
+    log "Failed: ${FAILURES[*]}"
+    PARTIAL=true
+    exit 3
+  fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
 fi
-
-require_tool nix
-require_tool curl
-require_tool jq
-CURRENT_SYSTEM="$(nix eval --impure --raw --expr builtins.currentSystem)"
-
-cd "${BASEDIR}"
-trap report_exit_status EXIT
-section "Dotfiles update"
-warn_if_git_dirty
-
-if [[ -n "${FETCH_PACKAGE}" ]]; then
-  if [[ "${FETCH_PACKAGE}" == rex-server ]]; then
-    run_quiet_step "Caching private Rex flake" refresh_private_rex_flake
-  else
-    run_quiet_step "Caching ${FETCH_PACKAGE}" fetch_private_package "${FETCH_PACKAGE}"
-  fi
-  exit 0
-fi
-
-if [[ "${APPLY}" == true ]]; then
-  section "Update flake inputs"
-  if jq -e '.nodes.root.inputs.rex' flake.lock >/dev/null; then
-    rex_path="$(jq -er '.nodes[.nodes.root.inputs.rex].original | select(.type == "path") | .path | select(startswith("/"))' flake.lock)" || {
-      log_message error "Rex must use an external absolute path input; see docs/rex.md"
-      exit 1
-    }
-    run_quiet_step "Refreshing private Rex flake" refresh_private_rex_flake "${rex_path}"
-  fi
-  run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
-
-  section "Update generated files"
-  run_quiet_step "Updating Browser skill" regenerate_skill agent-browser-skill agent-browser
-  run_quiet_step "Updating Herdr skill" regenerate_skill herdr-skill herdr
-  run_quiet_step "Updating Hunk skill" regenerate_skill hunk-skill hunk-review
-fi
-
-section "Check packaged binaries"
-
-mapfile -t SYSTEMS < <(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages" --apply builtins.attrNames | jq -r '.[]')
-
-updates=()
-package_files=("${BASEDIR}"/nix/packages/*.nix)
-for index in "${!package_files[@]}"; do
-  file="${package_files[$index]}"
-  pkg="$(sed -n 's/.*pname = "\([^"]*\)".*/\1/p' "${file}" | head -n1)"
-  [[ -n "${pkg}" ]] || continue
-  program_status working "Checking ${pkg}" "progress=$(( index * 100 / ${#package_files[@]} ))"
-
-  mapfile -t supported_systems < <(package_systems "${pkg}")
-  package_system="${supported_systems[0]:-}"
-  if [[ -z "${package_system}" ]]; then
-    log_message warn "${pkg}: no flake package with update metadata; skipping"
-    continue
-  fi
-
-  current_version="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.version" 2>/dev/null || true)"
-  if [[ -z "${current_version}" ]]; then
-    log_message warn "${pkg}: no version attribute; skipping"
-    continue
-  fi
-
-  update_info="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --json ".#packages.${package_system}.${pkg}.updateInfo" 2>/dev/null || true)"
-  if [[ -z "${update_info}" || "${update_info}" == null ]]; then
-    log_message warn "${pkg}: no update metadata; skipping"
-    continue
-  fi
-
-  source="$(jq -r '.source' <<<"${update_info}")"
-  if jq -e '.privateUrlKey' <<<"${update_info}" >/dev/null \
-    && ! private_source "$(jq -r '.privateUrlKey' <<<"${update_info}")" >/dev/null 2>&1; then
-    log_message warn "${pkg}: private source configuration unavailable; see docs/rex.md; skipping"
-    continue
-  fi
-  if [[ "${source}" == github-branch ]]; then
-    current_revision="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.src.rev" 2>/dev/null || true)"
-  else
-    current_revision="${current_version}"
-  fi
-  latest_update_info="$(latest_update "${update_info}" 2>/dev/null || true)"
-  latest_revision="$(jq -r '.revision // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
-  latest_version="$(jq -r '.version // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
-  if [[ -z "${latest_revision}" || -z "${latest_version}" ]]; then
-    log_message warn "${pkg}: failed to discover latest upstream version; skipping"
-    continue
-  fi
-
-  if [[ "${current_revision}" == "${latest_revision}" ]]; then
-    log_message info "${pkg}: up to date (${current_version})"
-  else
-    log_message warn "${pkg}: update available (${current_version} -> ${latest_version})"
-    encoded_update_info="$(printf '%s' "${update_info}" | base64 --wrap=0)"
-    updates+=("${pkg}|${file}|${current_revision}|${latest_revision}|${current_version}|${latest_version}|${package_system}|${encoded_update_info}")
-  fi
-done
-
-if (( ${#updates[@]} == 0 )); then
-  log_message info "All packaged binaries up to date"
-  exit 0
-fi
-
-if ! confirm_apply "${#updates[@]}"; then
-  exit 0
-fi
-
-section "Apply updates"
-for entry in "${updates[@]}"; do
-  IFS='|' read -r pkg file current_revision latest_revision current_version latest_version package_system encoded_update_info <<<"${entry}"
-  update_info="$(printf '%s' "${encoded_update_info}" | base64 --decode)"
-  strategy="$(jq -r '.strategy // "archive"' <<<"${update_info}")"
-  case "${strategy}" in
-    require-file)
-      update_command=(apply_private_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
-      ;;
-    archive)
-      update_command=(apply_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${update_info}")
-      ;;
-    npm-lock)
-      update_command=(apply_npm_lock_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
-      ;;
-    pnpm-git)
-      update_command=(apply_pnpm_git_update "${pkg}" "${file}" "${current_revision}" "${latest_revision}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
-      ;;
-    *)
-      log_message error "${pkg}: unknown update strategy ${strategy}"
-      continue
-      ;;
-  esac
-  if ! run_quiet_step "Bumping ${pkg} to ${latest_version}" "${update_command[@]}"; then
-    log_message error "${pkg}: failed to bump; left unchanged"
-  fi
-done
-
-log_message info "Run ./check to validate, then ./install to switch"

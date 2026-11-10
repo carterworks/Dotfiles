@@ -1,64 +1,41 @@
 # TODO
 
-## Rex
+## Watch items
 
-- [ ] Obtain Linux testing access through Discord `#alpha-registration`, then follow `docs/rex.md` to configure private source locations and the token outside the repository, cache and lock the external preview flake, and enable `dotfiles.rex.enable` on the desired hosts. Validate the real upstream package and service once access is available, and inspect its transitive lock entries for private URLs before committing. `./update --apply` refreshes the external flake before updating its pin.
-- [ ] Deploy the macOS `rex-client` package with `./install` and verify Finder launch. `./update` reads the preview feed from the external private-source manifest; `./update --fetch rex-client` caches the hash-pinned installer without recording its URL in Git.
+Temporary pins and workarounds, each with the condition for removing it.
 
-## Temporary pins and workarounds
+- [ ] `nix/packages/fnox.nix` (and its entry in `nix/packages/overlay.nix`): replace with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` as build inputs and `cache.nixos.org` has the build; until then nixpkgs' build fails (`aws-lc-sys` finds no system AWS-LC).
+- [ ] `nix/packages/t3code-cli.nix`: drop `dontStrip = true` once stripping keeps the embedded Node SEA payload; check `t3 --version` and `t3 serve`. On 2026-11-01, patchelf 0.19.2 still truncated the SEA `NOTE` segment.
+- [ ] `nix/hosts/carters-macbook-pro/default.nix`: lift the kubelogin 0.1.9 pin when a newer release keeps the Ethos device-code token instead of prompting on every run; upstream still recommends 0.1.9 for legacy `spn:` logins.
+- [ ] `nix/packages/fnox.nix`: fnox is held (`held = true` in its `updateInfo`), so the nightly reports new releases without taking them. Bump it deliberately with `./update --apply --held` after reading the release notes; the hold stays while fnox runs as root from an unsigned binary.
+- [ ] `ATTIC_TOKEN` in the `binary-cache` GitHub Environment expires 90 days after it is minted, and nothing reminds you; on expiry every cache push fails and `release` freezes. Rotate it before then ([docs/binary-cache.md, rotate the CI token](docs/binary-cache.md#rotate-the-ci-token)). Remove this item once something rotates it or reminds you automatically.
+- [ ] `flake.nix`: the `hermes-agent` input is held at a fixed rev. Before bumping it, check that upstream's newer packaging no longer reports version `0.0.0`; then edit the rev and run `nix flake update hermes-agent`.
+- [ ] `nix/packages/hex.nix`: remove the PipeWire client override (`module.rt = false`) once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME`; with the stock config the kernel kills Hex (`status=9/KILL`) as soon as it records or plays a sound.
+- [ ] Cua's Hyprland input plugin (`cua-hyprland-plugin`): reconsider installing it on scylla once Cua qualifies apps beyond Calc and Inkscape; 0.38.0 still ships it experimental, off by default and ABI-pinned.
+- [ ] Rex's Linux server: restore it once there is preview access (Discord `#alpha-registration`) by reverting "rex: remove the gated Linux server module and package", "update: remove the private Rex server flake refresh" and "docs: trim the Rex guide to the macOS client".
+- [ ] `opencode/idle-compaction/`: revisit background summary preparation when OpenCode's plugin API can prepare and hold a summary without applying it; leave the global `experimental.background_compaction` flag unchanged.
 
-- [ ] Remove the `fnox` dependency overlay in `nix/modules/nix.nix` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs. Its Cargo dependencies require both system libraries under nixpkgs' Cargo setup hook; OpenSSL alone does not satisfy them.
+## Follow-up work
 
-- [ ] `atuin`: `carters-macbook-pro.nix` disables its nixpkgs check phase because `e2e_ai_sessions` fails on hosts with a live Pi session (`a_diverged_copy_resumes_only_as_chosen`, `a_session_gone_on_with_elsewhere_catches_up_where_it_came_from`). Remove the overlay once upstream fixes those tests or they stop depending on local sessions.
+- [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
+- [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. Do it once eltoro is settled on a chain-based generation (decision 1 in [docs/rollout.md](docs/rollout.md)).
+- [ ] `nix/hosts/prostagma/default.nix`: drop the `d /var/lib/secrets/bazarr` tmpfiles rule after the old secrets are removed (rollout stage 7); those files are now admin-only records in fnox.
+- [ ] Move scylla's `truenas-smb` credential into fnox and back up scylla's SSH host keys as admin-only records; both need `sudo` on scylla ("Still outside fnox" in `docs/secrets.md`).
+- [ ] eltoro: close DNS exfiltration. `hermes` can send any name to the local resolver and MagicDNS, which forward it upstream as another user; this needs a filtering resolver.
+- [ ] eltoro: stop the `hermes` CLI from being a way to run code as root. Run as root with `HERMES_HOME` at the service home, it reads configuration `hermes` can write; until then admins use `runuser --pty -u hermes -- hermes …`.
+- [ ] Package Cua Driver's `darwin-universal` tarball (not the `-binary` asset, which lacks the app) for the Mac and install `CuaDriver.app` in `/Applications`, so TCC can find it; `nix/packages/cua-driver.nix` is x86_64-linux only.
+- [ ] Re-enable idle-compaction in `opencode/opencode.jsonc`: restore the chosen timers (54 minutes for configured GPT-5.6+ models, 3 for Claude, a 200k-token default with per-model overrides), set `options.logLevel` to `debug` while validating, and confirm a real Copilot session emits `session.compaction.ended` after admission and its summary request reports cache reads; then remove the log override.
+- [ ] Authenticate the `cloudflare` MCP server in Claude Code on scylla with `/mcp`; `claude mcp list` says it needs authentication.
+- [ ] `nix/modules/home/workstation.nix`: remove the `~/.lmstudio/bin` PATH entry left over from LM Studio, which scylla no longer installs.
+- [ ] prostagma: report a Postgres collation mismatch before it breaks a deploy, for example in `./drift`. After a glibc bump the next new database fails `postgresql-setup` and takes Immich down ([docs/binary-cache.md](docs/binary-cache.md#postgres-refuses-to-create-the-database)); the VM tests start from a fresh cluster and cannot see it.
+- [ ] `nix/hosts/prostagma/default.nix`: correct the `tailscale-services` comment that says the unit fails until `svc:beszel` is approved; it succeeds. The comment is inside the unit's script, so the edit restarts the unit; make it with the next change to that file.
+## Awaiting a decision
 
-- [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it. Retested 2026-11-01 with nixpkgs patchelf 0.19.2: stripping still truncates the SEA `NOTE` segment and `t3 --version` aborts.
-- [x] Verify Vicinae opens with hardware rendering on Scylla after the `QT_QUICK_BACKEND=software` override removal; restore the override if it regresses. nixpkgs 0.29.2 carries the upstream fix (vicinaehq/vicinae#2055). The remaining software fallback came from `[QtQuickRendererSettings] SceneGraphBackend=software` in `kde/kdeglobals`, which the KDE platform theme propagates to every Qt Quick app; the group is now removed and cleaned from the live file on activation.
-- [ ] kubelogin: reassess the 0.1.9 pin when newer releases persist the Ethos device-code token instead of re-prompting on every invocation. Upstream still treats legacy `spn:` logins as unsupported and recommends pinning 0.1.9.
-
-## Obsidian Sync
-
-`nix/users/carter/obsidian-sync.nix` runs `ob sync --continuous` for `Documents/Notes` on Scylla (bidirectional) and Prostagma (pull-only). Scylla's `~/.config/obsidian-headless` was seeded from Prostagma's `auth_token`; if sync starts failing with an expired session, run `ob login` there.
-
-- [ ] Verify both hosts resume syncing after a reboot and that Scylla appears in the vault's version history as device `scylla`.
-
-## Agent daemons
-
-- [ ] Before re-enabling idle-compaction, restore and validate the user-selected timers in `opencode/opencode.jsonc` (54m for configured GPT-5.6+ models; 3m for Claude; 200k-token default with per-model overrides) and verify that a real Copilot session emits `session.compaction.ended` after admission and that the summary request reports cache reads. These are policies, not Copilot expiry guarantees; 54m exceeds OpenAI's documented 30m minimum.
-- [ ] When re-enabling idle-compaction, temporarily set `options.logLevel` to `debug` to validate scheduling and skip reasons in T3's OpenCode server, then remove the override to restore its `info` default.
-- [ ] Revisit idle-compaction background preparation when OpenCode exposes a plugin API to prepare/hold a summary without applying it. Current `session.compact()` can consume an existing built-in background summary, but cannot start one or defer applying it. Keep the global `experimental.background_compaction` flag unchanged so Go's behavior is untouched.
-- [ ] Package the Cua Driver `darwin-universal` tarball for Carters-MacBook-Pro and install `CuaDriver.app` at `/Applications` so TCC can find it. Use the full tarball, not the `-binary` asset, which omits the app. `nix/packages/cua-driver.nix` currently ships only x86_64-linux, so OpenCode reports the shared `cua-driver` MCP entry as failed on hosts without the binary.
-- [ ] Verify `opencode2`/`t3` survive a reboot on Scylla and deploy/verify them at login on Carters-MacBook-Pro. Scylla's manual `opencode2 serve --service` blocker is resolved.
-- [x] Split macOS `./install` into a user-level build (OSC 7501 progress; root cannot open the user-owned Git checkout) and a root activation detached into its own session, so restarting T3/OpenCode cannot kill an installer they host before Home Manager reloads them. Activation stays in the GUI login session because nix-darwin needs the terminal's App Management permission; a system launchd job fails its `/Applications` check. Output streams live and persists under `~/Library/Logs/dotfiles-install/`.
-- [ ] Validate a full `./install` from a T3/OpenCode session (requires administrator authentication) and confirm both agents reload.
-- [ ] After deploying, confirm the managed `opencode2` agent/unit owns port 49374 (`launchctl print gui/$(id -u)/org.nix-community.home.opencode2` shows `state = running`, not `spawn scheduled`). Since at least Oct 27 a client-started server held the port and `serve --service` exited 0 every ~10s; the service now runs `opencode2 service stop` before serving.
-- [ ] Pair clients per host whenever that host's `t3` service is running. `t3pair` uses Tailscale when its CLI is present and otherwise pairs locally. Without Tailscale, remote clients need an SSH tunnel to the loopback-only server on port 3773. Existing sessions survive restarts and downtime; re-pair only after `~/.t3` state loss, an origin/port change, or explicit revocation:
-  - `t3pair --label phone` (scan the QR code)
-  - `t3pair --label desktop` (add the environment in Settings → Connections)
-  - Direct pairing is per host and per client, so two hosts × two clients means four initial links. T3 Connect is the only route that gives one sign-in per device across all hosts.
-  - On a host that runs the `t3` service, turn off the desktop app's **Local environment** first so it attaches to the service instead of starting a second backend or failing on the shared `~/.t3`.
-  - `opencode2`: create `tailscale serve --bg --https=9444 http://127.0.0.1:49374` once, then pair with `opencode2 pair --url https://<host>.dropbear-tortoise.ts.net:9444`.
-
-## Cua Driver
-
-Cua Driver gives an agent background control of GUI apps.
-`nix/packages/cua-driver.nix` packages the upstream x86_64-linux binary, Scylla
-runs `cua-driver serve` inside its Hyprland session, and OpenCode reaches that
-daemon over its socket through the `cua-driver` MCP server.
-
-- [ ] Reassess the optional Hyprland input plugin (`cua-hyprland-plugin`) when Cua qualifies apps beyond native Wayland Calc (`libreoffice-fresh 26.2.5-3`) and Inkscape (`1.4.4-6`); upstream 0.38.0 still ships it experimental, off by default, and ABI-pinned, and Scylla does not install it.
-
-## Hex dictation
-
-Handy is replaced by Hex: `nix/packages/hex.nix` pins Hex's prebuilt GitHub
-releases, the macOS app and the Linux executable. On Linux the `programs.hex`
-Home Manager module from the `anomalyco/hex` flake input drives it; macOS
-installs the app system-wide with Hex's own updater turned off
-(`DisableUpdates`). `./update` bumps both releases and the flake input's tag
-together.
-
-- [ ] Remove the PipeWire client config override in `nix/packages/hex.nix` once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME` here. With the stock config, the ALSA plugin promotes Hex's data loop to realtime and the kernel SIGKILLs Hex the moment it runs (`code=killed, status=9/KILL`), for both the default microphone and Hex's sounds. The wrapper loads the stock client config with `module.rt = false`, which keeps dictation working without realtime scheduling; the PipeWire server keeps its own RT.
-- [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
-
-macOS has no `hex-model-install` equivalent: its `model install` takes a model id
-and drives the running app over its control socket, so a launchd job would race
-the app. The app downloads its model during setup instead.
+- [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
+- [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
+- [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
+- [ ] Put a read-only Docker socket proxy in front of prostagma's Beszel agent, whose Docker access is equivalent to root ("What each agent collects" in `docs/monitoring.md`)?
+- [ ] Bind `opencode2` to loopback on the workstations (`--hostname 0.0.0.0` in `nix/modules/home/agent-daemons.nix`) and reach it only through Tailscale Serve? Today the LAN reaches it behind a pairing password on Scylla, whose firewall is off and which holds the keys to both servers; clients would then always need Tailscale (decision 6 in [docs/rollout.md](docs/rollout.md)).
+- [ ] Remove eltoro's `hermes-settings-repair` timer and its test? It is a root process in the agent's directory every minute, repairing only what running `hermes` as root breaks, which the docs forbid; without it such a slip stays broken until fixed by hand (decision 7).
+- [ ] Pin the `copyparty` input to release tags? It tracks upstream's default branch, so a nightly can bring unreleased code to a service the internet reaches through the Cloudflare tunnel; pinning means waiting for releases and moving the tag by hand (decision 8).
+- [ ] Advance `release` with a credential only `main`'s runs hold (a deploy key or GitHub App in the `binary-cache` Environment) and make it the rulesets' only bypass? Today any workflow pushed to any branch runs as GitHub Actions and can fast-forward `release` ("Protect `release`" in [docs/ci.md](docs/ci.md#what-you-set-up-once)); the cost is one more secret to rotate.

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Show whether each host runs the system its configuration evaluates to at a
+# ref of the GitHub repository (default: release). Usage: ./drift [ref]
+
+set -euo pipefail
+
+ref="${1:-release}"
+status=0
+
+# Pin the ref once so every host is compared with the same commit.
+revision="$(nix flake metadata --refresh --json "github:carterworks/dotfiles/${ref}" | jq -r .revision)"
+flake="github:carterworks/dotfiles/${revision}"
+printf '%s is %s\n\n' "${ref}" "${revision:0:12}"
+
+for host in scylla prostagma eltoro; do
+  case "${host}" in
+    prostagma) target="${PROSTAGMA_HOST:-carter@prostagma}" ;;
+    eltoro) target="${ELTORO_HOST:-root@eltoro}" ;;
+    *) target="${host}" ;;
+  esac
+
+  if ! expected="$(nix eval --raw "${flake}#nixosConfigurations.${host}.config.system.build.toplevel.outPath" 2>/dev/null)"; then
+    printf '%-10s evaluation failed\n' "${host}"
+    status=1
+    continue
+  fi
+
+  # Activation replaces the /run/current-system link, so its mtime is when the
+  # running generation was activated. The command is also valid fish, root's
+  # login shell on eltoro. An activation that left units failed still runs the
+  # expected system, so the count is the only sign of it.
+  if ! running="$(ssh -o BatchMode=yes -o ConnectTimeout=5 "${target}" 'readlink /run/current-system; stat -c %Y /run/current-system; systemctl --failed --no-legend | wc -l' 2>/dev/null)"; then
+    printf '%-10s unreachable (%s)\n' "${host}" "${target}"
+    status=1
+    continue
+  fi
+  { read -r system; read -r mtime; read -r failed; } <<<"${running}"
+
+  activated="$(date -d "@${mtime}" '+%Y-%m-%d %H:%M %Z')"
+  if [[ "${system}" == "${expected}" ]]; then
+    state='in sync'
+  else
+    state='behind'
+    status=1
+  fi
+  warning=''
+  if [[ "${failed}" != 0 ]]; then
+    warning="   FAILED UNITS: ${failed} (systemctl --failed)"
+    status=1
+  fi
+  printf '%-10s %-10s activated %s%s\n' "${host}" "${state}" "${activated}" "${warning}"
+done
+
+printf '%-10s not checked: not reachable over SSH; run ./install on it\n' mac
+exit "${status}"

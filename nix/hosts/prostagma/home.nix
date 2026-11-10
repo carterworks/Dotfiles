@@ -1,0 +1,101 @@
+{
+  config,
+  fleet,
+  pkgs,
+  ...
+}:
+
+let
+  inherit (fleet) tailnetDomain;
+in
+{
+  imports = [
+    ../../modules/home/obsidian-sync.nix
+  ];
+
+  home = {
+    username = "carter";
+    homeDirectory = "/home/carter";
+    stateVersion = "26.11";
+    packages = [
+      pkgs.age
+      pkgs.fnox
+    ];
+  };
+
+  programs = {
+    home-manager.enable = true;
+    ssh = {
+      enable = true;
+      enableDefaultConfig = false;
+      settings = {
+        "github.com" = {
+          User = "git";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+        herodotus = {
+          HostName = "192.168.5.253";
+          User = "root";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+        jerodmcbride-nas = {
+          HostName = "jerodmcbride-nas.${tailnetDomain}";
+          User = "carter";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+          SetEnv.TERM = "xterm-256color";
+        };
+        prostagma = {
+          HostName = "prostagma.${tailnetDomain}";
+          User = "carter";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+        rpi = {
+          HostName = "raspberrypi.${tailnetDomain}";
+          User = "carter";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+        scylla = {
+          HostName = "scylla.${tailnetDomain}";
+          User = "carter";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+        truenas = {
+          HostName = "192.168.5.252";
+          User = "carter";
+          IdentityFile = "~/.ssh/bitwarden";
+          IdentitiesOnly = true;
+        };
+      };
+    };
+  };
+
+  systemd.user.services.carter-nix-profile-prune = {
+    Unit = {
+      Description = "Prune old Carter Nix profile generations";
+      ConditionPathExists = "${config.home.homeDirectory}/.local/state/nix/profiles/profile";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.nix}/bin/nix-env --profile ${config.home.homeDirectory}/.local/state/nix/profiles/profile --delete-generations +5";
+    };
+  };
+
+  systemd.user.timers.carter-nix-profile-prune = {
+    Unit = {
+      Description = "Daily pruning of old Carter Nix profile generations";
+    };
+    Timer = {
+      OnCalendar = "02:45";
+      Persistent = true;
+      RandomizedDelaySec = "10m";
+      Unit = "carter-nix-profile-prune.service";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+}
