@@ -100,29 +100,26 @@ must match a flake host.
 
 ## By hand, by the owner
 
-- Before merging the CI workflows into `main`, create the `binary-cache`
-  GitHub Environment limited to `main` (step 0 of
-  [Binary cache](docs/binary-cache.md)).
-- Create the binary cache and set its key, the CI token, the GitHub
-  Environment and the tailnet policy ([Binary cache](docs/binary-cache.md)).
-  Setting the key also turns on server auto-upgrades.
-- Before that, deploy eltoro's chain-based fence by hand ("Deploying fence
-  changes" in [El Toro](docs/eltoro.md)).
+- The first rollout, in order: [Rollout](docs/rollout.md).
 - Run `./install` on scylla and the Mac.
 - Check `systemctl --failed` on the servers, or run `./drift`: a failed
   auto-upgrade notifies nobody.
 - Add, rotate and enrol secrets ([Secrets](docs/secrets.md)).
-- Approve the Beszel Service, make the agents' tokens and set the hub's key
-  ("First deployment" in [Monitoring](docs/monitoring.md)).
 
 ## Runbooks
 
+- [Rollout](docs/rollout.md): the owner's steps, in order, from merging the
+  fleet rework to a fleet that runs unattended. Start here.
+- [CI](docs/ci.md): the workflows, the nightly update, `release` and the trust
+  roots
 - [Binary cache](docs/binary-cache.md)
 - [Server auto-upgrade](docs/auto-upgrade.md)
 - [Secrets](docs/secrets.md): encrypted with fnox in `secrets/fnox.toml`
 - [El Toro](docs/eltoro.md): onboarding, settings, the egress fence
 - [Monitoring](docs/monitoring.md): the Beszel hub on prostagma and its agents
 - [Rex](docs/rex.md): the macOS client
+- [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,
+  Cua Driver, Hex
 
 ## Config files
 
