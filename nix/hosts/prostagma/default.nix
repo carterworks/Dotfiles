@@ -162,6 +162,7 @@ in
   imports = [
     ../../modules/nixos/common.nix
     ../../modules/nixos/server.nix
+    ../../modules/nixos/secrets.nix
     inputs.copyparty.nixosModules.default
     ./hardware.nix
     ./app-storage.nix

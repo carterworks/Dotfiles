@@ -1,4 +1,5 @@
 {
+  config,
   fleet,
   pkgs,
   lib,
@@ -31,14 +32,14 @@ let
   # Connect issuer, whereas host:port is awkward to register everywhere.
   authServiceUrl = "https://authelia.${tailnetDomain}";
 
-  secretsDir = "/var/lib/secrets/authelia";
+  secretsDir = "/run/secrets/authelia";
 
   # State directory that systemd creates for the service (0700, owned by it).
   stateDir = "/var/lib/authelia-main";
 
-  # Secrets are root-only files outside the Nix store, handed to the service as
-  # systemd credentials. This repository is public, so nothing secret may be
-  # referenced from here.
+  # Secrets come from secrets/fnox.toml, decrypted to root-only files outside
+  # the Nix store and handed to the service as systemd credentials. This
+  # repository is public, so nothing secret may be written here in plain text.
   #
   # Users live in the store so that the account list stays declarative. What
   # ends up in the repository is an argon2id digest of a 24-character random
@@ -61,14 +62,14 @@ let
           - admins
   '';
 
-  # Digest of the Audiobookshelf client secret. The plaintext is in
-  # ${secretsDir}/audiobookshelf_client_secret and is the value to configure on
-  # the application side.
+  # Digest of the Audiobookshelf client secret. The plaintext is
+  # AUTHELIA_AUDIOBOOKSHELF_CLIENT_SECRET in secrets/fnox.toml and is the value
+  # to configure on the application side.
   audiobookshelfClientSecret = "$pbkdf2-sha512$310000$8OycXiZhi8uctR/XEvRd5A$lE.elcaNRZ7.bhELA8dcYlsvur.ZmAFnu8zTL6DlJVQxhn25hjqLGAmVUvAKkb9WQakxFiWNgl9q0mn2vlS6gQ";
 
-  # Digest of the Immich client secret, same pattern. The plaintext is in
-  # ${secretsDir}/immich_client_secret and is the value to paste into Immich's
-  # own OAuth settings.
+  # Digest of the Immich client secret, same pattern. The plaintext is
+  # AUTHELIA_IMMICH_CLIENT_SECRET in secrets/fnox.toml and is the value to paste
+  # into Immich's own OAuth settings.
   immichClientSecret = "$pbkdf2-sha512$310000$vub0ivsDB5zuFb2XCW5YCA$M2lxXuPv4070S3/uDqNos5yLS8jvAlTy/p/PyGBj76N/kgHB6EvAeFeLrXwHHk4ljKeu01VelJoU4yCs.XnNpA";
 
   # Applications with no OIDC support, gated at the reverse proxy instead.
@@ -145,12 +146,12 @@ in
   services.authelia.instances.main = {
     enable = true;
 
-    secrets = {
-      jwtSecretFile = "${secretsDir}/jwt_secret";
-      sessionSecretFile = "${secretsDir}/session_secret";
-      storageEncryptionKeyFile = "${secretsDir}/storage_encryption_key";
-      oidcHmacSecretFile = "${secretsDir}/oidc_hmac_secret";
-      oidcIssuerPrivateKeyFile = "${secretsDir}/oidc_issuer_private.pem";
+    secrets = with config.dotfiles.fnox.secrets; {
+      jwtSecretFile = AUTHELIA_JWT_SECRET.path;
+      sessionSecretFile = AUTHELIA_SESSION_SECRET.path;
+      storageEncryptionKeyFile = AUTHELIA_STORAGE_ENCRYPTION_KEY.path;
+      oidcHmacSecretFile = AUTHELIA_OIDC_HMAC_SECRET.path;
+      oidcIssuerPrivateKeyFile = AUTHELIA_OIDC_ISSUER_PRIVATE_KEY.path;
     };
 
     settings = {
@@ -313,4 +314,18 @@ in
   # Serve only ever binds the tailnet address, so nothing on the LAN or on the
   # public internet is listening on this port.
   networking.firewall.allowedTCPPorts = [ authPortalPort ];
+
+  dotfiles.fnox.secrets =
+    lib.mapAttrs
+      (_: file: {
+        path = "${secretsDir}/${file}";
+        requiredBy = [ "authelia-main.service" ];
+      })
+      {
+        AUTHELIA_JWT_SECRET = "jwt_secret";
+        AUTHELIA_SESSION_SECRET = "session_secret";
+        AUTHELIA_STORAGE_ENCRYPTION_KEY = "storage_encryption_key";
+        AUTHELIA_OIDC_HMAC_SECRET = "oidc_hmac_secret";
+        AUTHELIA_OIDC_ISSUER_PRIVATE_KEY = "oidc_issuer_private.pem";
+      };
 }
