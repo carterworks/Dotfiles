@@ -33,10 +33,6 @@
       url = "github:9001/copyparty";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    delta = {
-      url = "github:zed-industries/delta-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     numtide-llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs.systems.follows = "systems";
