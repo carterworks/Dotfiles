@@ -311,7 +311,27 @@ name=${0##*/}
 printf '%s %s\\n' "$name" "$*" >> "$HOME/argv"
 env >> "$HOME/env-$name"
 case "$name" in
-  nix) case "$*" in *build*) echo "$SYSTEM" ;; esac ;;
+  nix)
+    case "$*" in *build*)
+      while [ $# -gt 0 ]; do
+        if [ "$1" = --out-link ]; then
+          ln -s "$SYSTEM" "$2"
+          echo "$2" > "$HOME/out-link"
+        fi
+        shift
+      done
+      echo "$SYSTEM"
+      ;;
+    esac
+    ;;
+  nixos-rebuild|darwin-rebuild)
+    link=$(cat "$HOME/out-link" 2>/dev/null)
+    if [ -n "$link" ] && [ "$(cd "$link" && pwd -P)" = "$(cd "$SYSTEM" && pwd -P)" ]; then
+      echo rooted >> "$HOME/roots"
+    else
+      echo unrooted >> "$HOME/roots"
+    fi
+    ;;
   sudo)
     case "$1" in -n|-v) exit 0 ;; -H) shift ;; esac
     exec "$@"
@@ -319,11 +339,19 @@ case "$name" in
 esac
 '''
 DEPLOY = f'bash {ROOT / "install"} eltoro'
+DARWIN_REBUILD = FUNCTIONS + '''
+uname() { echo Darwin; }
+current_machine_name() { echo Test-Mac; }
+run_rebuild
+'''
+NIXOS_REBUILD = FUNCTIONS.replace(NIXOS_CHECK, "false") + '''
+uname() { echo Linux; }
+current_machine_name() { echo test-host; }
+run_rebuild
+'''
 
 
-class TokenTests(unittest.TestCase):
-    """The GitHub token reaches Nix through its environment, never an argument list."""
-
+class RecordedInstall(unittest.TestCase):
     def run_install(self, script, gh_token=TOKEN, env=None):
         with tempfile.TemporaryDirectory() as home:
             home = Path(home)
@@ -349,7 +377,16 @@ class TokenTests(unittest.TestCase):
             result.env = {
                 path.name.removeprefix("env-"): path.read_text() for path in home.glob("env-*")
             }
+            roots = home / "roots"
+            result.roots = roots.read_text().split() if roots.exists() else []
+            out_link = home / "out-link"
+            result.out_link = Path(out_link.read_text().strip()) if out_link.exists() else None
+            result.out_link_left = result.out_link is not None and os.path.lexists(result.out_link)
             return result
+
+
+class TokenTests(RecordedInstall):
+    """The GitHub token reaches Nix through its environment, never an argument list."""
 
     def assert_only_in_nix_environment(self, result, *commands):
         self.assertNotIn(TOKEN, result.argv)
@@ -360,20 +397,12 @@ class TokenTests(unittest.TestCase):
                 self.assertNotIn(TOKEN, environment, command)
 
     def test_darwin_build_and_activation(self):
-        result = self.run_install(FUNCTIONS + '''
-uname() { echo Darwin; }
-current_machine_name() { echo Test-Mac; }
-run_rebuild
-''')
+        result = self.run_install(DARWIN_REBUILD)
         self.assertIn("darwin-rebuild activate", result.argv)
         self.assert_only_in_nix_environment(result, "nix")
 
     def test_nixos_builds_as_user_and_switches_by_store_path(self):
-        result = self.run_install(FUNCTIONS.replace(NIXOS_CHECK, "false") + '''
-uname() { echo Linux; }
-current_machine_name() { echo test-host; }
-run_rebuild
-''')
+        result = self.run_install(NIXOS_REBUILD)
         self.assertIn("nixosConfigurations.test-host.config.system.build.toplevel", result.argv)
         self.assertRegex(result.argv, r"(?m)^sudo \S+/nixos-rebuild switch --store-path \S+/system$")
         self.assert_only_in_nix_environment(result, "nix")
@@ -393,6 +422,19 @@ run_rebuild
         result = self.run_install(DEPLOY, env={"NIX_CONFIG": "connect-timeout = 3"})
         self.assertIn(f"NIX_CONFIG=connect-timeout = 3\naccess-tokens = github.com={TOKEN}\n",
                       result.env["nixos-rebuild"])
+
+
+
+class GarbageCollectionRootTests(RecordedInstall):
+    """The built system has a garbage-collection root until it is activated."""
+
+    def test_root_exists_while_the_system_is_activated_and_goes_after(self):
+        for platform, script in (("darwin", DARWIN_REBUILD), ("nixos", NIXOS_REBUILD)):
+            with self.subTest(platform=platform):
+                result = self.run_install(script)
+                self.assertNotIn("--no-link", result.argv)
+                self.assertEqual(result.roots, ["rooted"])
+                self.assertFalse(result.out_link_left, result.out_link)
 
 
 if __name__ == "__main__":
