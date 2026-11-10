@@ -78,7 +78,7 @@ attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo att
 
 Create the cache. Name the key of every upstream cache the Linux hosts
 substitute from, so that pushes skip their paths. The names come from the
-flake's own `trusted-public-keys` (`nix/modules/common.nix`), so they cannot drift
+flake's own `trusted-public-keys` (`nixConfig` in `flake.nix`), so they cannot drift
 from it:
 
 ```sh
@@ -317,7 +317,7 @@ cache's retention to the default, so any configure token needs
 `--configure-cache-retention` as well as `--configure-cache`.
 
 The cache keeps the upstream key names it was created with. Whenever
-`nix/modules/common.nix` adds or drops a cache, update them with the same login,
+`nixConfig` in `flake.nix` adds or drops a cache, update them with the same login,
 from a checkout that has the change:
 
 ```sh
