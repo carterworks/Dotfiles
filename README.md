@@ -54,7 +54,7 @@ firewall setup.
 
 ## Rex
 
-For the Rex macOS client and gated Linux server setup, see [Rex](docs/rex.md).
+For the Rex macOS client setup, see [Rex](docs/rex.md).
 
 ## Dotbot
 
