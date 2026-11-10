@@ -32,6 +32,13 @@ builds software. Two workflows do it:
   GitHub Actions, and either can still fast-forward `release`. Nor can the
   read-only default in [item 4](#what-you-set-up-once), since a workflow may ask
   for `contents: write` itself. Push access stays the boundary.
+- **The generated skill files are an upstream path to the servers.**
+  `./update --apply` regenerates `agents/skills/generated/` from upstream
+  tools' own output. The coding agents on Scylla read those files as
+  instructions, and Scylla holds your SSH agent and the admin age key, so a
+  compromised upstream could write instructions that reach both servers
+  through an agent. Nothing checks their content; each nightly commit's diff
+  shows any change to them, and reading that diff is the control.
 
 ## From a push to a server
 
