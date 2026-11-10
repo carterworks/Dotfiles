@@ -110,12 +110,11 @@ jobs:
       - name: Check for the binary cache secrets
         id: secrets
         if: matrix.cache && github.ref == 'refs/heads/main'
+        # Only whether they are set, so this step never holds their values.
         env:
-          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          PRESENT: ${{ secrets.ATTIC_TOKEN != '' && secrets.TS_OAUTH_CLIENT_ID != '' && secrets.TS_OAUTH_SECRET != '' }}
         run: |
-          if [[ -n $ATTIC_TOKEN && -n $TS_OAUTH_CLIENT_ID && -n $TS_OAUTH_SECRET ]]; then
+          if [[ $PRESENT == true ]]; then
             echo present=true >>"$GITHUB_OUTPUT"
           else
             echo "${{ matrix.name }}=skipped" >>"$GITHUB_OUTPUT"
@@ -151,9 +150,10 @@ jobs:
             echo "::warning title=Cache unreachable::Could not join the tailnet or reach $CACHE; the build is not in the cache, so release does not advance."
             exit 0
           fi
-          attic() { nix run --inputs-from . nixpkgs#attic-client -- "$@"; }
-          attic login prostagma "$CACHE" "$ATTIC_TOKEN"
-          attic push prostagma:fleet ./result
+          # printf is a builtin, so the token never appears in an argument list.
+          mkdir -p ~/.config/attic
+          (umask 077; printf '[servers.prostagma]\nendpoint = "%s"\ntoken = "%s"\n' "$CACHE" "$ATTIC_TOKEN" >~/.config/attic/config.toml)
+          nix run --inputs-from . nixpkgs#attic-client -- push prostagma:fleet ./result
           echo "${{ matrix.name }}=pushed" >>"$GITHUB_OUTPUT"
       - run: df -h
         if: always()
