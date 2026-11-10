@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   lib,
   ...
@@ -126,20 +125,21 @@ let
       name = "backrest";
       port = 9898;
     }
-  ]
-  ++ lib.optional config.prostagma.podmaker.enable {
+
     # PodMaker has no login of its own. Gate the UI and management API, but
     # leave feed, audio, and artwork URLs open: podcast clients cannot complete
     # an Authelia login, and those paths are already protected by feed tokens.
-    name = "podmaker";
-    port = config.prostagma.podmaker.port;
-    bypassPaths = [
-      "/feed/*"
-      "/media/*"
-      "/images/*"
-      "/healthz"
-    ];
-  };
+    {
+      name = "podmaker";
+      port = 8090;
+      bypassPaths = [
+        "/feed/*"
+        "/media/*"
+        "/images/*"
+        "/healthz"
+      ];
+    }
+  ];
 in
 {
   services.authelia.instances.main = {
