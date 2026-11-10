@@ -1,4 +1,5 @@
 import os
+import shutil
 import signal
 from pathlib import Path
 import subprocess
@@ -23,6 +24,25 @@ NIX_ENV = '''#!/bin/sh
 printf 'nix-env %s\\n' "$*"
 '''
 
+# Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
+# curl or git, nor the caller's environment or home, so no test can read a real
+# credential or reach the network.
+TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
+         "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
+
+
+def hermetic_env(home, bin_dir):
+    tools = Path(home) / "tools"
+    tools.mkdir()
+    for name in TOOLS:
+        if path := shutil.which(name):
+            (tools / name).symlink_to(path)
+    gh = Path(bin_dir) / "gh"
+    if not gh.exists():
+        gh.write_text("#!/bin/sh\nexit 1\n")
+        gh.chmod(0o755)
+    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home)}
+
 
 class DarwinRebuildTests(unittest.TestCase):
     def run_script(self, script, home, activate="echo activated", wait=True):
@@ -35,7 +55,7 @@ class DarwinRebuildTests(unittest.TestCase):
         rebuild.write_text(f'#!/bin/sh\ntest "$1" = activate || exit 8\n{activate}\n')
         rebuild.chmod(0o755)
         args = ["bash", "-c", "nix() { :; }\n" + FUNCTIONS + script]
-        env = {**os.environ, "HOME": home, "PATH": f"{bin_dir}:{os.environ['PATH']}"}
+        env = hermetic_env(home, bin_dir)
         if not wait:
             return subprocess.Popen(
                 args, env=env, start_new_session=True,
@@ -166,7 +186,6 @@ class DeployTests(unittest.TestCase):
             calls = Path(temp) / "calls"
             stubs = {
                 "nixos-rebuild": f'printf "%s\\n" "$@" > "{calls}"',
-                "gh": "exit 1",
                 "nix": "exit 0",
                 "hostname": "echo localhost",
                 "uname": "echo Plan9",
@@ -174,10 +193,7 @@ class DeployTests(unittest.TestCase):
             for name, body in stubs.items():
                 (bin_dir / name).write_text(f"#!/bin/sh\n{body}\n")
                 (bin_dir / name).chmod(0o755)
-            script_env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"}
-            for name in ("ELTORO_HOST", "PROSTAGMA_HOST"):
-                script_env.pop(name, None)
-            script_env.update(env or {})
+            script_env = {**hermetic_env(temp, bin_dir), **(env or {})}
             result = subprocess.run(
                 ["bash", str(ROOT / "install"), *args],
                 env=script_env, text=True, capture_output=True, timeout=10,

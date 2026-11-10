@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -38,6 +38,25 @@ case "$*" in
 esac
 '''
 
+# Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
+# curl or git, nor the caller's environment or home, so no test can read a real
+# credential or reach the network.
+TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
+         "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
+
+
+def hermetic_env(home, bin_dir):
+    tools = Path(home) / "tools"
+    tools.mkdir()
+    for name in TOOLS:
+        if path := shutil.which(name):
+            (tools / name).symlink_to(path)
+    gh = Path(bin_dir) / "gh"
+    if not gh.exists():
+        gh.write_text("#!/bin/sh\nexit 1\n")
+        gh.chmod(0o755)
+    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home)}
+
 
 class DriftTests(unittest.TestCase):
     def run_drift(self, args=(), running=None, expected=None, env=None):
@@ -53,15 +72,12 @@ class DriftTests(unittest.TestCase):
             for host, path in (expected or {}).items():
                 (state / f"expected-{host}").write_text(path)
             script_env = {
-                **os.environ,
-                "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                **hermetic_env(state, bin_dir),
                 "STATE": str(state),
                 "REVISION": REVISION,
                 "TZ": "UTC",
+                **(env or {}),
             }
-            for name in ("ELTORO_HOST", "PROSTAGMA_HOST"):
-                script_env.pop(name, None)
-            script_env.update(env or {})
             result = subprocess.run(
                 ["bash", str(ROOT / "drift"), *args],
                 env=script_env, text=True, capture_output=True, timeout=10,
