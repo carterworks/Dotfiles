@@ -66,7 +66,7 @@ installs the app system-wide with Hex's own updater turned off
 together.
 
 - [ ] Remove the PipeWire client config override in `nix/packages/hex.nix` once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME` here. With the stock config, the ALSA plugin promotes Hex's data loop to realtime and the kernel SIGKILLs Hex the moment it runs (`code=killed, status=9/KILL`), for both the default microphone and Hex's sounds. The wrapper loads the stock client config with `module.rt = false`, which keeps dictation working without realtime scheduling; the PipeWire server keeps its own RT.
-- [ ] Remove `home.activation.clearHandyModelCache` from `nix/users/carter/home-manager.nix` once every host has switched. It deletes Handy's `models--handy-computer--*` Hugging Face cache. Handy's history and recordings under `~/.local/share/com.pais.handy` are untouched and still need a manual decision.
+- [ ] Decide what to do with Handy's history and recordings under `~/.local/share/com.pais.handy`; nothing removes them.
 
 macOS has no `hex-model-install` equivalent: its `model install` takes a model id
 and drives the running app over its control socket, so a launchd job would race

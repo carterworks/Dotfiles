@@ -124,13 +124,6 @@ in
       run ${pkgs.python3}/bin/python3 ${./complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
     ''
   );
-  # Handy is replaced by Hex; drop its downloaded speech models so the old
-  # ~700 MB HF cache does not linger. Handy's history and recordings stay.
-  home.activation.clearHandyModelCache = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    rm -rf ${lib.escapeShellArg config.home.homeDirectory}/.cache/huggingface/hub/models--handy-computer--*
-    rm -rf ${lib.escapeShellArg config.home.homeDirectory}/.local/share/com.pais.handy/models
-    rm -rf ${lib.escapeShellArg "${config.home.homeDirectory}/Library/Application Support/com.pais.handy/models"}
-  '';
   xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     force = true;
     text = ''
