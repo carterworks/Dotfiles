@@ -42,6 +42,7 @@ in
   imports = [
     ./agent-daemons.nix
     ./desktop-theme
+    ./shell.nix
   ];
 
   dotfiles.desktopTheme = {
@@ -77,14 +78,7 @@ in
     fi
   '';
 
-  home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
-  programs.home-manager.enable = true;
-  programs.direnv = {
-    enable = true;
-    enableFishIntegration = true;
-    enableZshIntegration = true;
-  };
   xdg.configFile."git/aliases".source = ../../../git/aliases;
   xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
   xdg.configFile."fish/completions/oc.fish".text = ''
@@ -95,7 +89,6 @@ in
   xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
 
   programs.fish = {
-    enable = true;
     plugins = [
       {
         name = "done";
@@ -298,48 +291,18 @@ in
   };
 
   programs.atuin = {
-    enable = true;
     settings = {
       enter_accept = true;
       sync.records = true;
     };
   };
   programs.man.generateCaches = pkgs.stdenv.hostPlatform.isLinux;
-  programs.zsh.enable = true;
 
   programs.bat.enable = true;
-
-  programs.eza = {
-    enable = true;
-    icons = "auto";
-    extraOptions = [
-      "--classify=auto"
-      "--group-directories-first"
-    ];
-  };
 
   home.sessionVariables = {
     CODEHOME = "${config.home.homeDirectory}/Projects/code";
     WORKTREEHOME = "${config.home.homeDirectory}/Projects/code/worktrees";
-    EZA_ICON_SPACING = "2";
-  };
-
-  programs.fzf = {
-    enable = true;
-    historyWidget.command = "";
-  };
-
-  programs.zoxide = {
-    enable = true;
-    options = [
-      "--cmd"
-      "cd"
-    ];
-  };
-
-  programs.yazi = {
-    enable = true;
-    shellWrapperName = "yy";
   };
 
   programs.gh = {
@@ -526,15 +489,6 @@ in
   };
 
   programs.helix = {
-    enable = true;
-    settings = {
-      editor.whitespace.render = "all";
-      editor.indent-guides.render = true;
-      keys.normal = {
-        C-s = ":w";
-        C-x = ":q";
-      };
-    };
     languages = {
       language = [
         {
@@ -569,23 +523,6 @@ in
     settings = {
       command = lib.getExe pkgs.fish;
       shell-integration-features = "ssh-terminfo,ssh-env";
-    };
-  };
-
-  programs.starship = {
-    enable = true;
-    settings = {
-    };
-  };
-
-  programs.zellij = {
-    enable = true;
-    settings = {
-      default_shell = "fish";
-      default_mode = "locked";
-      show_startup_tips = false;
-      show_release_notes = false;
-      osc8_hyperlinks = true;
     };
   };
 
