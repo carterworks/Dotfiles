@@ -103,15 +103,9 @@ in
           builtins.toJSON {
             inherit (theme) appearance apps colors;
             palettes = lib.mapAttrsToList (_: theme: theme.colors) home.dotfiles.desktopTheme.themes;
-            fzfOptions = home.home.sessionVariables.FZF_DEFAULT_OPTS;
             files = {
-              opencode = home.xdg.configFile."opencode/cli.json".source;
-              opencodeBase = ../opencode/cli.json;
               herdr = home.xdg.configFile."herdr/config.toml".source;
-              herdrBase = ../herdr/config.toml;
-              vicinae = home.xdg.configFile."vicinae/desktop-theme.json".source;
               vicinaeTheme = home.xdg.dataFile."vicinae/themes/${home.dotfiles.desktopTheme.name}.toml".source;
-              helix = home.xdg.configFile."helix/config.toml".source;
               helixBuiltin = "${pkgs.helix-unwrapped.src}/runtime/themes/${theme.apps.helix}.toml";
               zellijBuiltin = "${pkgs.zellij-unwrapped.src}/zellij-utils/assets/themes/${theme.apps.zellij}.kdl";
               zed = home.xdg.configFile."zed/themes/desktop-theme.json".source;
@@ -122,16 +116,7 @@ in
               gtk3 = home.xdg.configFile."gtk-3.0/colors.css".source;
               gtk4 = home.xdg.configFile."gtk-4.0/colors.css".source;
               gtk4Css = home.xdg.configFile."gtk-4.0/gtk.css".source;
-              btop = home.xdg.configFile."btop/btop.conf".source;
-              btopTheme =
-                if theme.apps ? btopTheme then
-                  home.xdg.configFile."btop/themes/${theme.apps.btop}.theme".source
-                else
-                  null;
-              fish = home.xdg.configFile."fish/config.fish".source;
-              zedSettings = home.xdg.configFile."zed/settings.json".source;
               zellij = home.xdg.configFile."zellij/config.kdl".source;
-              heroic = home.xdg.configFile."desktop-theme/heroic/${home.dotfiles.desktopTheme.name}.css".source;
               telegram =
                 home.xdg.configFile."desktop-theme/telegram/${home.dotfiles.desktopTheme.name}.tdesktop-theme".source;
             };
