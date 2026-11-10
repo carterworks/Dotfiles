@@ -2,7 +2,8 @@
 
 A pet NixOS LXC on the Proxmox host **herodotus** (CT 102) running its own
 [Hermes agent](https://github.com/NousResearch/hermes-agent). It is a normal
-host in this flake: `nix/machines/eltoro.nix` holds the configuration and
+host in this flake: `nix/machines/eltoro.nix` holds the configuration,
+`nix/machines/eltoro/egress.nix` holds the agent's network restrictions, and
 `hermes-agent` is a flake input.
 
 ## What's in the box
