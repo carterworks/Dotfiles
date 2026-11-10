@@ -161,8 +161,17 @@ in
   config = {
     assertions = [
       {
-        assertion = !(config.nix.settings.auto-allocate-uids or false);
-        message = "eltoro's egress fence finds Nix builds by group nixbld, which auto-allocate-uids does not use.";
+        # Unset, the root daemon defaults to nixbld. extraOptions is appended
+        # to nix.conf after settings, so a key there would override them.
+        assertion =
+          (config.nix.settings.build-users-group or "nixbld") == "nixbld"
+          && !(config.nix.settings.auto-allocate-uids or false)
+          && lib.all (
+            line:
+            builtins.match "[[:space:]]*(extra-)?(build-users-group|auto-allocate-uids)[[:space:]]*=.*" line
+            == null
+          ) (lib.splitString "\n" config.nix.extraOptions);
+        message = "eltoro's egress fence finds Nix builds by group nixbld: keep build-users-group at nixbld and auto-allocate-uids off, and set neither in nix.extraOptions.";
       }
     ];
 
