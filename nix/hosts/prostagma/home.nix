@@ -1,11 +1,12 @@
 {
   config,
+  fleet,
   pkgs,
   ...
 }:
 
 let
-  inherit (import ../../lib/fleet.nix) tailnetDomain;
+  inherit (fleet) tailnetDomain;
 in
 {
   imports = [
