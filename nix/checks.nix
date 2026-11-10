@@ -6,31 +6,25 @@ let
   nixFiles = lib.filter (lib.hasSuffix ".nix") (lib.filesystem.listFilesRecursive source);
   scylla = self.nixosConfigurations.scylla;
   eltoro = self.nixosConfigurations.eltoro;
+  skillDirectories = {
+    agent-browser-skill = "agent-browser";
+    herdr-skill = "herdr";
+    hunk-skill = "hunk-review";
+  };
   repositoryChecks =
     system:
     let
-      browserSkill = self.packages.${system}.agent-browser-skill;
-      herdrSkill = self.packages.${system}.herdr-skill;
-      hunkSkill = self.packages.${system}.hunk-skill;
       pkgs = nixpkgs.legacyPackages.${system};
+      packages = self.packages.${system};
     in
-    {
-      agent-browser-skill =
-        pkgs.runCommandLocal "agent-browser-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
-          ''
-            diff -u ${source}/agents/skills/generated/agent-browser/SKILL.md ${browserSkill}
-            touch "$out"
-          '';
-      hunk-skill = pkgs.runCommandLocal "hunk-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
-        diff -u ${source}/agents/skills/generated/hunk-review/SKILL.md ${hunkSkill}
+    lib.mapAttrs (
+      package: directory:
+      pkgs.runCommandLocal "${package}-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
+        diff -u ${source}/agents/skills/generated/${directory}/SKILL.md ${packages.${package}}
         touch "$out"
-      '';
-      herdr-skill =
-        pkgs.runCommandLocal "herdr-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
-          ''
-            diff -u ${source}/agents/skills/generated/herdr/SKILL.md ${herdrSkill}
-            touch "$out"
-          '';
+      ''
+    ) skillDirectories
+    // {
       nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
         nixfmt --check ${lib.escapeShellArgs nixFiles}
         touch "$out"
