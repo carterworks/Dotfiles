@@ -24,7 +24,6 @@ let
   # tailnet certificate and proxies to the loopback listener below. Port 8443
   # is used because the default 443 route already belongs to Caddy.
   authPortalPort = 8443;
-  authPortalUrl = "https://prostagma.${tailnetDomain}:${toString authPortalPort}";
 
   # The portal also has its own Tailscale Service, and this is the URL
   # clients should use: a MagicDNS name with no port is a valid OpenID
