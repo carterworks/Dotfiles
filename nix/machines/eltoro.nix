@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   modulesPath,
@@ -47,8 +48,8 @@ let
   '';
 
   hermesService = lib.recursiveUpdate {
-    # The egress fence is the agent's security boundary: never run
-    # without it, and stop along with it.
+    # The egress fence is the agent's security boundary: start only while
+    # its chain is hooked, and stop along with the firewall.
     requires = [ "firewall.service" ];
     after = [
       "network-online.target"
@@ -63,6 +64,7 @@ let
       PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
     };
     serviceConfig = {
+      ExecStartPre = "+${config.eltoro.egress.checkHooked}";
       User = "hermes";
       Group = "hermes";
       Slice = "hermes.slice";

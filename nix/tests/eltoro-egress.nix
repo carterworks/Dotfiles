@@ -29,7 +29,12 @@ in
   name = "eltoro-egress";
 
   nodes.eltoro =
-    { lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       fenceProbe = {
         mode = "0755";
@@ -56,6 +61,15 @@ in
       systemd.services.hermes-inbound = listen pkgs "TCP6-LISTEN:9119" // {
         serviceConfig = (listen pkgs "TCP6-LISTEN:9119").serviceConfig // {
           User = "hermes";
+        };
+      };
+      # Stands in for the Hermes units, which gate their start the same way.
+      systemd.services.fenced = {
+        serviceConfig = {
+          Type = "oneshot";
+          User = "hermes";
+          ExecStartPre = "+${config.eltoro.egress.checkHooked}";
+          ExecStart = "${pkgs.coreutils}/bin/true";
         };
       };
 
@@ -381,6 +395,16 @@ in
         assert_rules_once()
         assert_fence()
 
+    with subtest("a fenced unit starts only while the chain is hooked in both families"):
+        eltoro.succeed("systemctl start fenced")
+        eltoro.succeed("systemctl stop firewall")
+        eltoro.fail("systemctl start fenced")
+        eltoro.succeed("systemctl start firewall", "ip6tables -w -D OUTPUT -j hermes-egress")
+        eltoro.fail("systemctl start fenced")
+        eltoro.succeed("systemctl reload firewall", "systemctl start fenced")
+        assert_rules_once()
+        assert_fence()
+
     with subtest("a failed reload leaves hermes fenced"):
         # Referencing a chain from elsewhere makes the start script fail to
         # recreate it: nixos-fw-accept fails before extraCommands, hermes-egress
@@ -390,6 +414,7 @@ in
                 eltoro.succeed(f"{ipt} -w -N sabotage", f"{ipt} -w -A sabotage -j {target}")
             eltoro.fail("systemctl reload firewall")
             eltoro.succeed("systemctl is-active firewall")
+            eltoro.fail("systemctl start fenced")
             assert_closed()
             for ipt in ("iptables", "ip6tables"):
                 eltoro.succeed(f"{ipt} -w -F sabotage", f"{ipt} -w -X sabotage")

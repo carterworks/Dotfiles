@@ -134,10 +134,28 @@ let
   '';
 in
 {
-  options.eltoro.egress.uplink = lib.mkOption {
-    type = lib.types.str;
-    default = "eth0";
-    description = "Interface carrying hermes' internet egress. NixOS test VMs need eth1.";
+  options.eltoro.egress = {
+    uplink = lib.mkOption {
+      type = lib.types.str;
+      default = "eth0";
+      description = "Interface carrying hermes' internet egress. NixOS test VMs need eth1.";
+    };
+    # Requires=firewall.service is met by a firewall unit that was skipped,
+    # and a boot-time start that fails before extraCommands leaves no
+    # catch-all, so units the fence must cover check the ruleset itself.
+    checkHooked = lib.mkOption {
+      type = lib.types.path;
+      readOnly = true;
+      description = "Run as root; exits non-zero unless ${chain} is hooked into OUTPUT in both address families.";
+      default = pkgs.writeShellScript "egress-check-hooked" ''
+        for ipt in iptables ip6tables; do
+          if ! ${config.networking.firewall.package}/bin/$ipt -w -C OUTPUT -j ${chain}; then
+            echo "$ipt: OUTPUT does not jump to ${chain}; refusing to start unfenced" >&2
+            exit 1
+          fi
+        done
+      '';
+    };
   };
 
   config = {
