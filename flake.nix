@@ -57,9 +57,6 @@
       inputs.home-manager.follows = "home-manager";
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
-    # Keep gated downloads out of normal evaluation until access is available.
-    # Token setup and activation: docs/rex.md.
-    # rex.url = "path:/absolute/path/to/private/rex-flake";
   };
 
   outputs =
@@ -163,11 +160,6 @@
             pkgs.runCommandLocal "obsidian-sync-module-check" { } ''
               touch "$out"
             '';
-          rex-module =
-            assert import ./nix/tests/rex.nix { inherit (nixpkgs) lib; };
-            pkgs.runCommandLocal "rex-module-check" { } ''
-              touch "$out"
-            '';
         }
       );
       scylla = mkSystem "scylla" {
@@ -175,7 +167,6 @@
         profile = "carter";
         extraModules = [
           inputs.disko.nixosModules.disko
-          ./nix/modules/rex.nix
         ];
       };
       prostagma = mkSystem "prostagma" {
@@ -185,7 +176,6 @@
         gui = false;
         extraModules = [
           inputs.copyparty.nixosModules.default
-          ./nix/modules/rex.nix
         ];
       };
       eltoro = mkSystem "eltoro" {
