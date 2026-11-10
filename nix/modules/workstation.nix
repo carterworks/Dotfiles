@@ -1,6 +1,5 @@
 {
   inputs,
-  lib,
   pkgs,
   self,
   ...
@@ -10,34 +9,10 @@ let
   # Kept out of the overlay: there it would also replace the nixpkgs delta
   # that programs.delta in Home Manager runs as Git's pager.
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
-  # The base package enables Metal by default on aarch64-darwin; Vulkan is the
-  # Linux equivalent.
-  stableDiffusionCppMetal = pkgs.stable-diffusion-cpp;
-  stableDiffusionCppVulkan = pkgs.stable-diffusion-cpp-vulkan;
-  # Use the host package set for compatibility with its GPU drivers and libc.
-  vicinae = pkgs.vicinae;
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
-
-  # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
-  # token, so every kubectl call re-prompts a browser login. 0.1.9 caches it.
-  # https://wiki.corp.adobe.com/spaces/ethos/pages/1710311412 (section 2.1.1)
-  kubelogin = pkgs.stdenvNoCC.mkDerivation rec {
-    pname = "kubelogin";
-    version = "0.1.9";
-    src = pkgs.fetchurl {
-      url = "https://github.com/Azure/kubelogin/releases/download/v${version}/kubelogin-darwin-arm64.zip";
-      hash = "sha256-lNmnm72mLKZWgiIN4mI6r/XM7MCe1rkT6E4Dd/7hBZw=";
-    };
-    nativeBuildInputs = [ pkgs.unzip ];
-    sourceRoot = ".";
-    installPhase = ''
-      runHook preInstall
-      install -Dm755 bin/darwin_arm64/kubelogin $out/bin/kubelogin
-      runHook postInstall
-    '';
-  };
-
-  commonPackages = with pkgs; [
+in
+{
+  environment.systemPackages = with pkgs; [
     age
     agent-browser
     aria2
@@ -98,52 +73,4 @@ let
     yaml-language-server
     zen-browser
   ];
-
-  darwinPackages = with pkgs; [
-    awscli2
-    github-copilot-cli
-    hex
-    kubectl
-    kubelogin
-    openspec
-    python3
-    rex-client
-    stableDiffusionCppMetal
-    vault-bin
-  ];
-
-  nixosPackages = with pkgs; [
-    bambu-studio
-    bibata-cursors
-    discord
-    dolphin-emu
-    google-chrome
-    heroic
-    papirus-icon-theme
-    playerctl
-    protonplus
-    sgdboop
-    ship-of-harkinian
-    stableDiffusionCppVulkan
-    systemd-lsp
-    telegram-desktop
-    trayscale
-    vicinae
-    wallust
-    wl-clipboard
-  ];
-in
-{
-  fonts.packages =
-    lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-      pkgs.nerd-fonts.noto
-    ]
-    ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-      pkgs.nerd-fonts.iosevka
-    ];
-
-  environment.systemPackages =
-    commonPackages
-    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin darwinPackages
-    ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux nixosPackages;
 }
