@@ -274,10 +274,42 @@ pick one:
 
 Then clear the failed state: `sudo systemctl start atticd-size-guard.service`.
 
-## 6. Wipe and rebuild
+## 6. New signing key (**You**)
+
+If the cache's signing key may have leaked (it is in the `atticd` database,
+under `/srv/apps/postgresql`), give the cache a new key pair. The paths stay:
+Attic signs each narinfo as it serves it, so everything is served under the new
+key at once. On prostagma, in the dotfiles checkout:
+
+```sh
+nix shell --inputs-from . nixpkgs#attic-client
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --configure-cache fleet --configure-cache-retention fleet --pull fleet)"
+attic cache configure prostagma:fleet --regenerate-keypair
+attic cache info prostagma:fleet
+```
+
+Like any `attic cache configure`, this resets a per-cache retention (step 5).
+As in step 2, put the new `Public Key` in `nix/modules/binary-cache.nix`,
+commit, and deploy every Linux host. Until a host is deployed it rejects the
+cache's paths and falls back to other caches or to building.
+
+Each host's Nix daemon also keeps the narinfo of every path it has looked up,
+old signature included, for up to 30 days (`narinfo-cache-positive-ttl`), and
+rejects those paths until the entry expires. After deploying, clear it on each
+Linux host:
+
+```sh
+sudo sh -c 'rm -f /root/.cache/nix/binary-cache-v*.sqlite*' && sudo systemctl restart nix-daemon.service
+```
+
+If the token signing secret may have leaked too, also revoke every token
+(step 3).
+
+## 7. Wipe and rebuild (**You**)
 
 Use this if the cache is ever corrupted. It deletes everything and gives the
-cache a new signing key. On prostagma:
+cache a new signing key. For a leaked signing key alone, step 6 is enough. On
+prostagma:
 
 ```sh
 sudo systemctl stop atticd.service
@@ -288,10 +320,10 @@ sudo systemctl start atticd.service
 ```
 
 Then repeat step 2: create the cache, put its new public key in
-`nix/modules/binary-cache.nix`, and deploy every Linux host. Until they are
-deployed, hosts reject the new cache's signatures and fall back to other caches
-or to building. The CI token keeps working, because tokens depend only on the
-signing secret, not on the database.
+`nix/modules/binary-cache.nix`, deploy every Linux host, and clear each host's
+narinfo cache as in step 6. Until then, hosts reject the new cache's signatures
+and fall back to other caches or to building. The CI token keeps working,
+because tokens depend only on the signing secret, not on the database.
 
 ## Behaviour when the cache is down
 
