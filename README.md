@@ -38,7 +38,9 @@ host, `nixos/server.nix` for the two servers.
 ```
 
 A remote deploy has the target fetch from its own caches and receives only the
-rest over SSH. `PROSTAGMA_HOST` and `ELTORO_HOST` override the SSH targets.
+rest over SSH. As with `./update`, the GitHub token comes from `GH_TOKEN`,
+`GITHUB_TOKEN` or `gh auth token`; Nix gets it through `NIX_CONFIG`, never on a
+command line, and root never gets it. `PROSTAGMA_HOST` and `ELTORO_HOST` override the SSH targets.
 
 To build a host without switching to it:
 
