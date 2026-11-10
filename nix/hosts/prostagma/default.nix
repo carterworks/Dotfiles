@@ -174,17 +174,11 @@ in
 
   home-manager.users.carter = import ./home.nix;
 
-  nix = {
-    gc = {
-      automatic = true;
-      options = "--delete-older-than 7d";
-    };
-    settings = {
-      auto-optimise-store = true;
-      sandbox = false;
-      min-free = 5 * 1024 * 1024 * 1024;
-      max-free = 10 * 1024 * 1024 * 1024;
-    };
+  nix.settings = {
+    auto-optimise-store = true;
+    sandbox = false;
+    min-free = 5 * 1024 * 1024 * 1024;
+    max-free = 10 * 1024 * 1024 * 1024;
   };
 
   # The root disk is 50G. Time-based GC alone lets a busy rebuild week pin
