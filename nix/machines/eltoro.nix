@@ -190,8 +190,9 @@ in
     "+/run/current-system/sw/bin/chmod 0600 /run/tailscale/tailscaled.sock";
   networking.firewall = {
     enable = true;
+    # The dashboard (9119) is reached over the tailnet only; opening it in
+    # allowedTCPPorts would expose it on the LAN side too.
     trustedInterfaces = [ "tailscale0" ];
-    allowedTCPPorts = [ 9119 ];
   };
 
   environment.systemPackages = with pkgs; [
