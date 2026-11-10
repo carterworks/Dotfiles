@@ -226,9 +226,6 @@ in
   networking.firewall.allowedTCPPorts = [
     copypartyPort
   ];
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [
-    9119
-  ];
 
   # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
   # chmod or chown anything there: a single failure makes systemd-tmpfiles
