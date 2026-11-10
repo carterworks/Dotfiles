@@ -94,6 +94,29 @@ let
   '';
 
   chain = "hermes-egress";
+  # Whenever the chain is down (stopped, failed or mid-reload) this rejects
+  # every new connection the agent opens, so the fence fails closed. Hooked
+  # first in OUTPUT, so whatever sits there cannot let the agent past it.
+  closed = "${chain}-closed";
+  # Appending the new catch-all before deleting the old one from the head
+  # means a catch-all is in force at every moment, whichever generation
+  # wrote the old one.
+  closeFence = ''
+    for ipt in iptables ip6tables; do
+      $ipt -w -N ${closed} 2>/dev/null || true
+      stale=$($ipt -w -S ${closed} | grep -c '^-A' || true)
+      $ipt -w -A ${closed} ! -o lo -m conntrack ! --ctstate ESTABLISHED,RELATED -m owner --uid-owner hermes -j REJECT
+      for _ in $(seq "$stale"); do $ipt -w -D ${closed} 1; done
+      $ipt -w -C OUTPUT -j ${closed} 2>/dev/null || $ipt -w -I OUTPUT -j ${closed}
+    done
+  '';
+  openFence = ''
+    for ipt in iptables ip6tables; do
+      while $ipt -w -D OUTPUT -j ${closed} 2>/dev/null; do :; done
+      $ipt -w -F ${closed} 2>/dev/null || true
+      $ipt -w -X ${closed} 2>/dev/null || true
+    done
+  '';
   # Start, reload and stop all go through this, so no generation can leave
   # rules behind that a later generation's delete commands fail to match.
   removeRules = ''
@@ -126,6 +149,7 @@ in
       # tailscale itself is unaffected: its control plane and
       # DERP relays run over eth0, not tailscale0.
       extraCommands = ''
+        ${closeFence}
         ${removeRules}
         iptables  -w -N ${chain}
         ip6tables -w -N ${chain}
@@ -151,8 +175,12 @@ in
         # hook last so a half-filled chain is never live
         iptables  -w -A OUTPUT -j ${chain}
         ip6tables -w -A OUTPUT -j ${chain}
+        ${openFence}
       '';
-      extraStopCommands = removeRules;
+      extraStopCommands = ''
+        ${closeFence}
+        ${removeRules}
+      '';
     };
 
     # resolve the egress allowlist domains into the ipset the

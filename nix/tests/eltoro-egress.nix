@@ -20,7 +20,7 @@ in
   name = "eltoro-egress";
 
   nodes.eltoro =
-    { pkgs, ... }:
+    { lib, pkgs, ... }:
     {
       imports = [ ../machines/eltoro/egress.nix ];
       eltoro.egress.uplink = "eth1";
@@ -47,6 +47,21 @@ in
       # The VM has no DNS, but getent consults /etc/hosts, which drives the
       # same refresh path a real answer would.
       networking.hosts.${allowedDns} = [ "discord.com" ];
+
+      # Puts itself in front of iptables and ip6tables on PATH and records any
+      # call after which neither the chain nor the catch-all is hooked.
+      environment.etc = lib.genAttrs [ "fence-probe/iptables" "fence-probe/ip6tables" ] (_: {
+        mode = "0755";
+        source = pkgs.writeShellScript "fence-probe" ''
+          /run/current-system/sw/bin/''${0##*/} "$@"
+          rc=$?
+          for ipt in iptables ip6tables; do
+            /run/current-system/sw/bin/$ipt -w -S OUTPUT | grep -Eq -- '-j hermes-egress(-closed)?$' ||
+              echo "$ipt unfenced after ''${0##*/} $*" >>/tmp/unfenced
+          done
+          exit $rc
+        '';
+      });
 
       environment.systemPackages = [
         pkgs.ipset
@@ -135,11 +150,27 @@ in
             assert len(set(rules)) == count, f"{save}: duplicate rules in {rules}"
 
 
-    def unit_script(prop):
+    def assert_closed():
+        blocked("hermes", "TCP4", "${allowedCidr}:80")
+        blocked("hermes", "TCP4", "${unlisted}:80")
+        blocked("hermes", "TCP6", "[${internetIp6}]:80")
+        blocked("hermes", "TCP4", "${peerIp4}:80")
+        blocked("hermes", "UDP4", "${magicDns}:53")
+        allowed("root", "TCP4", "${unlisted}:80")
+        allowed("root", "TCP6", "[${internetIp6}]:80")
+        allowed("root", "TCP4", "${peerIp4}:80")
+        assert_inbound_replies()
+        for save in ("iptables-save", "ip6tables-save"):
+            hooks = [rule for rule in output_rules(save) if rule.startswith("-A OUTPUT ")]
+            assert hooks == ["-A OUTPUT -j hermes-egress-closed"], f"{save}: {hooks}"
+
+
+    def unit_script(prop, probe=False):
         show = eltoro.succeed(f"systemctl show firewall -p {prop}")
         match = re.search(r"path=(\S+)", show)
         assert match, show
-        eltoro.succeed(match.group(1))
+        path = "PATH=/etc/fence-probe:$PATH " if probe else ""
+        eltoro.succeed(path + match.group(1))
 
 
     def peer_listener(unit, spec):
@@ -199,10 +230,9 @@ in
         assert_rules_once()
         assert_fence()
 
-    with subtest("stop removes the rules and start restores them"):
+    with subtest("stop leaves hermes fenced and start restores the chain"):
         eltoro.succeed("systemctl stop firewall")
-        assert output_rules("iptables-save") == []
-        assert output_rules("ip6tables-save") == []
+        assert_closed()
         eltoro.succeed("systemctl start firewall")
         assert_rules_once()
         assert_fence()
@@ -257,10 +287,32 @@ in
     with subtest("start and stop are idempotent"):
         unit_script("ExecStop")
         unit_script("ExecStop")
-        assert output_rules("iptables-save") == []
-        assert output_rules("ip6tables-save") == []
+        assert_closed()
         unit_script("ExecStart")
         unit_script("ExecStart")
+        assert_rules_once()
+        assert_fence()
+
+    with subtest("a failed reload leaves hermes fenced"):
+        # Referencing a chain from elsewhere makes the start script fail to
+        # recreate it: nixos-fw-accept fails before extraCommands, hermes-egress
+        # within it.
+        for target in ("nixos-fw-accept", "hermes-egress"):
+            for ipt in ("iptables", "ip6tables"):
+                eltoro.succeed(f"{ipt} -w -N sabotage", f"{ipt} -w -A sabotage -j {target}")
+            eltoro.fail("systemctl reload firewall")
+            eltoro.succeed("systemctl is-active firewall")
+            assert_closed()
+            for ipt in ("iptables", "ip6tables"):
+                eltoro.succeed(f"{ipt} -w -F sabotage", f"{ipt} -w -X sabotage")
+            eltoro.succeed("systemctl reload firewall")
+            assert_rules_once()
+            assert_fence()
+
+    with subtest("no moment without a fence"):
+        for prop in ("ExecStart", "ExecReload", "ExecStop", "ExecStart"):
+            unit_script(prop, probe=True)
+        eltoro.fail("cat /tmp/unfenced")
         assert_rules_once()
         assert_fence()
   '';
