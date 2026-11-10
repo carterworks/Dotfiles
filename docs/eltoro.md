@@ -48,7 +48,8 @@ Once the binary cache is on, eltoro also upgrades itself every night to the
 Garbage collection runs nightly at 03:15, deleting store paths older than 3
 days (the other hosts keep 7; eltoro's disk is 32 GB). The store
 deduplicates new paths as they are added; to deduplicate what was there
-before, run `nix-store --optimise` once as root.
+before, run `nix-store --optimise` once as root. The journal is capped at
+200 MB.
 
 ## First-run agent onboarding
 
