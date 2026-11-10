@@ -252,11 +252,6 @@ in
     pkgs.age # age-keygen; fnox reads the key from ~/.config/fnox/age.txt
   ];
 
-  nix.gc = {
-    automatic = true;
-    options = "--delete-older-than 7d";
-  };
-
   # hard resource ceiling for the whole hermes family (both units
   # + everything they spawn): a runaway agent must never be able
   # to starve ssh/root out of cpu or memory, so you can always
