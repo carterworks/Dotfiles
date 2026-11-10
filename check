@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NIX_ACCESS_TOKEN_ARGS=()
 
@@ -102,10 +101,6 @@ if ! command -v nix >/dev/null 2>&1; then
   exit 1
 fi
 
-run_dotbot_check() {
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#dotbot" -- --verbose --exit-on-failure --dry-run --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
-}
-
 current_machine_name() {
   local name
 
@@ -184,9 +179,6 @@ section "Dotfiles check"
 log_message info "Machine: $(current_machine_name)"
 log_message info "System: $(uname -s)"
 warn_if_git_dirty
-
-section "Check dotfiles"
-run_quiet_step "Running dotbot dry-run" run_dotbot_check "$@"
 
 section "Validate system"
 run_quiet_step "Validating system build" run_system_check

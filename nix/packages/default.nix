@@ -15,7 +15,6 @@ let
   inherit (inputs.numtide-llm-agents.packages.${system}) agent-browser herdr hunk;
 in
 {
-  dotbot = pkgs.dotbot;
   inherit agent-browser herdr hunk;
   agent-browser-skill = pkgs.runCommand "agent-browser-skill-${agent-browser.version}.md" { } ''
     cp "$(${agent-browser}/bin/agent-browser skills path agent-browser)/SKILL.md" "$out"

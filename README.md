@@ -4,7 +4,9 @@ Personal NixOS and nix-darwin machine config.
 
 ## Bootstrap
 
-Install Nix first, then clone the repo.
+Install Nix first, then clone the repo to `~/.config/dotfiles`. Home Manager
+links config files from there into your home directory, and activation stops
+if the checkout is anywhere else.
 
 ```bash
 git clone <repo> ~/.config/dotfiles
@@ -17,7 +19,7 @@ If `nix` is not installed, `./check` and `./install` exit early and point to:
 
 ## Check
 
-`./check` dry-runs Dotbot, then builds the current machine's Nix config without switching generations.
+`./check` builds the current machine's Nix config without switching generations.
 
 ```bash
 ./check
@@ -34,7 +36,7 @@ Those names must match the flake host names. Multiple names may point to the sam
 
 ## Install
 
-`./install` runs Dotbot, then switches the current machine to a new generation with the appropriate rebuild command for the live system.
+`./install` switches the current machine to a new generation with the appropriate rebuild command for the live system.
 
 ```bash
 ./install
@@ -58,10 +60,13 @@ firewall setup.
 
 For the Rex macOS client setup, see [Rex](docs/rex.md).
 
-## Dotbot
+## Config files
 
-`./check` and `./install` run Dotbot from the pinned `nixpkgs` input in `flake.lock`, so Dotbot updates come from normal flake input updates instead of a submodule bump.
-
-```bash
-nix flake update
-```
+Home Manager links config files such as `hypr/*.lua`, `quickshell/`, `bin/*`
+and the KDE files in `kde/` from the checkout, not from the Nix store, so edits
+take effect without a rebuild and programs that rewrite their own config can.
+Adding or removing a link takes `./install`. A new file in `bin/`,
+`agents/skills/personal/`, `agents/skills/generated/`, `hypr/` (`*.lua`) or
+`quickshell/` gets its link once Git tracks it; the other links are listed in
+`nix/modules/home/workstation.nix` (both workstations),
+`nix/hosts/scylla/home.nix` and `nix/hosts/carters-macbook-pro/default.nix`.

@@ -43,7 +43,7 @@ provider cache retention settings or parse/store raw response bodies.
 
 ## Configuration
 
-Dotbot links this directory to `~/.config/opencode/idle-compaction`, and the
+Home Manager links this directory to `~/.config/opencode/idle-compaction`, and the
 global OpenCode config loads it explicitly. It is intentionally outside `plugins/`
 so helper and test files cannot be discovered as plugins.
 

@@ -99,7 +99,7 @@ These are existing application ports, not pixel-identical generated themes.
 Zed's theme is installed locally, so theme extension updates cannot change the
 pinned palette. Edit `opencode/cli.json` and `herdr/config.toml` for non-theme
 settings; Home Manager merges in the selected theme. Do not add a `[theme]`
-table to the Herdr base file. Dotbot no longer links these two files directly.
+table to the Herdr base file.
 The Obsidian build fixes one upstream selector so its light palette works
 without Style Settings; no palette colours are changed.
 
