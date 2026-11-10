@@ -46,13 +46,19 @@ curl -sS http://prostagma.dropbear-tortoise.ts.net:8199/       # any HTTP reply
 
 The cache's signing key is created with the cache and kept in its database.
 
-On prostagma, in `bash` (start it first if your shell is fish), make a one-hour
-admin token and log the Attic client in with it:
+On prostagma, in the dotfiles checkout, open a shell with the Attic client this
+flake pins, so that client and server versions match:
 
 ```sh
-export ADMIN_TOKEN="$(sudo atticd-atticadm make-token --sub admin --validity 1h --create-cache fleet --configure-cache fleet --configure-cache-retention fleet --destroy-cache fleet --pull fleet --push fleet)"
-nix shell nixpkgs#attic-client
-attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$ADMIN_TOKEN"
+nix shell --inputs-from . nixpkgs#attic-client
+```
+
+Log in with a one-hour token that may only create and read the cache. The token
+goes straight into `~/.config/attic/config.toml`, never onto the screen or into
+shell history:
+
+```sh
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --create-cache fleet --pull fleet)"
 ```
 
 Create the cache. Name every upstream cache that every Linux host also
@@ -88,26 +94,39 @@ nix store info --store http://prostagma.dropbear-tortoise.ts.net:8199/fleet
 
 Hosts pull without a token, so no pull token is needed.
 
-CI needs a push token. On prostagma:
+CI needs a push token. Treat it like root on every Linux host: the cache signs
+whatever is pushed with the key every host trusts, so whoever holds the token
+can put any binary on scylla, prostagma and eltoro at their next rebuild. It is
+valid for 90 days.
+
+From a machine where `gh` is logged in and `ssh prostagma` works, mint the
+token and store it in one pipe, so it never reaches the screen:
 
 ```sh
-sudo atticd-atticadm make-token --sub github-actions --validity 1y --pull fleet --push fleet
+ssh prostagma sudo atticd-atticadm make-token --sub github-actions --validity 90d --pull fleet --push fleet \
+  | gh secret set ATTIC_TOKEN --repo carterworks/dotfiles
 ```
 
-Store it as a repository secret from a machine where `gh` is logged in. `gh`
-prompts for the value:
+`gh` reads the value from standard input and drops the trailing newline.
 
-```sh
-gh secret set ATTIC_TOKEN --repo carterworks/dotfiles
-```
+### Rotate the CI token
 
-Attic tokens are signed JWTs with no revocation list. To revoke every token at
-once, delete the signing secret and restart; a new one is generated:
+Before the 90 days are up, run the same pipe again; `gh` replaces the secret.
+`gh secret list --repo carterworks/dotfiles` shows when it was last set. Attic
+cannot revoke a single token, so the old one stays valid until it expires. If it may have leaked, revoke every token instead.
+
+### Revoke every token
+
+Attic tokens are signed JWTs with no revocation list. To revoke them all, delete
+the token signing secret and restart; a new one is generated. On prostagma:
 
 ```sh
 sudo rm /var/lib/secrets/attic/environment
 sudo systemctl restart atticd.service
 ```
+
+This also invalidates `ATTIC_TOKEN`, so CI pushes fail until you mint a new one
+with the pipe at the start of this step.
 
 ## 4. What the CI job needs
 
@@ -197,13 +216,21 @@ period. Garbage collection runs when atticd starts and every 12 hours after.
 To change the retention for every cache, edit
 `garbage-collection.default-retention-period` in
 `nix/machines/prostagma/binary-cache.nix` and deploy prostagma. A
-per-cache value set with `attic` overrides the default until it is reset (admin
-token from step 2):
+per-cache value set with `attic` overrides the default until it is reset. The
+token from step 2 has expired and could not configure anyway, so log in with a
+fresh one-hour token that may only configure the cache. On prostagma, in the
+dotfiles checkout:
 
 ```sh
+nix shell --inputs-from . nixpkgs#attic-client
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --configure-cache fleet --configure-cache-retention fleet)"
 attic cache configure prostagma:fleet --retention-period '7 days'
 attic cache configure prostagma:fleet --reset-retention-period
 ```
+
+Every `attic cache configure` without `--retention-period` also resets the
+cache's retention to the default, so any configure token needs
+`--configure-cache-retention` as well as `--configure-cache`.
 
 To collect now rather than waiting for the next run:
 
