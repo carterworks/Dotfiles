@@ -109,6 +109,8 @@ must match a flake host.
 - Check `systemctl --failed` on the servers, or run `./drift`: a failed
   auto-upgrade notifies nobody.
 - Add, rotate and enrol secrets ([Secrets](docs/secrets.md)).
+- Approve the Beszel Service, make the agents' tokens and set the hub's key
+  ("First deployment" in [Monitoring](docs/monitoring.md)).
 
 ## Runbooks
 
@@ -116,6 +118,7 @@ must match a flake host.
 - [Server auto-upgrade](docs/auto-upgrade.md)
 - [Secrets](docs/secrets.md): encrypted with fnox in `secrets/fnox.toml`
 - [El Toro](docs/eltoro.md): onboarding, settings, the egress fence
+- [Monitoring](docs/monitoring.md): the Beszel hub on prostagma and its agents
 - [Rex](docs/rex.md): the macOS client
 
 ## Config files

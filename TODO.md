@@ -102,7 +102,12 @@ the app. The app downloads its model during setup instead.
 
 ## Monitoring
 
-- [ ] Add a Beszel hub and dashboard on prostagma, behind Authelia like the other dashboards, and Beszel agents on prostagma, Scylla and eltoro. Nothing on the Mac. On eltoro the agent may run as root; confirm the egress fence still restricts only Hermes and what acts for it. The prostagma agent should also record its Docker containers, systemd services, and whatever else Beszel can collect there, such as processes.
+The Beszel hub and agents are configured (`docs/monitoring.md`); the agents stay off until the hub's key is set.
+
+- [ ] Deploy prostagma, approve `svc:beszel` in the Tailscale admin console and check the tailnet policy lets scylla and eltoro reach it, then confirm the dashboard opens after the Authelia login with no second login.
+- [ ] Enrol scylla and eltoro in fnox (`beszel-scylla` and `beszel-eltoro` providers), make the three `BESZEL_TOKEN_*` tokens, and set `dotfiles.beszel.hubKey` from the hub's key ("First deployment" in `docs/monitoring.md`). Then deploy prostagma, scylla and eltoro and confirm all three are `up`.
+- [ ] On prostagma, check what the LXC exposes: temperatures, and Intel GPU data from `/sys/class/drm`. Neither can be tested in a VM.
+- [ ] Back up `/srv/apps/beszel-hub/beszel_data/id_ed25519`; losing it means a new hub key and redeploying every agent.
 
 ## Fleet deploys
 
