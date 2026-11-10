@@ -1,7 +1,8 @@
 { pkgs }:
 
 let
-  host = "prostagma.dropbear-tortoise.ts.net:8199";
+  inherit (import ../lib/fleet.nix) tailnetDomain;
+  host = "prostagma.${tailnetDomain}:8199";
   serverLanAddress = "192.168.1.2";
   serverTailnetAddress = "192.168.2.2";
   serverLanAddress6 = "2001:db8:1::2";
@@ -55,7 +56,7 @@ pkgs.testers.runNixOSTest {
         1
         2
       ];
-      networking.hosts.${serverTailnetAddress} = [ "prostagma.dropbear-tortoise.ts.net" ];
+      networking.hosts.${serverTailnetAddress} = [ "prostagma.${tailnetDomain}" ];
       nix.settings = {
         experimental-features = [ "nix-command" ];
         # The build before the push would otherwise cache "not found" for an hour.

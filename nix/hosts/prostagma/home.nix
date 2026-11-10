@@ -3,6 +3,10 @@
   pkgs,
   ...
 }:
+
+let
+  inherit (import ../../lib/fleet.nix) tailnetDomain;
+in
 {
   imports = [
     ../../modules/home/obsidian-sync.nix
@@ -36,26 +40,26 @@
           IdentitiesOnly = true;
         };
         jerodmcbride-nas = {
-          HostName = "jerodmcbride-nas.dropbear-tortoise.ts.net";
+          HostName = "jerodmcbride-nas.${tailnetDomain}";
           User = "carter";
           IdentityFile = "~/.ssh/bitwarden";
           IdentitiesOnly = true;
           SetEnv.TERM = "xterm-256color";
         };
         prostagma = {
-          HostName = "prostagma.dropbear-tortoise.ts.net";
+          HostName = "prostagma.${tailnetDomain}";
           User = "carter";
           IdentityFile = "~/.ssh/bitwarden";
           IdentitiesOnly = true;
         };
         rpi = {
-          HostName = "raspberrypi.dropbear-tortoise.ts.net";
+          HostName = "raspberrypi.${tailnetDomain}";
           User = "carter";
           IdentityFile = "~/.ssh/bitwarden";
           IdentitiesOnly = true;
         };
         scylla = {
-          HostName = "scylla.dropbear-tortoise.ts.net";
+          HostName = "scylla.${tailnetDomain}";
           User = "carter";
           IdentityFile = "~/.ssh/bitwarden";
           IdentitiesOnly = true;
