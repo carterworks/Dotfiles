@@ -3,11 +3,10 @@
   lib,
   pkgs,
   self,
-  systemUsername,
   ...
 }:
 let
-  themeName = config.home-manager.users.${systemUsername}.dotfiles.desktopTheme.name;
+  themeName = config.home-manager.users.carter.dotfiles.desktopTheme.name;
   colors = (import (../../modules/home/desktop-theme/themes + "/${themeName}.nix")).colors;
   screenshot = pkgs.writeShellApplication {
     name = "hypr-screenshot";
@@ -67,7 +66,7 @@ in
     '';
   };
 
-  home-manager.users.${systemUsername} = { config, lib, ... }: {
+  home-manager.users.carter = { config, lib, ... }: {
     xdg.configFile."uwsm/env-hyprland".text = ''
       export XCURSOR_THEME=Bibata-Modern-Classic
       export XCURSOR_SIZE=24

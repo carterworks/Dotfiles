@@ -58,7 +58,7 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 
 ## Theme
 
-Set `dotfiles.desktopTheme.name` in `nix/users/carter/home-manager.nix` to
+Set `dotfiles.desktopTheme.name` in `nix/modules/home/workstation.nix` to
 select a theme. The initial theme is `everforest-light-medium`. Add other theme
 files under `nix/modules/home/desktop-theme/themes/`; each file has named UI colours,
 native Ghostty settings, and an `apps` attribute with application theme names

@@ -1,3 +1,5 @@
+{ inputs, self, ... }:
+
 {
   nixpkgs.overlays = [
     # nixpkgs' fnox fails to build, so it is never cached. See TODO.md.
@@ -30,5 +32,12 @@
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
     ];
+  };
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = false;
+    backupFileExtension = "hm-backup";
+    extraSpecialArgs = { inherit inputs self; };
   };
 }

@@ -107,9 +107,13 @@ let
 in
 {
   imports = [
+    ../../modules/nixos/common.nix
+    ../../modules/nixos/server.nix
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./egress.nix
   ];
+
+  nixpkgs.hostPlatform = "x86_64-linux";
 
   # the proxmox-lxc module forces networking.hostName to "" by default
   proxmoxLXC.manageHostName = true;
