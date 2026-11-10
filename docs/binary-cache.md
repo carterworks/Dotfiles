@@ -99,6 +99,30 @@ sudo stat -c '%a %U %G' /var/lib/secrets/attic/environment   # 600 root root
 curl -sS http://prostagma.dropbear-tortoise.ts.net:8199/       # any HTTP reply
 ```
 
+### Postgres refuses to create the database
+
+The deploy creates the `atticd` database, and `createdb` in step 7 does the
+same. Postgres refuses when a nixpkgs update has moved glibc since the cluster
+was made: `postgresql-setup` fails with `template database "template1" has a
+collation version mismatch`, and Immich stays down with it because both wait
+for `postgresql.target`. This happened on the first deploy, 2026-11-10. Compare
+what each database recorded with what the system provides:
+
+```sh
+sudo -u postgres psql -Atc "select datname, datcollversion, pg_database_collation_actual_version(oid) from pg_database"
+```
+
+For each database whose two versions differ, rebuild its indexes and only then
+record the new version; refreshing without the rebuild hides an index that may
+sort wrongly. Stop `immich-server` first for `immich`. `template0` has no
+recorded version and needs nothing.
+
+```sh
+sudo -u postgres psql -d <db> -c 'REINDEX DATABASE <db>'
+sudo -u postgres psql -d <db> -c 'ALTER DATABASE <db> REFRESH COLLATION VERSION'
+sudo systemctl start postgresql-setup postgresql.target immich-server atticd
+```
+
 ## 2. Create the cache and read its public key (**You**)
 
 The cache's signing key is created with the cache and kept in its database.

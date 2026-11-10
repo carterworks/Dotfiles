@@ -27,6 +27,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Re-enable idle-compaction in `opencode/opencode.jsonc`: restore the chosen timers (54 minutes for configured GPT-5.6+ models, 3 for Claude, a 200k-token default with per-model overrides), set `options.logLevel` to `debug` while validating, and confirm a real Copilot session emits `session.compaction.ended` after admission and its summary request reports cache reads; then remove the log override.
 - [ ] Authenticate the `cloudflare` MCP server in Claude Code on scylla with `/mcp`; `claude mcp list` says it needs authentication.
 - [ ] `nix/modules/home/workstation.nix`: remove the `~/.lmstudio/bin` PATH entry left over from LM Studio, which scylla no longer installs.
+- [ ] prostagma: report a Postgres collation mismatch before it breaks a deploy, for example in `./drift`. After a glibc bump the next new database fails `postgresql-setup` and takes Immich down ([docs/binary-cache.md](docs/binary-cache.md#postgres-refuses-to-create-the-database)); the VM tests start from a fresh cluster and cannot see it.
 - [ ] `nix/hosts/prostagma/default.nix`: correct the `tailscale-services` comment that says the unit fails until `svc:beszel` is approved; it succeeds. The comment is inside the unit's script, so the edit restarts the unit; make it with the next change to that file.
 ## Awaiting a decision
 
