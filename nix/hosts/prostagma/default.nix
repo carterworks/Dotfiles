@@ -1,4 +1,5 @@
 {
+  config,
   fleet,
   inputs,
   lib,
@@ -498,10 +499,15 @@ in
   services.cloudflared = {
     enable = true;
     tunnels.${tunnelId} = {
-      credentialsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
+      credentialsFile = config.dotfiles.fnox.secrets.CLOUDFLARED_TUNNEL_CREDENTIALS.path;
       ingress."files.cartermcbri.de" = "http://127.0.0.1:${toString copypartyPort}";
       default = "http_status:404";
     };
+  };
+  dotfiles.fnox.secrets.CLOUDFLARED_TUNNEL_CREDENTIALS = {
+    path = "/run/secrets/cloudflared/${tunnelId}.json";
+    mode = "0600";
+    requiredBy = [ "cloudflared-tunnel-${tunnelId}.service" ];
   };
 
   services.copyparty = {
