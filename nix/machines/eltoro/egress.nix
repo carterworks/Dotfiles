@@ -106,6 +106,7 @@ let
       $ipt -w -N ${closed} 2>/dev/null || true
       stale=$($ipt -w -S ${closed} | grep -c '^-A' || true)
       $ipt -w -A ${closed} ! -o lo -m conntrack ! --ctstate ESTABLISHED,RELATED -m owner --uid-owner hermes -j REJECT
+      $ipt -w -A ${closed} ! -o lo -m conntrack ! --ctstate ESTABLISHED,RELATED -m owner --gid-owner nixbld -j REJECT
       for _ in $(seq "$stale"); do $ipt -w -D ${closed} 1; done
       $ipt -w -C OUTPUT -j ${closed} 2>/dev/null || $ipt -w -I OUTPUT -j ${closed}
     done
@@ -140,11 +141,25 @@ in
   };
 
   config = {
+    assertions = [
+      {
+        assertion = !(config.nix.settings.auto-allocate-uids or false);
+        message = "eltoro's egress fence finds Nix builds by group nixbld, which auto-allocate-uids does not use.";
+      }
+    ];
+
     networking.firewall = {
-      # The fence is an allowlist: once a packet is known to be hermes',
-      # anything not accepted below is rejected, on every interface and in
-      # both families, so a new NIC, a subnet route or an exit node on
-      # tailscale0 opens nothing. Root and every other uid are unrestricted.
+      # The fence is an allowlist: once a packet is known to be hermes' or a
+      # Nix build's, anything not accepted below is rejected, on every
+      # interface and in both families, so a new NIC, a subnet route or an
+      # exit node on tailscale0 opens nothing. Root and every other uid are
+      # unrestricted.
+      #
+      # Nix builds run as build users in group nixbld, and fixed-output ones
+      # get the host network. Any user may ask the daemon for a build
+      # (allowed-users is *), so unfenced, hermes could fetch any address from
+      # a derivation and read the reply in the build log. Substitution runs as
+      # root and is unaffected; root's own builds here are fenced too.
       #
       # el toro may not initiate connections INTO the tailnet
       # (lateral movement: herodotus/proxmox api, truenas, other
@@ -165,7 +180,7 @@ in
         iptables  -w -N ${chain}
         ip6tables -w -N ${chain}
         for ipt in iptables ip6tables; do
-          $ipt -w -A ${chain} -m owner ! --uid-owner hermes -j ACCEPT
+          $ipt -w -A ${chain} -m owner ! --uid-owner hermes -m owner ! --gid-owner nixbld -j ACCEPT
           $ipt -w -A ${chain} -o lo -j ACCEPT
           $ipt -w -A ${chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         done

@@ -28,6 +28,20 @@ in
 
   nodes.eltoro =
     { lib, pkgs, ... }:
+    let
+      fenceProbe = {
+        mode = "0755";
+        source = pkgs.writeShellScript "fence-probe" ''
+          /run/current-system/sw/bin/''${0##*/} "$@"
+          rc=$?
+          for ipt in iptables ip6tables; do
+            /run/current-system/sw/bin/$ipt -w -S OUTPUT | grep -Eq -- '-j hermes-egress(-closed)?$' ||
+              echo "$ipt unfenced after ''${0##*/} $*" >>/tmp/unfenced
+          done
+          exit $rc
+        '';
+      };
+    in
     {
       imports = [ ../machines/eltoro/egress.nix ];
       eltoro.egress.uplink = "eth1";
@@ -57,18 +71,24 @@ in
 
       # Puts itself in front of iptables and ip6tables on PATH and records any
       # call after which neither the chain nor the catch-all is hooked.
-      environment.etc = lib.genAttrs [ "fence-probe/iptables" "fence-probe/ip6tables" ] (_: {
-        mode = "0755";
-        source = pkgs.writeShellScript "fence-probe" ''
-          /run/current-system/sw/bin/''${0##*/} "$@"
-          rc=$?
-          for ipt in iptables ip6tables; do
-            /run/current-system/sw/bin/$ipt -w -S OUTPUT | grep -Eq -- '-j hermes-egress(-closed)?$' ||
-              echo "$ipt unfenced after ''${0##*/} $*" >>/tmp/unfenced
-          done
-          exit $rc
-        '';
-      });
+      environment.etc."fence-probe/iptables" = fenceProbe;
+      environment.etc."fence-probe/ip6tables" = fenceProbe;
+
+      # A fixed-output derivation gets the host's network. This one reports
+      # what its builder could reach, then fails so it never gets cached.
+      environment.etc."fod-escape.nix".text = ''
+        derivation {
+          name = "fod-escape";
+          system = "${pkgs.stdenv.hostPlatform.system}";
+          builder = builtins.storePath "${pkgs.busybox}/bin/busybox";
+          args = [ "sh" "-c" "echo allowed:$(${pkgs.busybox}/bin/nc -w 3 ${allowedCidr} 80 </dev/null) unlisted:$(${pkgs.busybox}/bin/nc -w 3 ${unlisted} 80 </dev/null); exit 1" ];
+          outputHashMode = "flat";
+          outputHashAlgo = "sha256";
+          outputHash = "0000000000000000000000000000000000000000000000000000";
+        }
+      '';
+      system.extraDependencies = [ pkgs.busybox ];
+      nix.settings.substituters = lib.mkForce [ ];
 
       environment.systemPackages = [
         pkgs.ipset
@@ -116,32 +136,30 @@ in
             assert "ok" in reply
 
 
+    # nixbld1 stands in for a Nix build, which runs as a build user in group nixbld.
+    restricted = ("hermes", "nixbld1")
+
+
     def assert_fence():
-        blocked("hermes", "TCP4", "${unlisted}:80")
-        allowed("root", "TCP4", "${unlisted}:80")
-        blocked("hermes", "TCP4", "${internetIp4}:80")
-        allowed("hermes", "TCP4", "${allowedCidr}:80")
-        allowed("hermes", "TCP4", "${allowedDns}:80")
+        for user in restricted:
+            blocked(user, "TCP4", "${unlisted}:80")
+            blocked(user, "TCP4", "${internetIp4}:80")
+            allowed(user, "TCP4", "${allowedCidr}:80")
+            allowed(user, "TCP4", "${allowedDns}:80")
+            blocked(user, "TCP6", "[${internetIp6}]:80")
+            blocked(user, "TCP4", "${peerIp4}:80")
+            blocked(user, "TCP6", "[${peerIp6}]:80")
+            allowed(user, "TCP4", "${magicDns}:53")
+            allowed(user, "UDP4", "${magicDns}:53")
+            blocked(user, "TCP4", "${magicDns}:5300")
 
-        blocked("hermes", "TCP6", "[${internetIp6}]:80")
-        allowed("root", "TCP6", "[${internetIp6}]:80")
-
-        blocked("hermes", "TCP4", "${peerIp4}:80")
-        allowed("root", "TCP4", "${peerIp4}:80")
-        blocked("hermes", "TCP6", "[${peerIp6}]:80")
-        allowed("root", "TCP6", "[${peerIp6}]:80")
-
-        # Users other than hermes are as unrestricted as root.
-        allowed("nobody", "TCP4", "${unlisted}:80")
-        allowed("nobody", "TCP6", "[${internetIp6}]:80")
-        allowed("nobody", "TCP4", "${peerIp4}:80")
-        allowed("nobody", "TCP6", "[${peerIp6}]:80")
-        allowed("nobody", "TCP4", "${magicDns}:5300")
-
-        allowed("hermes", "TCP4", "${magicDns}:53")
-        allowed("hermes", "UDP4", "${magicDns}:53")
-        blocked("hermes", "TCP4", "${magicDns}:5300")
-        allowed("root", "TCP4", "${magicDns}:5300")
+        # Users other than the restricted ones are as unrestricted as root.
+        for user in ("root", "nobody"):
+            allowed(user, "TCP4", "${unlisted}:80")
+            allowed(user, "TCP6", "[${internetIp6}]:80")
+            allowed(user, "TCP4", "${peerIp4}:80")
+            allowed(user, "TCP6", "[${peerIp6}]:80")
+            allowed(user, "TCP4", "${magicDns}:5300")
 
         for proto, target in (
             ("TCP4", "${routedIp4}:80"),
@@ -149,7 +167,8 @@ in
             ("TCP4", "${lanIp4}:80"),
             ("TCP6", "[${lanIp6}]:80"),
         ):
-            blocked("hermes", proto, target)
+            for user in restricted:
+                blocked(user, proto, target)
             allowed("root", proto, target)
 
         assert_inbound_replies()
@@ -167,11 +186,12 @@ in
 
 
     def assert_closed():
-        blocked("hermes", "TCP4", "${allowedCidr}:80")
-        blocked("hermes", "TCP4", "${unlisted}:80")
-        blocked("hermes", "TCP6", "[${internetIp6}]:80")
-        blocked("hermes", "TCP4", "${peerIp4}:80")
-        blocked("hermes", "UDP4", "${magicDns}:53")
+        for user in restricted:
+            blocked(user, "TCP4", "${allowedCidr}:80")
+            blocked(user, "TCP4", "${unlisted}:80")
+            blocked(user, "TCP6", "[${internetIp6}]:80")
+            blocked(user, "TCP4", "${peerIp4}:80")
+            blocked(user, "UDP4", "${magicDns}:53")
         allowed("root", "TCP4", "${unlisted}:80")
         allowed("root", "TCP6", "[${internetIp6}]:80")
         allowed("root", "TCP4", "${peerIp4}:80")
@@ -246,6 +266,14 @@ in
     internet.wait_for_open_port(80)
 
     eltoro.succeed("systemctl start egress-allowlist")
+
+    with subtest("a nix build hermes requests is fenced like hermes"):
+        status, build_log = eltoro.execute(
+            "runuser -u hermes -- nix-build /etc/fod-escape.nix --no-out-link 2>&1",
+            timeout=300,
+        )
+        assert status != 0 and "allowed:ok" in build_log, build_log
+        assert "unlisted:ok" not in build_log, build_log
 
     with subtest("fence holds after boot"):
         assert_rules_once()
