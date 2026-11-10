@@ -173,18 +173,6 @@ private_source() {
   jq -er --arg key "${key}" 'getpath($key | split(".")) | select(type == "string" and startswith("https://"))' "${file}"
 }
 
-# Print the version record every source resolves to: the revision the package
-# pins (a tag version, or a commit for branch sources) and its display version.
-version_record() {
-  local revision="$1"
-  local version="${2:-$1}"
-
-  if [[ -z "${revision}" || "${revision}" == null ]]; then
-    return 1
-  fi
-  jq -cn --arg revision "${revision}" --arg version "${version}" '{ revision: $revision, version: $version }'
-}
-
 latest_update() {
   local update_info="$1"
   local source
@@ -199,7 +187,7 @@ latest_update() {
       else
         url="$(jq -r '.url' <<<"${update_info}")"
       fi
-      version_record "$(curl -fsSL "${url}" | python3 -c '
+      curl -fsSL "${url}" | python3 -c '
 import sys
 import xml.etree.ElementTree as ET
 
@@ -212,7 +200,7 @@ build = item.findtext(namespace + "version")
 if not version or not build:
     sys.exit("Sparkle release is missing its version or build")
 print(version + "-" + build)
-')"
+'
       ;;
     github-release)
       # Scan the release list rather than /releases/latest: a monorepo's latest
@@ -240,9 +228,8 @@ print(version + "-" + build)
         pattern="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}(\\.[0-9A-Za-z-]+)*$"
         prereleases=true
       fi
-      version_record "$(
-        github_api "repos/${owner}/${repo}/releases?per_page=100" \
-          | jq -r --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
+      github_api "repos/${owner}/${repo}/releases?per_page=100" \
+        | jq -er --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
               [
                 .[]
                 | select((.draft | not) and ($prereleases or (.prerelease | not)))
@@ -252,30 +239,12 @@ print(version + "-" + build)
                 | select($pattern == "" or test($pattern))
               ][0] // empty
             '
-      )"
       ;;
     npm)
-      latest_update "$(jq -c '{
-        source: "json",
-        url: ("https://registry.npmjs.org/" + .package),
-        query: (".[\"dist-tags\"][\"" + (.channel // "latest") + "\"]")
-      }' <<<"${update_info}")"
-      ;;
-    json)
-      local url query
-      url="$(jq -r '.url' <<<"${update_info}")"
-      query="$(jq -r '.query' <<<"${update_info}")"
-      version_record "$(curl -fsSL "${url}" | jq -r "${query}")"
-      ;;
-    github-branch)
-      local owner repo branch commit
-      owner="$(jq -r '.owner' <<<"${update_info}")"
-      repo="$(jq -r '.repo' <<<"${update_info}")"
-      branch="$(jq -r '.branch' <<<"${update_info}")"
-      commit="$(github_api "repos/${owner}/${repo}/commits/${branch}")"
-      version_record \
-        "$(jq -r '.sha' <<<"${commit}")" \
-        "0-unstable-$(jq -r '.commit.committer.date | split("T")[0]' <<<"${commit}")"
+      local package channel
+      package="$(jq -r '.package' <<<"${update_info}")"
+      channel="$(jq -r '.channel // "latest"' <<<"${update_info}")"
+      curl -fsSL "https://registry.npmjs.org/${package}" | jq -er --arg channel "${channel}" '."dist-tags"[$channel] // empty'
       ;;
     *)
       return 1
@@ -439,120 +408,6 @@ fetch_private_package() {
   cache_private_release "${update_info}" "${version}" "${hash}" >/dev/null
 }
 
-nixpkgs_tool() {
-  local tool="$1"
-  local flake_ref expression
-
-  flake_ref="$(jq -Rn --arg value "path:${BASEDIR}" '$value')"
-  expression="let flake = builtins.getFlake ${flake_ref}; in flake.inputs.nixpkgs.legacyPackages.${CURRENT_SYSTEM}.${tool}"
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --impure --no-link --print-out-paths --expr "${expression}"
-}
-
-apply_npm_lock_update() {
-  local pkg="$1"
-  local file="$2"
-  local current="$3"
-  local latest="$4"
-  local system="$5"
-  local update_info="$6"
-  local oldurl oldhash old_deps_hash newurl newhash npm_package npm_path prefetch_path new_deps_hash content tempdir
-
-  oldurl="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.url")"
-  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.updateSource.outputHash")"
-  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.npmDeps.outputHash")"
-  newurl="${oldurl//${current}/${latest}}"
-  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --json "${newurl}" | jq -r '.hash')" || return 1
-  npm_package="$(jq -r '.package' <<<"${update_info}")"
-
-  tempdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-npm-update.XXXXXX")"
-  if ! curl -fsSL "https://registry.npmjs.org/${npm_package}/${latest}" \
-    | jq '{ name, version, main, bin, engines, dependencies }' >"${tempdir}/package.json"; then
-    rm -rf "${tempdir}"
-    return 1
-  fi
-
-  npm_path="$(nixpkgs_tool nodejs)" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-  if ! (cd "${tempdir}" && "${npm_path}/bin/npm" install --package-lock-only --ignore-scripts --no-audit --no-fund >/dev/null); then
-    rm -rf "${tempdir}"
-    return 1
-  fi
-
-  prefetch_path="$(nixpkgs_tool prefetch-npm-deps)" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-  new_deps_hash="$("${prefetch_path}/bin/prefetch-npm-deps" "${tempdir}/package-lock.json")" || {
-    rm -rf "${tempdir}"
-    return 1
-  }
-
-  content="$(cat "${file}")"
-  content="${content//${oldhash}/${newhash}}"
-  content="${content//${old_deps_hash}/${new_deps_hash}}"
-  content="${content//version = \"${current}\"/version = \"${latest}\"}"
-  printf '%s\n' "${content}" >"${file}"
-  mv "${tempdir}/package.json" "${BASEDIR}/nix/packages/${pkg}/package.json"
-  mv "${tempdir}/package-lock.json" "${BASEDIR}/nix/packages/${pkg}/package-lock.json"
-  rm -rf "${tempdir}"
-}
-
-apply_pnpm_git_update() {
-  local pkg="$1"
-  local file="$2"
-  local current_revision="$3"
-  local latest_revision="$4"
-  local current_version="$5"
-  local latest_version="$6"
-  local system="$7"
-  local update_info="$8"
-  local owner repo oldhash old_deps_hash newhash content backup logfile new_deps_hash
-  local fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-
-  owner="$(jq -r '.owner' <<<"${update_info}")"
-  repo="$(jq -r '.repo' <<<"${update_info}")"
-  oldhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.src.outputHash")"
-  old_deps_hash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${system}.${pkg}.pnpmDeps.outputHash")"
-  newhash="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" store prefetch-file --unpack --json \
-    "https://github.com/${owner}/${repo}/archive/${latest_revision}.tar.gz" | jq -r '.hash')" || return 1
-
-  backup="$(mktemp "${file}.XXXXXX")"
-  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-pnpm-update.XXXXXX")"
-  cp "${file}" "${backup}"
-  content="$(cat "${file}")"
-  content="${content//${current_revision}/${latest_revision}}"
-  content="${content//${oldhash}/${newhash}}"
-  content="${content//${old_deps_hash}/${fake_hash}}"
-  content="${content//version = \"${current_version}\"/version = \"${latest_version}\"}"
-  printf '%s\n' "${content}" >"${file}"
-
-  if nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-  new_deps_hash="$(sed -n 's/^[[:space:]]*got:[[:space:]]*//p' "${logfile}" | tail -n1)"
-  if [[ "${new_deps_hash}" != sha256-* ]]; then
-    show_log "${logfile}"
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-
-  content="$(cat "${file}")"
-  content="${content//${fake_hash}/${new_deps_hash}}"
-  printf '%s\n' "${content}" >"${file}"
-  if ! nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link ".#packages.${system}.${pkg}" >"${logfile}" 2>&1; then
-    show_log "${logfile}"
-    cp "${backup}" "${file}"
-    rm -f "${backup}" "${logfile}"
-    return 1
-  fi
-  rm -f "${backup}" "${logfile}"
-}
-
 regenerate_skill() {
   local package="$1"
   local name="$2"
@@ -671,31 +526,23 @@ for index in "${!package_files[@]}"; do
     continue
   fi
 
-  source="$(jq -r '.source' <<<"${update_info}")"
   if jq -e '.privateUrlKey' <<<"${update_info}" >/dev/null \
     && ! private_source "$(jq -r '.privateUrlKey' <<<"${update_info}")" >/dev/null 2>&1; then
     log_message warn "${pkg}: private source configuration unavailable; see docs/rex.md; skipping"
     continue
   fi
-  if [[ "${source}" == github-branch ]]; then
-    current_revision="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" eval --raw ".#packages.${package_system}.${pkg}.src.rev" 2>/dev/null || true)"
-  else
-    current_revision="${current_version}"
-  fi
-  latest_update_info="$(latest_update "${update_info}" 2>/dev/null || true)"
-  latest_revision="$(jq -r '.revision // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
-  latest_version="$(jq -r '.version // empty' <<<"${latest_update_info}" 2>/dev/null || true)"
-  if [[ -z "${latest_revision}" || -z "${latest_version}" ]]; then
+  latest_version="$(latest_update "${update_info}" 2>/dev/null || true)"
+  if [[ -z "${latest_version}" ]]; then
     log_message warn "${pkg}: failed to discover latest upstream version; skipping"
     continue
   fi
 
-  if [[ "${current_revision}" == "${latest_revision}" ]]; then
+  if [[ "${current_version}" == "${latest_version}" ]]; then
     log_message info "${pkg}: up to date (${current_version})"
   else
     log_message warn "${pkg}: update available (${current_version} -> ${latest_version})"
     encoded_update_info="$(printf '%s' "${update_info}" | base64 --wrap=0)"
-    updates+=("${pkg}|${file}|${current_revision}|${latest_revision}|${current_version}|${latest_version}|${package_system}|${encoded_update_info}")
+    updates+=("${pkg}|${file}|${current_version}|${latest_version}|${package_system}|${encoded_update_info}")
   fi
 done
 
@@ -710,7 +557,7 @@ fi
 
 section "Apply updates"
 for entry in "${updates[@]}"; do
-  IFS='|' read -r pkg file current_revision latest_revision current_version latest_version package_system encoded_update_info <<<"${entry}"
+  IFS='|' read -r pkg file current_version latest_version package_system encoded_update_info <<<"${entry}"
   update_info="$(printf '%s' "${encoded_update_info}" | base64 --decode)"
   strategy="$(jq -r '.strategy // "archive"' <<<"${update_info}")"
   case "${strategy}" in
@@ -719,12 +566,6 @@ for entry in "${updates[@]}"; do
       ;;
     archive)
       update_command=(apply_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${update_info}")
-      ;;
-    npm-lock)
-      update_command=(apply_npm_lock_update "${pkg}" "${file}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
-      ;;
-    pnpm-git)
-      update_command=(apply_pnpm_git_update "${pkg}" "${file}" "${current_revision}" "${latest_revision}" "${current_version}" "${latest_version}" "${package_system}" "${update_info}")
       ;;
     *)
       log_message error "${pkg}: unknown update strategy ${strategy}"

@@ -31,9 +31,7 @@ latest_update '{"source":"sparkle","url":"https://example.com/appcast.xml"}'
 <item><sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
 <sparkle:version>1497</sparkle:version></item></channel></rss>''')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout), {
-            "version": "0.1.0-1541", "revision": "0.1.0-1541"
-        })
+        self.assertEqual(result.stdout.strip(), "0.1.0-1541")
 
     def test_rejects_missing_build(self):
         result = self.discover("<rss><channel><item/></channel></rss>")
@@ -163,7 +161,7 @@ curl() {
 latest_update '{"source":"sparkle","privateUrlKey":"rex.clientFeedUrl"}'
 ''')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(json.loads(result.stdout)["version"], "1.0-2")
+        self.assertEqual(result.stdout.strip(), "1.0-2")
 
     def test_missing_manifest_fails_without_exposing_urls(self):
         result = self.run_script(
