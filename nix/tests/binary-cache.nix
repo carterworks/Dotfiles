@@ -4,6 +4,8 @@ let
   host = "prostagma.dropbear-tortoise.ts.net:8199";
   serverLanAddress = "192.168.1.2";
   serverTailnetAddress = "192.168.2.2";
+  serverLanAddress6 = "2001:db8:1::2";
+  serverTailnetAddress6 = "2001:db8:2::2";
   # A well-formed key that matches nothing, so Nix rejects the cache's signatures
   # until the test puts the key the running cache generated in its place.
   placeholderKey = "fleet:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -21,6 +23,7 @@ let
       private = generate "private";
       upstream = generate "upstream";
       offline = generate "offline";
+      rejected = generate "rejected";
     }
   '';
 in
@@ -126,9 +129,17 @@ pkgs.testers.runNixOSTest {
             "ip link set eth2 name tailscale0",
             "ip link set tailscale0 up",
             "ip address replace ${serverTailnetAddress}/24 dev tailscale0",
+            "ip address replace ${serverTailnetAddress6}/64 dev tailscale0 nodad",
         )
-        client.wait_until_succeeds(f"curl -sS --max-time 5 -o /dev/null {url}/")
-        client.fail("curl -sS --connect-timeout 3 -o /dev/null http://${serverLanAddress}:8199/")
+        probe = "curl -sS --connect-timeout 3 -o /dev/null http://{}:8199/"
+        client.wait_until_succeeds(probe.format("${serverTailnetAddress}"), timeout=60)
+        client.wait_until_succeeds(probe.format("[${serverTailnetAddress6}]"), timeout=60)
+        # 28 is curl's timeout: the firewall drops the connection, so any other
+        # failure would mean the check proved nothing.
+        for address in ["${serverLanAddress}", "[${serverLanAddress6}]"]:
+            status, _ = client.execute(probe.format(address))
+            assert status == 28, f"{address} gave curl exit {status}"
+        client.succeed(f"curl -sS --max-time 5 -o /dev/null {url}/")
 
     with subtest("a cache can be created and a path pushed"):
         token = server.succeed(
@@ -142,6 +153,15 @@ pkgs.testers.runNixOSTest {
         client.succeed(f"attic push test:fleet {private}")
         client.succeed(narinfo(private))
         server.succeed(f"{chunks} | grep -q .")
+
+    with subtest("a push without a push token is rejected"):
+        rejected = client.succeed(f"{build} rejected").strip()
+        pull_token = server.succeed("atticd-atticadm make-token --sub pull-only --validity 1h --pull fleet").strip()
+        client.succeed(f"attic login anonymous {url}", f"attic login pull-only {url} {pull_token}")
+        for name in ["anonymous", "pull-only"]:
+            status, output = client.execute(f"attic push {name}:fleet {rejected} 2>&1")
+            assert status != 0 and "User does not have permission" in output, output
+        client.fail(narinfo(rejected))
 
     with subtest("a path signed by an upstream cache is not stored"):
         upstream = client.succeed(f"{build} upstream").strip()
