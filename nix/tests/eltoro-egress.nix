@@ -2,6 +2,7 @@ let
   internetIp4 = "192.168.1.2";
   internetIp6 = "2001:db8:1::2";
   eltoroIp4 = "192.168.1.1";
+  eltoroIp6 = "2001:db8:1::1";
   unlisted = "203.0.113.10";
   # Inside egressAllowedCidrs.
   allowedCidr = "151.101.1.1";
@@ -10,6 +11,12 @@ let
   peerIp4 = "100.64.0.2";
   peerIp6 = "fd7a:115c:a1e0::2";
   magicDns = "100.100.100.100";
+  # Behind a subnet router or exit node on tailscale0, outside the tailnet ranges.
+  routedIp4 = "198.18.0.1";
+  routedIp6 = "2001:db8:99::1";
+  # On a second NIC.
+  lanIp4 = "10.99.0.2";
+  lanIp6 = "fd00:99::2";
 
   listen = pkgs: spec: {
     wantedBy = [ "multi-user.target" ];
@@ -104,6 +111,7 @@ in
             eltoro.succeed("echo hi | ip netns exec peer socat -t2 -T3 - TCP4:100.64.0.1:9119"),
             eltoro.succeed("echo hi | ip netns exec peer socat -t2 -T3 - 'TCP6:[fd7a:115c:a1e0::1]:9119'"),
             internet.succeed("echo hi | socat -t2 -T3 - TCP4:${eltoroIp4}:9119"),
+            internet.succeed("echo hi | socat -t2 -T3 - 'TCP6:[${eltoroIp6}]:9119'"),
         ):
             assert "ok" in reply
 
@@ -136,6 +144,15 @@ in
         blocked("hermes", "TCP4", "${magicDns}:5300")
         allowed("root", "TCP4", "${magicDns}:5300")
 
+        for proto, target in (
+            ("TCP4", "${routedIp4}:80"),
+            ("TCP6", "[${routedIp6}]:80"),
+            ("TCP4", "${lanIp4}:80"),
+            ("TCP6", "[${lanIp6}]:80"),
+        ):
+            blocked("hermes", proto, target)
+            allowed("root", proto, target)
+
         assert_inbound_replies()
 
 
@@ -144,7 +161,7 @@ in
 
 
     def assert_rules_once():
-        for save, count in (("iptables-save", 10), ("ip6tables-save", 5)):
+        for save, count in (("iptables-save", 8), ("ip6tables-save", 7)):
             rules = output_rules(save)
             assert len(rules) == count, f"{save}: expected {count} rules, got {rules}"
             assert len(set(rules)) == count, f"{save}: duplicate rules in {rules}"
@@ -173,8 +190,8 @@ in
         eltoro.succeed(path + match.group(1))
 
 
-    def peer_listener(unit, spec):
-        return f"systemd-run --unit={unit} -E PATH ip netns exec peer socat {spec},fork 'SYSTEM:echo ok'"
+    def peer_listener(unit, spec, netns="peer"):
+        return f"systemd-run --unit={unit} -E PATH ip netns exec {netns} socat {spec},fork 'SYSTEM:echo ok'"
 
 
     start_all()
@@ -211,6 +228,24 @@ in
         peer_listener("peer-5300", "TCP4-LISTEN:5300,reuseaddr"),
     )
     eltoro.wait_until_succeeds("test $(ip netns exec peer ss -Hlntu | wc -l) = 4")
+
+    eltoro.succeed(
+        "ip -n peer addr add ${routedIp4}/32 dev lo",
+        "ip -n peer -6 addr add ${routedIp6}/128 dev lo",
+        "ip route add ${routedIp4}/32 via ${peerIp4} dev tailscale0",
+        "ip -6 route add ${routedIp6}/128 via ${peerIp6} dev tailscale0",
+        "ip netns add lan",
+        "ip link add lan0 type veth peer name far0",
+        "ip link set far0 netns lan",
+        "ip addr add 10.99.0.1/24 dev lan0",
+        "ip -6 addr add fd00:99::1/64 dev lan0 nodad",
+        "ip link set lan0 up",
+        "ip -n lan addr add ${lanIp4}/24 dev far0",
+        "ip -n lan -6 addr add ${lanIp6}/64 dev far0 nodad",
+        "ip -n lan link set far0 up",
+        peer_listener("lan-80", "TCP6-LISTEN:80,reuseaddr", netns="lan"),
+    )
+    eltoro.wait_until_succeeds("test $(ip netns exec lan ss -Hlnt | wc -l) = 1")
     eltoro.wait_for_open_port(9119)
     internet.wait_for_open_port(80)
 
