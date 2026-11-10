@@ -254,7 +254,7 @@
             python3 ${source}/nix/modules/home/desktop-theme/test-obsidian-theme.py
             python3 ${source}/nix/modules/home/desktop-theme/test-kde-theme.py
             python3 ${source}/nix/modules/home/desktop-theme/test-live-desktop-theme.py
-            python3 ${source}/nix/users/carter/test-vicinae-onboarding.py
+            python3 ${source}/nix/hosts/scylla/test-vicinae-onboarding.py
             python3 ${source}/nix/modules/home/desktop-theme/test-desktop-theme.py ${manifest}
             touch "$out"
           '';

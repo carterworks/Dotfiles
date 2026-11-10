@@ -35,6 +35,77 @@ let
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
 in
 {
+  # Upstream's Home Manager module supports x86_64-linux only; macOS installs
+  # the same package as a system app instead.
+  # installModel downloads the speech model from the module's own service, so
+  # a fresh host can dictate immediately; it is a no-op once the model is
+  # present and checksum-verified.
+  programs.hex = {
+    enable = true;
+    autostart = true;
+    installModel = true;
+    package = pkgs.hex;
+    # The Hyprland bind in hypr/bindings.lua names the portal shortcut by this
+    # trigger, so changing it means changing that bind too.
+    shortcut = "option+space";
+  };
+
+  dotfiles.desktopTheme.zenProfile = ".config/zen/jhvzidh2.Default Profile";
+
+  gtk = {
+    enable = true;
+    font = {
+      name = "Inter";
+      size = 12;
+    };
+    theme = {
+      name = "Breeze";
+      package = pkgs.kdePackages.breeze-gtk;
+    };
+    iconTheme = {
+      name = "Papirus";
+      package = pkgs.papirus-icon-theme;
+    };
+    cursorTheme = {
+      name = "Bibata-Modern-Classic";
+      package = pkgs.bibata-cursors;
+      size = 24;
+    };
+    gtk2.configLocation = "${config.xdg.configHome}/gtk-2.0/gtkrc";
+    gtk3.extraConfig.gtk-application-prefer-dark-theme = false;
+    gtk4.theme = config.gtk.theme;
+    gtk4.extraConfig.gtk-application-prefer-dark-theme = false;
+  };
+
+  xdg.configFile."autostart/vicinae.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Vicinae
+      Exec=vicinae server
+      Terminal=false
+      NoDisplay=true
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
+  # This desktop is already configured. Closing Vicinae's welcome window does
+  # not persist completion; seed its mutable state once, without replacing it.
+  home.activation.vicinaeOnboarding = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run ${pkgs.python3}/bin/python3 ${./complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
+  '';
+  xdg.configFile."autostart/steam.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Steam
+      Exec=steam -silent
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
+
   home.packages = [ pkgs.claude-code ];
 
   home.file.".claude/CLAUDE.md".source = ../../../agents/AGENTS.md;
