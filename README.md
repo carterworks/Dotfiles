@@ -60,8 +60,8 @@ changes nothing. `./update --apply` updates every flake input, regenerates
 It never prompts and needs no terminal. Each change prints as one
 `name old -> new` line, followed by `note:` lines worth a look (an image held
 back from a new major version, or one whose newest tag is ambiguous). It exits
-1 if anything failed and keeps the updates that worked. The GitHub token comes
-from
+3 if some items failed and keeps the updates that worked, and 1 if the updater
+itself failed. The GitHub token comes from
 `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`; `nix`, `git`, `curl` and `jq`
 must be on `PATH`.
 
