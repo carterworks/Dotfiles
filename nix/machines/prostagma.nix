@@ -1,5 +1,4 @@
 {
-  inputs,
   lib,
   modulesPath,
   pkgs,
@@ -196,9 +195,6 @@ in
   };
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.overlays = [
-    inputs.copyparty.overlays.default
-  ];
 
   proxmoxLXC = {
     manageNetwork = false;
