@@ -1,18 +1,13 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, pkgs, ... }:
 
 let
   inherit (pkgs) obsidian-headless;
   vaultPath = "${config.home.homeDirectory}/Documents/Notes";
 in
 {
-  home.packages = lib.mkIf pkgs.stdenv.hostPlatform.isLinux [ obsidian-headless ];
+  home.packages = [ obsidian-headless ];
 
-  systemd.user.services.obsidian-sync = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+  systemd.user.services.obsidian-sync = {
     Unit = {
       Description = "Obsidian Notes vault sync";
       After = [ "network-online.target" ];
