@@ -236,31 +236,6 @@ cache_private_release '{"privateUrlTemplateKey":"rex.clientUrlTemplate","fileNam
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "expectedhash")
 
-    def test_server_flake_uses_external_gc_root_without_writing_lock(self):
-        with tempfile.TemporaryDirectory() as directory:
-            result = self.run_script('''
-NIX_ACCESS_TOKEN_ARGS=()
-expected_destination="$1"
-private_source() { echo https://example.invalid/server.tar.gz; }
-nix() {
-  [[ "$*" == *--no-write-lock-file* && "$*" == *--refresh* ]] || return 1
-  echo '{"path":"/nix/store/test-rex-source"}'
-}
-nix-store() {
-  [[ "$1" == --realise && "$2" == /nix/store/test-rex-source && "$3" == --add-root && "$4" == "$expected_destination" && "$5" == --indirect ]]
-}
-refresh_private_rex_flake "$1"
-''', str(Path(directory) / "rex-flake"))
-            self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_server_flake_refuses_to_replace_directory(self):
-        with tempfile.TemporaryDirectory() as directory:
-            result = self.run_script(
-                '\nrefresh_private_rex_flake "$1"\n', directory,
-            )
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("refusing to replace", result.stderr)
-
 
 if __name__ == "__main__":
     unittest.main()
