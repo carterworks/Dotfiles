@@ -174,10 +174,15 @@ in
   # file transition left by root-run onboarding, and its `z` rule
   # will not walk ownership back off root either. Repair ownership
   # first, without following a symlink; tmpfiles then enforces mode.
+  #
+  # Hermes can make the repair refuse at will. Failing activation for it
+  # would make every deploy look failed though the system switched, so
+  # only warn here; the timer's unit still fails, visibly.
   system.activationScripts.hermes-settings = {
     deps = [ "users" ];
     text = ''
-      ${hermesSettingsRepair}
+      ${hermesSettingsRepair} ||
+        echo "warning: hermes settings were not repaired; see above and inspect /var/lib/hermes/.hermes. The system switched regardless." >&2
     '';
   };
 
