@@ -1,8 +1,8 @@
 # Rollout
 
 What is left of the owner's first rollout of the fleet configuration, in order.
-Pull requests #3 and #4 are merged, prostagma and eltoro are deployed and
-checked, the cache `fleet` exists, and Nightly runs (2026-11-10). Each step
+Pull requests #3 and #4 are merged, all four hosts are deployed from `main`,
+the cache `fleet` exists, and Nightly runs (2026-11-10). Each step
 names what to do and links to the runbook section that has the commands. You
 can stop safely at the end of any stage. **No return** marks a step that cannot
 simply be undone.
@@ -52,12 +52,10 @@ cannot show the two checks below.
 
 ## 2. scylla
 
-1. Run `./install` ([README](../README.md#deploy-by-hand)). It starts the
-   Beszel agent; the system is already built.
-2. Reboot: a new kernel has been pending since before 2026-11-10. Then confirm
+1. Reboot: a new kernel has been pending since before 2026-11-10. Then confirm
    `opencode2` and `t3` are running and Obsidian Sync resumed, with scylla in
    the vault's version history ([User services](user-services.md)).
-3. Confirm `./install` left no new `*.hm-backup` files and every config link
+2. Confirm `./install` left no new `*.hm-backup` files and every config link
    resolves through `home-manager-files`
    ([README, config files](../README.md#config-files)). The 31 `*.hm-backup`
    files from before 2026-11-10 come from earlier Home Manager runs and can be
@@ -111,12 +109,8 @@ cannot show the two checks below.
 
 ## 6. The Mac
 
-1. Cache the Rex installer and run `./install` from inside a T3 Code or
-   OpenCode session ([Rex](rex.md#macos-client)). Confirm activation finished
-   though the hosting app restarted: the newest
-   `~/Library/Logs/dotfiles-install/*/status` is `0`, both apps reloaded, and
-   the terminal is not left stopped. Confirm Rex opens from Finder.
-2. Run the same link checks as on scylla (stage 2, step 3). Delete Dotbot's
+1. Confirm Rex opens from Finder ([Rex](rex.md#macos-client)).
+2. Run the same link checks as on scylla (stage 2, step 2). Delete Dotbot's
    leftover KDE, Hyprland, Quickshell and Vicinae links, and Handy's speech
    models (`~/.cache/huggingface/hub/models--handy-computer--*`,
    `~/Library/Application Support/com.pais.handy/models`).
