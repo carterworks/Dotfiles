@@ -42,6 +42,12 @@ class HermeticTests(unittest.TestCase):
         self.env = hermetic_env(self.home, self.bin_dir)
         self.marker = self.home / "script-ran"
 
+    def socket_stdin(self):
+        ends = socket.socketpair()
+        for end in ends:
+            self.addCleanup(end.close)
+        return ends[0]
+
     def plant_startup_file(self):
         """A ~/.bashrc that puts a decoy nix first, as the system bashrc does on
         NixOS and under the Nix installer on macOS."""
@@ -53,7 +59,7 @@ class HermeticTests(unittest.TestCase):
 
     def test_stubs_stay_first_on_path_when_stdin_is_a_socket(self):
         self.plant_startup_file()
-        stdin, _ = socket.socketpair()
+        stdin = self.socket_stdin()
         result = run(["bash", "-c", "command -v nix"], self.env, self.bin_dir, stdin=stdin)
         self.assertEqual(result.stdout.strip(), str(self.bin_dir / "nix"))
 
@@ -75,7 +81,7 @@ class HermeticTests(unittest.TestCase):
         self.plant_startup_file()
         env = {**self.env}
         del env["SHLVL"]
-        stdin, _ = socket.socketpair()
+        stdin = self.socket_stdin()
         with self.assertRaisesRegex(AssertionError, "resolves to"):
             run(["bash", "-c", f'touch "{self.marker}"'], env, self.bin_dir, stdin=stdin)
         self.assertFalse(self.marker.exists())
