@@ -17,6 +17,9 @@ in
       # Nix makes five attempts, so its 15-second default would stall every
       # command for over a minute while the tailnet or prostagma is down.
       connect-timeout = 5;
+      # A server that accepts the connection and then hangs would otherwise
+      # stall a download for the default five minutes.
+      stalled-download-timeout = 30;
       fallback = true;
     };
   };

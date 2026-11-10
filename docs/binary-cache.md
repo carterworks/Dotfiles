@@ -74,7 +74,8 @@ quotes:
 Commit, then deploy every Linux host: `./install` on scylla and on prostagma,
 and `./install-eltoro` from scylla. Every host's system derivation changes
 (new `substituters`, `trusted-public-keys`, `connect-timeout = 5`,
-`fallback = true` in `nix.conf`); the MacBook's must not.
+`stalled-download-timeout = 30`, `fallback = true` in `nix.conf`); the
+MacBook's must not.
 
 Check on any Linux host:
 
