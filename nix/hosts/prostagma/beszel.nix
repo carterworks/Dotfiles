@@ -118,6 +118,9 @@ in
   # timeout, so a TrueNAS outage would hang its collection.
   services.beszel.agent.environment = {
     SKIP_SYSTEMD = false;
+    # Status comes over D-Bus; the journal is only for showing logs, and would
+    # give the hub every service's log, Authelia's and the containers' included.
+    SKIP_SYSTEMD_LOGS = true;
     EXTRA_FILESYSTEMS = "/srv/apps";
     # Reads sysfs only; intel_gpu_top would need CAP_PERFMON and the host's
     # user namespace.

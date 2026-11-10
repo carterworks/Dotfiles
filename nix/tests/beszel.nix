@@ -153,6 +153,16 @@ in
         return {k.lower(): v for k, v in json.loads(body).items()}
 
 
+    def records(collection, host):
+        """The hub's records in a collection for one system."""
+        systems = json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/collections/systems/records"))["items"]
+        system = next(s["id"] for s in systems if s["name"] == host)
+        out = prostagma.succeed(
+            f"curl -sSf -G {as_carter} --data-urlencode \"filter=system='{system}'\" -d perPage=500 {api}/collections/{collection}/records"
+        )
+        return json.loads(out)["items"]
+
+
     def listens_on_nothing():
         for machine in [prostagma, scylla]:
             pid = machine.succeed("systemctl show -P MainPID beszel-agent.service").strip()
@@ -286,6 +296,19 @@ in
             timeout=120,
         )
         assert systems()["eltoro"] != "up"
+
+    with subtest("prostagma's agent reports its services but cannot read the journal"):
+        prostagma.wait_until_succeeds(
+            f"curl -sSf {as_carter} {api}/collections/systems/records"
+            " | jq -e '[.items[] | select(.name == \"prostagma\")][0].info.sv != null'",
+            timeout=180,
+        )
+        names = {r["name"] for r in records("systemd_services", "prostagma")}
+        assert {"caddy", "authelia-main"} <= names, names
+        groups = prostagma.succeed("systemctl show -P SupplementaryGroups beszel-agent.service").split()
+        assert "systemd-journal" not in groups, groups
+        system = next(s for s in json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/collections/systems/records"))["items"] if s["name"] == "prostagma")
+        assert not system["info"].get("jl"), system["info"]
 
     with subtest("a connected agent listens on nothing"):
         listens_on_nothing()
