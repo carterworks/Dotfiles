@@ -45,7 +45,7 @@ let
         touch "$out"
       '';
       shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-        shellcheck --severity=warning ${source}/check ${source}/install ${source}/install-eltoro ${source}/update ${source}/tests/hermes-settings-writable
+        shellcheck --severity=warning ${source}/check ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
         touch "$out"
       '';
       install =
@@ -58,18 +58,6 @@ let
           }
           ''
             python3 ${source}/test-install.py
-            touch "$out"
-          '';
-      install-eltoro =
-        pkgs.runCommandLocal "install-eltoro-check"
-          {
-            nativeBuildInputs = [
-              pkgs.bash
-              pkgs.python3
-            ];
-          }
-          ''
-            python3 ${source}/test-install-eltoro.py
             touch "$out"
           '';
       update =

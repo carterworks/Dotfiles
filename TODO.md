@@ -41,7 +41,7 @@ Prostagma's services read their secrets from fnox (`secrets/fnox.toml`, decrypte
 
 ## El Toro
 
-- [x] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
+- [x] Deploy the integrated `eltoro` host with `./install eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
 - [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before bumping the pinned rev. `flake.nix` names the rev in the input URL, so `./update` cannot move it; to bump, edit that rev and run `nix flake update hermes-agent`.
 - [ ] After eltoro first switches to the chain-based egress firewall, delete the one-time migration block in `nix/hosts/eltoro/egress.nix` that strips the old generation's rules from `OUTPUT`. Remove or rewrite the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests in the same change; both exercise that block.
 - [ ] Deploy the hardened egress fence and settings repair to eltoro following "Deploying fence changes" in `docs/eltoro.md` (snapshot, pre-flight `OUTPUT` check, then the post-deploy checks).

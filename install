@@ -316,8 +316,48 @@ run_rebuild() {
   esac
 }
 
+# Build here and activate on the target, which substitutes what it can itself.
+deploy_remote() {
+  local host="$1"
+  shift
+  local target
+  local elevate=()
+
+  case "${host}" in
+    eltoro)
+      target="${ELTORO_HOST:-root@eltoro}"
+      ;;
+    prostagma)
+      # The configuration authorizes only carter's key, with passwordless sudo.
+      target="${PROSTAGMA_HOST:-carter@prostagma}"
+      elevate=(--sudo)
+      ;;
+    *)
+      printf 'Unknown host: %s (expected eltoro or prostagma)\n' "${host}" >&2
+      exit 2
+      ;;
+  esac
+
+  if ! command -v nixos-rebuild >/dev/null 2>&1; then
+    printf 'nixos-rebuild is required to deploy %s.\n' "${host}" >&2
+    exit 1
+  fi
+
+  if ! printf '%s\n' "$@" |
+    grep -qx -E '(switch|boot|test|build|edit|repl|dry-build|dry-run|dry-activate|build-image|build-vm|build-vm-with-bootloader|list-generations)'; then
+    set -- "$@" switch
+  fi
+
+  run_with_nix_progress "Deploying ${host}" nixos-rebuild "${NIX_ACCESS_TOKEN_ARGS[@]}" \
+    --flake "${BASEDIR}#${host}" --target-host "${target}" --use-substitutes "${elevate[@]}" "$@"
+}
+
 cd "${BASEDIR}"
 trap report_exit_status EXIT
+if (( $# > 0 )); then
+  deploy_remote "$@"
+  exit
+fi
 section "Dotfiles install"
 log_message info "Machine: $(current_machine_name)"
 log_message info "System: $(uname -s)"
