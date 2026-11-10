@@ -14,7 +14,7 @@ let
   # Units that use the torrent payload fail closed when it is missing or backed
   # by anything other than this export.
   torrentDataMountSource = config.fileSystems."/mnt/truenas/vm-data".device;
-  qbittorrentEnvFile = "/var/lib/secrets/qbittorrent-vpn.env";
+  qbittorrentEnvFile = "/run/secrets/qbittorrent-vpn.env";
 
   uid = "568";
   gid = "568";
@@ -454,5 +454,11 @@ in
       Persistent = true;
       Unit = "prostagma-qbittorrent-space-guard.service";
     };
+  };
+
+  dotfiles.fnox.secrets.QBITTORRENT_VPN_ENV = {
+    path = qbittorrentEnvFile;
+    mode = "0600";
+    requiredBy = [ "docker-qbittorrent-vpn.service" ];
   };
 }
