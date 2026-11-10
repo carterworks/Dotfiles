@@ -8,7 +8,7 @@
 }:
 let
   themeName = config.home-manager.users.${systemUsername}.dotfiles.desktopTheme.name;
-  colors = (import (../../users/carter/themes + "/${themeName}.nix")).colors;
+  colors = (import (../../modules/home/desktop-theme/themes + "/${themeName}.nix")).colors;
   screenshot = pkgs.writeShellApplication {
     name = "hypr-screenshot";
     runtimeInputs = [

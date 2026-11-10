@@ -33,7 +33,7 @@ systemFunc {
     ../modules/nix.nix
   ]
   ++ lib.optional gui ../modules/fonts.nix
-  ++ lib.optional (!darwin) ../modules/binary-cache.nix
+  ++ lib.optional (!darwin) ../modules/nixos/binary-cache.nix
   ++ [
     homeManagerModule
     {

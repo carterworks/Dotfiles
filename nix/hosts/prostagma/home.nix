@@ -5,7 +5,7 @@
 }:
 {
   imports = [
-    ../../users/carter/obsidian-sync.nix
+    ../../modules/home/obsidian-sync.nix
   ];
 
   home = {
