@@ -16,7 +16,7 @@
 # keeps working if this service is stopped, so the host cannot be locked out by
 # a mistake here.
 let
-  tailnetDomain = "dropbear-tortoise.ts.net";
+  inherit (import ../../lib/fleet.nix) tailnetDomain;
 
   # The portal doubles as the OIDC issuer, so it needs a URL that is valid
   # HTTPS for the browser and for the applications making server-side token

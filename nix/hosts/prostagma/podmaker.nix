@@ -5,6 +5,7 @@
 }:
 
 let
+  inherit (import ../../lib/fleet.nix) tailnetDomain;
   dataDir = "/srv/apps/podmaker/data";
 
   # The GHCR package is private. Docker on this host is not logged in to the
@@ -24,7 +25,7 @@ in
     ports = [ "127.0.0.1:8090:8080/tcp" ];
     volumes = [ "${dataDir}:/data" ];
     environment = {
-      PUBLIC_BASE_URL = "https://podmaker.dropbear-tortoise.ts.net";
+      PUBLIC_BASE_URL = "https://podmaker.${tailnetDomain}";
       PODCAST_TITLE = "PodMaker";
       PODCAST_AUTHOR = "Carter McBride";
     };

@@ -127,7 +127,7 @@ in
     settings.PermitRootLogin = "prohibit-password";
   };
   users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILR4/6L4CG8EylhmV7laHQyn81YfQTk63tKWP4y9GB2O"
+    (import ../../lib/fleet.nix).adminSshKey
   ];
 
   # hermes runs as a dedicated unprivileged user — no sudo

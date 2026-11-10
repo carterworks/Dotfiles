@@ -8,7 +8,7 @@
 let
   copypartyPort = 3210;
 
-  tailnetDomain = "dropbear-tortoise.ts.net";
+  inherit (import ../../lib/fleet.nix) adminSshKey tailnetDomain;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   truenas = "192.168.5.252";
 
@@ -582,7 +582,7 @@ in
     linger = true;
     extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILR4/6L4CG8EylhmV7laHQyn81YfQTk63tKWP4y9GB2O carter@bitwarden"
+      "${adminSshKey} carter@bitwarden"
     ];
   };
 

@@ -1,8 +1,9 @@
 { pkgs, ... }:
 
 let
+  inherit (import ../../lib/fleet.nix) tailnetDomain;
   port = 8199;
-  host = "prostagma.dropbear-tortoise.ts.net:${toString port}";
+  host = "prostagma.${tailnetDomain}:${toString port}";
   storage = "/srv/apps/attic";
   sizeCapGiB = 30;
   secretFile = "/var/lib/secrets/attic/environment";

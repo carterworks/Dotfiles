@@ -1,6 +1,7 @@
 { config, lib, ... }:
 
 let
+  inherit (import ../../lib/fleet.nix) tailnetDomain;
   publicKey = config.dotfiles.binaryCache.publicKey;
 in
 {
@@ -12,7 +13,7 @@ in
 
   config = lib.mkIf (publicKey != null) {
     nix.settings = {
-      substituters = [ "http://prostagma.dropbear-tortoise.ts.net:8199/fleet" ];
+      substituters = [ "http://prostagma.${tailnetDomain}:8199/fleet" ];
       trusted-public-keys = [ publicKey ];
       # Nix makes five attempts, so its 15-second default would stall every
       # command for over a minute while the tailnet or prostagma is down.
