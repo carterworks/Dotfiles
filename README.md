@@ -100,6 +100,9 @@ must match a flake host.
 
 ## By hand, by the owner
 
+- Before merging the CI workflows into `main`, create the `binary-cache`
+  GitHub Environment limited to `main` (step 0 of
+  [Binary cache](docs/binary-cache.md)).
 - Create the binary cache and set its key, the CI token, the GitHub
   Environment and the tailnet policy ([Binary cache](docs/binary-cache.md)).
   Setting the key also turns on server auto-upgrades.
