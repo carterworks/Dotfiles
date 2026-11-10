@@ -93,14 +93,6 @@ in
     mv "$tmp" "$config_file"
   '';
 
-  # The removed Claude integration left this link pointing at a deleted file.
-  home.activation.claudeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings=${lib.escapeShellArg "${home}/.claude/settings.json"}
-    if [ -L "$settings" ] && [ ! -e "$settings" ]; then
-      rm -f "$settings"
-    fi
-  '';
-
   programs.mangohud = {
     enable = true;
     settings = {
