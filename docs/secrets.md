@@ -112,6 +112,11 @@ Never run `sfnox get` or `sfnox list --values` without a pipe: always end it in
 decrypt anything: it reports a healthy config even with a key that opens
 nothing, so never use it to prove a key works.
 
+`set -o pipefail` only makes a failed pipeline report the failure: `sfnox set`
+at its end still runs and stores whatever reached it, an empty value if the
+first command failed. Check a new value's length with `sfnox get KEY_NAME |
+base64 -d | wc -c`.
+
 **Hashes:** several commands below print a SHA-256 of a secret. Compare it on
 screen and never paste it anywhere public. A hash of a short password can be
 guessed against offline.
@@ -130,8 +135,10 @@ ssh prostagma 'sudo cat /path/on/host' | base64 -w0 | sfnox set KEY_NAME -p pros
 A new random value:
 
 ```bash
-openssl rand -hex 32 | tr -d '\n' | base64 -w0 | sfnox set KEY_NAME -p prostagma >/dev/null
+nix run nixpkgs#openssl -- rand -hex 32 | tr -d '\n' | base64 -w0 | sfnox set KEY_NAME -p prostagma >/dev/null
 ```
+
+`openssl` is not on scylla's PATH, hence `nix run`.
 
 A value you type (hidden input; the variable dies with the subshell, and
 nothing reaches shell history):

@@ -12,7 +12,7 @@ in
   options.dotfiles.beszel.hubKey = lib.mkOption {
     type = lib.types.nullOr lib.types.str;
     description = "Public key of the Beszel hub on prostagma. The hub's systems and every agent stay off while this is null; see docs/monitoring.md.";
-    default = null;
+    default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF1/IIfYiCiY3Rt53kiRdsmuJQ3ds+Vaavx8j1xeU/Ky";
   };
 
   config = lib.mkIf (hubKey != null) {
