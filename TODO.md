@@ -1,7 +1,5 @@
 # TODO
 
-- [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
-
 ## Watch items
 
 Temporary pins and workarounds, each with the condition for removing it.
@@ -19,6 +17,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 ## Follow-up work
 
+- [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. Do it once eltoro is settled on a chain-based generation (decision 1 in [docs/rollout.md](docs/rollout.md)).
 - [ ] `nix/hosts/prostagma/default.nix`: drop the `d /var/lib/secrets/bazarr` tmpfiles rule after the old secrets are removed (rollout stage 7); those files are now admin-only records in fnox.
 - [ ] Move scylla's `truenas-smb` credential into fnox and back up scylla's SSH host keys as admin-only records; both need `sudo` on scylla ("Still outside fnox" in `docs/secrets.md`).
