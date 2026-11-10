@@ -13,10 +13,13 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "tests"))
 from hermetic import hermetic_env, kill_session, run, start  # noqa: E402
 
-FUNCTIONS = (ROOT / "install").read_text().split('\ncd "${BASEDIR}"\n')[0]
-FUNCTIONS = 'set -euo pipefail\nBASEDIR="$HOME"\nNIX_ACCESS_TOKEN_ARGS=()\n' + FUNCTIONS.split(
-    "NIX_ACCESS_TOKEN_ARGS=()", 1
-)[1]
+INSTALL = (ROOT / "install").read_text()
+BASEDIR_LINE = 'BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+assert BASEDIR_LINE in INSTALL
+FUNCTIONS = INSTALL.split('\ncd "${BASEDIR}"\n')[0].replace(BASEDIR_LINE, 'BASEDIR="$HOME"\n')
+# The sandbox is not NixOS, so the NixOS path is reached by skipping its check.
+NIXOS_CHECK = "[[ ! -e /etc/NIXOS && ! -e /run/current-system/nixos-version ]]"
+assert NIXOS_CHECK in FUNCTIONS
 MOCK_SUDO = '''
 sudo() {
   [[ "$1" == -H ]] || return 1
@@ -287,6 +290,99 @@ class DeployTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("nowhere", result.stderr)
         self.assertIsNone(result.rebuild)
+
+
+
+TOKEN = "FAKE-TOKEN-MARKER-7f3a"
+# Records each call's arguments and environment, then behaves enough like the
+# real command for install to carry on.
+RECORDER = '''#!/bin/sh
+name=${0##*/}
+printf '%s %s\\n' "$name" "$*" >> "$HOME/argv"
+env >> "$HOME/env-$name"
+case "$name" in
+  nix) case "$*" in *build*) echo "$SYSTEM" ;; esac ;;
+  sudo)
+    case "$1" in -n|-v) exit 0 ;; -H) shift ;; esac
+    exec "$@"
+    ;;
+esac
+'''
+DEPLOY = f'bash {ROOT / "install"} eltoro'
+
+
+class TokenTests(unittest.TestCase):
+    """The GitHub token reaches Nix through its environment, never an argument list."""
+
+    def run_install(self, script, gh_token=TOKEN, env=None):
+        with tempfile.TemporaryDirectory() as home:
+            home = Path(home)
+            bin_dir = home / "bin"
+            system = home / "system"
+            (system / "sw/bin").mkdir(parents=True)
+            bin_dir.mkdir()
+            for stub in (*(bin_dir / name for name in ("nix", "nixos-rebuild", "sudo", "nix-env")),
+                         system / "sw/bin/darwin-rebuild"):
+                stub.write_text(RECORDER)
+                stub.chmod(0o755)
+            (bin_dir / "gh").write_text(f"#!/bin/sh\necho {gh_token}\n")
+            (bin_dir / "gh").chmod(0o755)
+            run_env = {
+                **hermetic_env(home, bin_dir),
+                "SYSTEM": str(system),
+                "ELTORO_HOST": "root@deploy-test.invalid",
+                **(env or {}),
+            }
+            result = run(["bash", "-c", script], run_env, bin_dir, timeout=20)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            result.argv = (home / "argv").read_text()
+            result.env = {
+                path.name.removeprefix("env-"): path.read_text() for path in home.glob("env-*")
+            }
+            return result
+
+    def assert_only_in_nix_environment(self, result, *commands):
+        self.assertNotIn(TOKEN, result.argv)
+        for command in commands:
+            self.assertIn(f"access-tokens = github.com={TOKEN}", result.env[command])
+        for command, environment in result.env.items():
+            if command not in commands:
+                self.assertNotIn(TOKEN, environment, command)
+
+    def test_darwin_build_and_activation(self):
+        result = self.run_install(FUNCTIONS + '''
+uname() { echo Darwin; }
+current_machine_name() { echo Test-Mac; }
+run_rebuild
+''')
+        self.assertIn("darwin-rebuild activate", result.argv)
+        self.assert_only_in_nix_environment(result, "nix")
+
+    def test_nixos_builds_as_user_and_switches_by_store_path(self):
+        result = self.run_install(FUNCTIONS.replace(NIXOS_CHECK, "false") + '''
+uname() { echo Linux; }
+current_machine_name() { echo test-host; }
+run_rebuild
+''')
+        self.assertIn("nixosConfigurations.test-host.config.system.build.toplevel", result.argv)
+        self.assertRegex(result.argv, r"(?m)^sudo \S+/nixos-rebuild switch --store-path \S+/system$")
+        self.assert_only_in_nix_environment(result, "nix")
+
+    def test_remote_deploy(self):
+        result = self.run_install(DEPLOY)
+        self.assertIn("--target-host root@deploy-test.invalid", result.argv)
+        self.assert_only_in_nix_environment(result, "nixos-rebuild")
+
+    def test_token_sources_in_order(self):
+        for env in ({"GH_TOKEN": TOKEN, "GITHUB_TOKEN": "other"}, {"GITHUB_TOKEN": TOKEN}):
+            with self.subTest(env=list(env)):
+                result = self.run_install(DEPLOY, gh_token="from-gh", env=env)
+                self.assertIn(f"github.com={TOKEN}", result.env["nixos-rebuild"])
+
+    def test_callers_nix_config_is_kept(self):
+        result = self.run_install(DEPLOY, env={"NIX_CONFIG": "connect-timeout = 3"})
+        self.assertIn(f"NIX_CONFIG=connect-timeout = 3\naccess-tokens = github.com={TOKEN}\n",
+                      result.env["nixos-rebuild"])
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ Home Manager now makes the links Dotbot made, into `~/.config/dotfiles`.
 
 Prostagma's services read their secrets from fnox (`secrets/fnox.toml`, decrypted by `nix/modules/nixos/secrets.nix`); see `docs/secrets.md`.
 
+- [ ] Rotate the GitHub token `gh auth token` returns on Scylla: until `./install` passed it through `NIX_CONFIG`, every local NixOS `./install` put it on `sudo nixos-rebuild`'s command line, which `sudo` recorded in Scylla's system journal.
 - [ ] Deploy prostagma and follow "First deployment" in `docs/secrets.md`: confirm every `fnox-secret-*` unit, rename the ten old files and restart, then run the clean-up on prostagma and eltoro from the private list.
 - [ ] Classify the unresolved files in the private clean-up list without opening them in a shared session; treat any old system backup in it as possibly holding an earlier SSH host key.
 - [ ] Revoke at their source the credentials of services that are not in the Nix configuration, whether or not a hand-started container still uses them.

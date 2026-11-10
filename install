@@ -3,18 +3,23 @@
 set -euo pipefail
 
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NIX_ACCESS_TOKEN_ARGS=()
 
 # A run detached into its own session has no controlling terminal, so the
 # caller names the terminal that should receive OSC 7501 reports.
 STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
 
-if command -v gh >/dev/null 2>&1; then
+# Nix takes the GitHub token from NIX_CONFIG, never from arguments: the process
+# table and sudo's log show those. Only the Nix commands this user runs get it;
+# root activates a store path and needs none.
+github_token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+if [[ -z "${github_token}" ]] && command -v gh >/dev/null 2>&1; then
   github_token="$(gh auth token 2>/dev/null || true)"
-  if [[ -n "${github_token}" ]]; then
-    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
-  fi
 fi
+NIX_CONFIG_WITH_TOKEN="${NIX_CONFIG:-}"
+if [[ -n "${github_token}" ]]; then
+  NIX_CONFIG_WITH_TOKEN="${NIX_CONFIG:+${NIX_CONFIG}$'\n'}access-tokens = github.com=${github_token}"
+fi
+unset github_token
 
 log_message() {
   shift
@@ -210,7 +215,7 @@ run_rebuild() {
   case "$(uname -s)" in
     Darwin)
       # Build as the invoking user: root cannot read a user-owned Git checkout.
-      system_path="$(run_with_nix_progress "Building system" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
       authenticate_sudo
       run_darwin_activation "${system_path}"
       ;;
@@ -226,8 +231,10 @@ run_rebuild() {
         exit 1
       fi
 
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --no-link "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
       authenticate_sudo
-      run_with_nix_progress "Rebuilding system" sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
+      program_status working "Switching system"
+      sudo "${rebuild}" switch --store-path "${system_path}"
       ;;
     *)
       printf 'Unsupported system: %s\n' "$(uname -s)" >&2
@@ -268,7 +275,7 @@ deploy_remote() {
     set -- "$@" switch
   fi
 
-  run_with_nix_progress "Deploying ${host}" nixos-rebuild "${NIX_ACCESS_TOKEN_ARGS[@]}" \
+  NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Deploying ${host}" nixos-rebuild \
     --flake "${BASEDIR}#${host}" --target-host "${target}" --use-substitutes "${elevate[@]}" "$@"
 }
 
