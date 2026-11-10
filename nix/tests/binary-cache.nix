@@ -93,13 +93,7 @@ pkgs.testers.runNixOSTest {
 
     def create_cache():
         login("setup", "--create-cache fleet --pull fleet")
-        client.succeed(
-            "attic cache create setup:fleet --public"
-            " --upstream-cache-key-name cache.nixos.org-1"
-            " --upstream-cache-key-name niks3.numtide.com-1"
-            " --upstream-cache-key-name vicinae.cachix.org-1"
-            " --upstream-cache-key-name nix-community.cachix.org-1"
-        )
+        client.succeed("attic cache create setup:fleet --public --upstream-cache-key-name cache.nixos.org-1")
         return cache_key("setup")
 
 
