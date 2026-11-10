@@ -1,5 +1,16 @@
-{ pkgs, repair }:
+{
+  pkgs,
+  repair,
+  activation,
+}:
 
+let
+  # NixOS records a failed snippet through an ERR trap; errexit fails the same way.
+  activate = pkgs.writeShellScript "activate-hermes-settings" ''
+    set -e
+    ${activation}
+  '';
+in
 pkgs.testers.runNixOSTest {
   name = "hermes-settings-repair";
 
@@ -39,6 +50,9 @@ pkgs.testers.runNixOSTest {
         )
         machine.fail("${repair}")
         assert owner("/srv/victim/config.yaml") == "root", "followed the symlink"
+        warning = machine.succeed("${activate} 2>&1 >/dev/null")
+        assert "warning:" in warning, warning
+        assert owner("/srv/victim/config.yaml") == "root", "activation followed the symlink"
 
     with subtest("a root-owned .hermes is refused"):
         machine.succeed(

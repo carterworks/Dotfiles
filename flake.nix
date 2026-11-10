@@ -296,6 +296,7 @@
         hermes-settings-repair = import ./nix/tests/hermes-settings-repair.nix {
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
           repair = eltoro.config.systemd.services.hermes-settings-repair.serviceConfig.ExecStart;
+          activation = eltoro.config.system.activationScripts.hermes-settings.text;
         };
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
