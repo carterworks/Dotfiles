@@ -4,6 +4,7 @@ let
   inherit ((import ../../flake.nix).nixConfig) extra-substituters extra-trusted-public-keys;
 in
 {
+  nixpkgs.config.allowUnfree = true;
   nixpkgs.overlays = [ (import ../packages/overlay.nix { inherit inputs; }) ];
 
   environment.systemPackages = with pkgs; [
