@@ -113,7 +113,10 @@ server fails a night for lack of it. Setting the key first is also safe; see
    ([Binary cache, step 2](binary-cache.md#2-create-the-cache-and-read-its-public-key-you),
    up to "Turn the client on"; decision 2).
 2. Mint the push token into the Environment
-   ([step 3](binary-cache.md#3-tokens-you)).
+   ([step 3](binary-cache.md#3-tokens-you)). It expires after 90 days, and then
+   every push fails and `release` stops moving; put a reminder in your
+   calendar for about day 80 to
+   [rotate it](binary-cache.md#rotate-the-ci-token).
 3. Add `tag:ci` to the tailnet policy, check the whole policy, and create the
    OAuth client ([Tailscale policy](binary-cache.md#tailscale-policy-you)).
 4. Run Fleet on `main` and confirm that all three hosts pushed and `release`
