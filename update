@@ -416,7 +416,7 @@ regenerate_skill() {
   local skill="${BASEDIR}/agents/skills/generated/${name}/SKILL.md"
 
   generated="$(mktemp "${skill}.XXXXXX")"
-  if generated_source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link --print-out-paths ".#${package}")" \
+  if generated_source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --no-link --print-out-paths ".#checks.${CURRENT_SYSTEM}.${package}.generated")" \
     && cp "${generated_source}" "${generated}"; then
     mv "${generated}" "${skill}"
   else
