@@ -2,6 +2,7 @@
 /result
 .osgrep
 node_modules/
+__pycache__/
 /sources.private.json
 # A local fnox config may hold values in plain text. These are every name fnox
 # reads (local and per-profile files included); only the encrypted store is
