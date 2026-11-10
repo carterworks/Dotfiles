@@ -307,6 +307,7 @@
           dotbot
           nub
           ;
+        binary-cache = import ./nix/tests/binary-cache.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
         eltoro = eltoro.config.system.build.toplevel;
         eltoro-egress = nixpkgs.legacyPackages.x86_64-linux.testers.runNixOSTest ./nix/tests/eltoro-egress.nix;
         prostagma = prostagma.config.system.build.toplevel;
