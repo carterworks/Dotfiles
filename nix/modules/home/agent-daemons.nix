@@ -1,0 +1,115 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+  home = config.home.homeDirectory;
+  inherit (pkgs) opencode2;
+  t3 = pkgs.t3code-cli;
+
+  opencode2Port = 49374;
+  t3Port = 3773;
+
+  # `--service` keeps the managed server's pairing password and client
+  # registration stable; the service manager owns the lifecycle, so stop it
+  # with systemctl/launchctl rather than `opencode2 service stop`.
+  opencode2Args = [
+    "serve"
+    "--service"
+    "--hostname"
+    "0.0.0.0"
+    "--port"
+    (toString opencode2Port)
+  ];
+  # Clients start their own detached shared server whenever none is running or
+  # its version differs. `serve --service` then exits 0 without serving, leaving
+  # the service manager respawning forever while upgrades never reach the live
+  # server. Take the shared service over before serving.
+  opencode2Service = pkgs.writeShellScript "opencode2-service" ''
+    ${opencode2}/bin/opencode2 service stop || true
+    exec ${opencode2}/bin/opencode2 ${lib.escapeShellArgs opencode2Args}
+  '';
+  # Keep the port and origin stable: paired clients are scoped to the origin,
+  # so changing either forces every phone and desktop to pair again.
+  # Bind loopback so remote access requires Tailscale Serve or an SSH tunnel.
+  t3Args = [
+    "serve"
+    "--mode"
+    "web"
+    "--host"
+    "127.0.0.1"
+    "--port"
+    (toString t3Port)
+    "--no-browser"
+  ];
+
+  mkSystemdService = description: executable: args: {
+    Unit = {
+      Description = description;
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      ExecStart = "${executable} ${lib.concatStringsSep " " args}";
+      WorkingDirectory = home;
+      Restart = "always";
+      RestartSec = "5s";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
+  # LaunchAgents do not inherit a login shell's PATH, so start through fish's
+  # login init to pick up the path nix-darwin computes instead of baking one in.
+  mkLaunchdAgent = name: executable: args: {
+    enable = true;
+    domain = "gui";
+    config = {
+      LimitLoadToSessionType = "Aqua";
+      ProgramArguments = [
+        "${pkgs.fish}/bin/fish"
+        "--login"
+        "--command"
+        "exec ${lib.escapeShellArgs ([ executable ] ++ args)}"
+      ];
+      WorkingDirectory = home;
+      KeepAlive = true;
+      ProcessType = "Background";
+      RunAtLoad = true;
+      StandardOutPath = "${home}/Library/Logs/${name}.log";
+      StandardErrorPath = "${home}/Library/Logs/${name}.error.log";
+    };
+  };
+
+  # Pairing is required per host and per client, and can only be done while the
+  # server is up. Keep the link command repeatable for hosts that come and go.
+  t3pair = pkgs.writeShellApplication {
+    name = "t3pair";
+    text = ''
+      if command -v tailscale >/dev/null 2>&1; then
+        exec ${t3}/bin/t3 pair --tailscale --tailscale-serve-port 9443 "$@"
+      fi
+      exec ${t3}/bin/t3 pair "$@"
+    '';
+  };
+in
+{
+  home.packages = [ t3pair ];
+  # Leave Environment alone: the user manager already carries the Nix profile
+  # and system paths, and duplicating them here drifts from the live session.
+  systemd.user.services.opencode2 = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
+    mkSystemdService "OpenCode 2 background server" opencode2Service [ ]
+  );
+  systemd.user.services.t3 = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
+    mkSystemdService "T3 Code background server" "${t3}/bin/t3" t3Args
+  );
+
+  launchd.agents.opencode2 = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+    mkLaunchdAgent "opencode2" opencode2Service [ ]
+  );
+  launchd.agents.t3 = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
+    mkLaunchdAgent "t3" "${t3}/bin/t3" t3Args
+  );
+}

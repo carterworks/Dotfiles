@@ -2,60 +2,28 @@
 
 set -euo pipefail
 
-CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NIX_ACCESS_TOKEN_ARGS=()
 
 # A run detached into its own session has no controlling terminal, so the
 # caller names the terminal that should receive OSC 7501 reports.
 STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
 
-if command -v gh >/dev/null 2>&1; then
+# Nix takes the GitHub token from NIX_CONFIG, never from arguments: the process
+# table and sudo's log show those. Only the Nix commands this user runs get it;
+# root activates a store path and needs none.
+github_token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+if [[ -z "${github_token}" ]] && command -v gh >/dev/null 2>&1; then
   github_token="$(gh auth token 2>/dev/null || true)"
-  if [[ -n "${github_token}" ]]; then
-    NIX_ACCESS_TOKEN_ARGS=(--option access-tokens "github.com=${github_token}")
-  fi
 fi
-
-has_gum() {
-  command -v gum >/dev/null 2>&1
-}
+NIX_CONFIG_WITH_TOKEN="${NIX_CONFIG:-}"
+if [[ -n "${github_token}" ]]; then
+  NIX_CONFIG_WITH_TOKEN="${NIX_CONFIG:+${NIX_CONFIG}$'\n'}access-tokens = github.com=${github_token}"
+fi
+unset github_token
 
 log_message() {
-  local level="$1"
   shift
-
-  if has_gum; then
-    gum log --level "${level}" "$*"
-  else
-    case "${level}" in
-      error|warn)
-        printf '%s\n' "$*" >&2
-        ;;
-      *)
-        printf '%s\n' "$*"
-        ;;
-    esac
-  fi
-}
-
-section() {
-  local title="$1"
-
-  if has_gum; then
-    gum style --bold --foreground 255 --background 62 --padding "0 1" --margin "1 0" "${title}"
-  else
-    printf '\n== %s ==\n' "${title}"
-  fi
-}
-
-show_log() {
-  local logfile="$1"
-
-  if [[ -s "${logfile}" ]]; then
-    printf '\n' >&2
-    cat "${logfile}" >&2
-  fi
+  printf '%s\n' "$*"
 }
 
 # Report state to the terminal with OSC 7501:
@@ -140,58 +108,10 @@ authenticate_sudo() {
   sudo -v
 }
 
-run_quiet_step() {
-  local title="$1"
-  shift
-
-  local logfile
-  local pid
-  local status=0
-
-  program_status working "${title}"
-  logfile="$(mktemp "${TMPDIR:-/tmp}/dotfiles-install.XXXXXX")"
-  "$@" >"${logfile}" 2>&1 &
-  pid=$!
-
-  if has_gum; then
-    gum spin --spinner dot --title "${title}" -- bash -c 'pid="$1"; while kill -0 "$pid" 2>/dev/null; do sleep 0.1; done' _ "${pid}"
-  else
-    log_message info "${title}"
-  fi
-
-  if wait "${pid}"; then
-    status=0
-  else
-    status=$?
-  fi
-
-  if (( status == 0 )); then
-    rm -f "${logfile}"
-    log_message info "${title} complete"
-    return 0
-  fi
-
-  log_message error "${title} failed"
-  show_log "${logfile}"
-  rm -f "${logfile}"
-  return "${status}"
-}
-
-warn_if_git_dirty() {
-  if command -v git >/dev/null 2>&1 && [[ -n "$(git -C "${BASEDIR}" status --short 2>/dev/null)" ]]; then
-    log_message warn "Git tree is dirty; Nix may warn during evaluation"
-  fi
-}
-
 if ! command -v nix >/dev/null 2>&1; then
-  log_message error "nix is required to run this installer"
-  log_message info "Install it from: https://github.com/DeterminateSystems/nix-installer"
+  printf 'nix is required: https://github.com/DeterminateSystems/nix-installer\n' >&2
   exit 1
 fi
-
-run_dotbot() {
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#dotbot" -- --verbose --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
-}
 
 current_machine_name() {
   local name
@@ -249,10 +169,17 @@ follow_rebuild_log() {
 }
 
 # Home Manager restarts T3 and OpenCode during activation, and they signal the
-# installer they host before it can load them again. Detach activation into its
-# own session so it always finishes; the installer only follows its log. It must
-# stay in this login session: nix-darwin needs the GUI session and the
-# terminal's App Management permission to update /Applications.
+# installer they host before it can load them again. Detach activation so it
+# always finishes; the installer only follows its log. It must stay in this
+# login session: nix-darwin needs the GUI session and the terminal's App
+# Management permission to update /Applications, so launchd will not do.
+# macOS has no setsid(1), so job control (set -m) gives activation its own
+# process group and the root shell exits to orphan it. Signals to the installer
+# or its group, the SIGHUP a closing terminal sends its foreground group, and
+# killers that walk the installer's process tree all miss it; HUP, INT and TERM
+# are ignored besides. Only killing the whole session would still reach it.
+# Bash, not sh: busybox sh refuses set -m without a terminal, and dash takes
+# the terminal's foreground group away from the installer.
 run_darwin_activation() {
   local system_path="$1"
   local state_dir
@@ -263,17 +190,15 @@ run_darwin_activation() {
   log_message info "Activation log: ${state_dir}/activate.log"
   touch "${state_dir}/activate.log"
 
-  sudo -H /usr/bin/perl -MPOSIX -e '
-    defined(my $pid = fork) or die "fork: $!\n";
-    exit 0 if $pid;
-    POSIX::setsid();
-    $SIG{$_} = "IGNORE" for qw(HUP INT TERM);
-    exec @ARGV or die "exec: $!\n";
-  ' /bin/sh -c '
+  sudo -H "${BASH}" -c '
     exec </dev/null >>"$1/activate.log" 2>&1
-    NIX_REMOTE=daemon "$3" -p /nix/var/nix/profiles/system --set "$2" && "$2/sw/bin/darwin-rebuild" activate
-    printf "%s\n" "$?" > "$1/status.new"
-    /bin/mv "$1/status.new" "$1/status"
+    trap "" HUP INT TERM
+    set -m
+    (
+      NIX_REMOTE=daemon "$3" -p /nix/var/nix/profiles/system --set "$2" && "$2/sw/bin/darwin-rebuild" activate
+      printf "%s\n" "$?" > "$1/status.new"
+      mv "$1/status.new" "$1/status"
+    ) &
   ' dotfiles-activate "${state_dir}" "${system_path}" "$(command -v nix-env)" || return $?
 
   follow_rebuild_log "${state_dir}/activate.log" "${state_dir}/status"
@@ -284,13 +209,18 @@ run_rebuild() {
   local rebuild
   local machine_name
   local system_path
+  local out_dir
 
   machine_name="$(current_machine_name)"
+  # The out-link keeps the built system from garbage collection until it is
+  # activated. After a failed activation it stays behind, still rooting the
+  # system, until the temporary directory is cleaned.
+  out_dir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-install.XXXXXX")"
 
   case "$(uname -s)" in
     Darwin)
       # Build as the invoking user: root cannot read a user-owned Git checkout.
-      system_path="$(run_with_nix_progress "Building system" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" build --print-out-paths --no-link "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --out-link "${out_dir}/system" "${BASEDIR}#darwinConfigurations.\"${machine_name}\".system")"
       authenticate_sudo
       run_darwin_activation "${system_path}"
       ;;
@@ -306,27 +236,59 @@ run_rebuild() {
         exit 1
       fi
 
+      system_path="$(NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Building system" nix build --print-out-paths --out-link "${out_dir}/system" "${BASEDIR}#nixosConfigurations.${machine_name}.config.system.build.toplevel")"
       authenticate_sudo
-      run_with_nix_progress "Rebuilding system" sudo "${rebuild}" switch --flake "${BASEDIR}#${machine_name}" "${NIX_ACCESS_TOKEN_ARGS[@]}"
+      program_status working "Switching system"
+      sudo "${rebuild}" switch --store-path "${system_path}"
       ;;
     *)
       printf 'Unsupported system: %s\n' "$(uname -s)" >&2
       exit 1
       ;;
   esac
+  rm -rf "${out_dir}"
+}
+
+# Build here and activate on the target, which substitutes what it can itself.
+deploy_remote() {
+  local host="$1"
+  shift
+  local target
+  local elevate=()
+
+  case "${host}" in
+    eltoro)
+      target="${ELTORO_HOST:-root@eltoro}"
+      ;;
+    prostagma)
+      # The configuration authorizes only carter's key, with passwordless sudo.
+      target="${PROSTAGMA_HOST:-carter@prostagma}"
+      elevate=(--sudo)
+      ;;
+    *)
+      printf 'Unknown host: %s (expected eltoro or prostagma)\n' "${host}" >&2
+      exit 2
+      ;;
+  esac
+
+  if ! command -v nixos-rebuild >/dev/null 2>&1; then
+    printf 'nixos-rebuild is required to deploy %s.\n' "${host}" >&2
+    exit 1
+  fi
+
+  if ! printf '%s\n' "$@" |
+    grep -qx -E '(switch|boot|test|build|edit|repl|dry-build|dry-run|dry-activate|build-image|build-vm|build-vm-with-bootloader|list-generations)'; then
+    set -- "$@" switch
+  fi
+
+  NIX_CONFIG="${NIX_CONFIG_WITH_TOKEN}" run_with_nix_progress "Deploying ${host}" nixos-rebuild \
+    --flake "${BASEDIR}#${host}" --target-host "${target}" --use-substitutes "${elevate[@]}" "$@"
 }
 
 cd "${BASEDIR}"
 trap report_exit_status EXIT
-section "Dotfiles install"
-log_message info "Machine: $(current_machine_name)"
-log_message info "System: $(uname -s)"
-warn_if_git_dirty
-
-section "Apply dotfiles"
-run_quiet_step "Running dotbot" run_dotbot "$@"
-
-section "Rebuild system"
-log_message info "Starting system rebuild"
+if (( $# > 0 )); then
+  deploy_remote "$@"
+  exit
+fi
 run_rebuild
-log_message info "System rebuild complete"

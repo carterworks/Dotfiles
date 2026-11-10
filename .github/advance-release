@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Fast-forward release to the given commit, creating it if it is missing.
+set -euo pipefail
+
+commit="$1"
+branch="${RELEASE_BRANCH:-release}"
+
+# Without --force the push only fast-forwards.
+if git push origin "${commit}:refs/heads/${branch}"; then
+  exit 0
+fi
+# A newer run may have moved release past this commit first.
+if git fetch -q origin "${branch}" 2>/dev/null && git merge-base --is-ancestor "${commit}" FETCH_HEAD; then
+  echo "${branch} already contains ${commit}"
+  exit 0
+fi
+echo "::error title=release did not move::GitHub refused to move ${branch} to ${commit}; the push output above says why. If it says the workflow token may not update workflows, the commits between ${branch} and ${commit} change .github/workflows, which only you can push: git push git@github.com:carterworks/dotfiles.git ${commit}:refs/heads/${branch} (docs/ci.md, \"When release does not move\")."
+exit 1

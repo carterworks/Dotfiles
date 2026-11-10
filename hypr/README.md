@@ -58,9 +58,9 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 
 ## Theme
 
-Set `dotfiles.desktopTheme.name` in `nix/users/carter/home-manager.nix` to
+Set `dotfiles.desktopTheme.name` in `nix/modules/home/workstation.nix` to
 select a theme. The initial theme is `everforest-light-medium`. Add other theme
-files under `nix/users/carter/themes/`; each file has named UI colours,
+files under `nix/modules/home/desktop-theme/themes/`; each file has named UI colours,
 native Ghostty settings, and an `apps` attribute with application theme names
 and pinned upstream downloads. No Base16 or wallpaper colour generator is used.
 
@@ -99,7 +99,7 @@ These are existing application ports, not pixel-identical generated themes.
 Zed's theme is installed locally, so theme extension updates cannot change the
 pinned palette. Edit `opencode/cli.json` and `herdr/config.toml` for non-theme
 settings; Home Manager merges in the selected theme. Do not add a `[theme]`
-table to the Herdr base file. Dotbot no longer links these two files directly.
+table to the Herdr base file.
 The Obsidian build fixes one upstream selector so its light palette works
 without Style Settings; no palette colours are changed.
 
@@ -145,7 +145,7 @@ on `windowsIn`, `windowsOut`, `fadeIn`, and `fadeOut`. Reload with Super+Shift+R
 - `../quickshell/AudioRow.qml`: one device or application row in the popover.
 - `../quickshell/dev.qml`: isolated preview entry point for panel work.
 - `../bin/qs-preview`: preview-and-screenshot helper for shell development.
-- `../nix/machines/scylla/hyprland.nix`: packages, portals, UWSM environment,
+- `../nix/hosts/scylla/hyprland.nix`: packages, portals, UWSM environment,
   and session services.
 
 The sidebar reuses Dolphin, PipeWire, KWallet, KDE authentication prompts, and

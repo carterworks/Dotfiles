@@ -1,0 +1,532 @@
+# Binary cache
+
+Prostagma runs [Attic](https://github.com/zhaofengli/attic) as a private Nix
+binary cache for the Linux hosts. It holds only what the public caches lack:
+`attic push` skips any path signed by an upstream cache's key, and anything not
+fetched for 14 days is garbage-collected.
+
+| | |
+|---|---|
+| Server | `nix/hosts/prostagma/binary-cache.nix` |
+| Client (scylla, prostagma, eltoro) | `nix/modules/nixos/binary-cache.nix`, off until its public key is set |
+| VM test | `nix build .#checks.x86_64-linux.binary-cache` (`nix/tests/binary-cache.nix`) |
+| URL | `http://prostagma.dropbear-tortoise.ts.net:8199/fleet` |
+| Storage | `/srv/apps/attic` (chunks), Postgres database `atticd` |
+| Token signing secret | `/var/lib/secrets/attic/environment`, generated on first start |
+| Size guard | `atticd-size-guard.timer`, stops atticd above 30 GiB (see "Size cap") |
+
+The MacBook never uses this cache: only the NixOS hosts import the client,
+through `nix/modules/nixos/common.nix`.
+
+Only the tailnet can reach the cache. atticd listens on port 8199 on every
+interface, and the firewall opens that port on `tailscale0` alone. The cache is
+an Attic "public" cache, so tailnet clients pull without a token; pushing needs
+one. Nix checks every path against the cache's signing key, so plain HTTP is
+fine inside the tailnet.
+
+## What is sensitive
+
+- **Token signing secret**: `/var/lib/secrets/attic/environment` on
+  prostagma. Whoever reads it can mint any token, a push token included. Revoke
+  with step 3.
+- **Cache signing key**: in the `atticd` Postgres database under
+  `/srv/apps/postgresql`, so also in any backup or snapshot of `/srv/apps`.
+  Whoever has it can sign paths every Linux host trusts. Replace it with step 6.
+- **Push token and tailnet credentials**: the `binary-cache` GitHub Environment
+  (steps 3 and 4). The Attic client also keeps the last token it logged in with
+  in `~/.config/attic/config.toml`; the admin tokens here expire in an hour.
+- **Cache contents**: the cache is public to the tailnet, so any device the
+  tailnet policy lets reach `prostagma:8199` can read every path in it.
+
+Steps marked **You** need your accounts or a deploy, so only you can do them.
+Run the rest wherever the step says.
+
+## 0. GitHub Environment, before merging the CI workflows (**You**)
+
+GitHub's branch rule on this Environment is the only thing that keeps the
+secrets of steps 3 and 4 from a workflow edited on another branch. A job that
+names a missing Environment creates it, empty and without a rule, so create it
+before `.github/workflows/fleet.yml` reaches `main`.
+
+In the repository's **Settings → Environments**, select **New environment**,
+name it `binary-cache` and **Configure environment**. Under **Deployment
+branches and tags**, choose **Selected branches and tags**, then **Add
+deployment branch or tag rule**: **Ref type** Branch, **Name pattern** `main`,
+**Add rule**. Add no other rule.
+
+Or, from a machine where `gh` is logged in:
+
+```sh
+gh api -X PUT repos/carterworks/dotfiles/environments/binary-cache \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+gh api -X POST repos/carterworks/dotfiles/environments/binary-cache/deployment-branch-policies \
+  -f name=main -f type=branch
+```
+
+Check it; the second command must print `main branch` and nothing else:
+
+```sh
+gh api repos/carterworks/dotfiles/environments/binary-cache --jq .deployment_branch_policy
+gh api repos/carterworks/dotfiles/environments/binary-cache/deployment-branch-policies --jq '.branch_policies[] | .name + " " + .type'
+```
+
+Also check that no repository-level secret has the name of one of the three
+Environment secrets. The workflows pass repository secrets on with
+`secrets: inherit`, so a repository secret named `ATTIC_TOKEN`,
+`TS_OAUTH_CLIENT_ID` or `TS_OAUTH_SECRET` would reach runs on every branch.
+This must print nothing:
+
+```sh
+gh secret list --repo carterworks/dotfiles | grep -E '^(ATTIC_TOKEN|TS_OAUTH_CLIENT_ID|TS_OAUTH_SECRET)\b'
+```
+
+## 1. First deployment (**You**)
+
+From scylla, on a checkout that contains this change:
+
+```sh
+./install prostagma
+```
+
+This is also prostagma's first deployment in [Secrets](secrets.md#prostagma)
+and [Monitoring](monitoring.md#first-deployment); do their checks after the
+same deploy. Check the result on prostagma:
+
+```sh
+systemctl status atticd.service atticd-secret.service atticd-size-guard.timer --no-pager
+sudo stat -c '%a %U %G' /var/lib/secrets/attic/environment   # 600 root root
+curl -sS http://prostagma.dropbear-tortoise.ts.net:8199/       # any HTTP reply
+```
+
+### Postgres refuses to create the database
+
+The deploy creates the `atticd` database, and `createdb` in step 7 does the
+same. Postgres refuses when a nixpkgs update has moved glibc since the cluster
+was made: `postgresql-setup` fails with `template database "template1" has a
+collation version mismatch`, and Immich stays down with it because both wait
+for `postgresql.target`. This happened on the first deploy, 2026-11-10. Compare
+what each database recorded with what the system provides:
+
+```sh
+sudo -u postgres psql -Atc "select datname, datcollversion, pg_database_collation_actual_version(oid) from pg_database"
+```
+
+For each database whose two versions differ, rebuild its indexes and only then
+record the new version; refreshing without the rebuild hides an index that may
+sort wrongly. Stop `immich-server` first for `immich`. `template0` has no
+recorded version and needs nothing.
+
+```sh
+sudo -u postgres psql -d <db> -c 'REINDEX DATABASE <db>'
+sudo -u postgres psql -d <db> -c 'ALTER DATABASE <db> REFRESH COLLATION VERSION'
+sudo systemctl start postgresql-setup postgresql.target immich-server atticd
+```
+
+## 2. Create the cache and read its public key (**You**)
+
+The cache's signing key is created with the cache and kept in its database.
+
+On prostagma, in the dotfiles checkout (`~/.config/dotfiles`, at the commit you
+deployed), open a shell with the Attic client this flake pins, so that client
+and server versions match:
+
+```sh
+nix shell --inputs-from . nixpkgs#attic-client
+```
+
+Log in with a one-hour token that may only create and read the cache. The token
+goes straight into `~/.config/attic/config.toml`, never onto the screen or into
+shell history:
+
+```sh
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --create-cache fleet --pull fleet)"
+```
+
+Create the cache. Name the key of every upstream cache the Linux hosts
+substitute from, so that pushes skip their paths. The names come from the
+flake's own `trusted-public-keys` (`nixConfig` in `flake.nix`), so they cannot drift
+from it:
+
+```sh
+attic cache create prostagma:fleet --public $(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)' | jq -r 'unique[] | "--upstream-cache-key-name", .')
+attic cache info prostagma:fleet
+```
+
+Before turning the client on, check that eltoro may reach the cache. Its own
+firewall lets the Nix daemon through (see "El Toro"), but the tailnet policy
+may not. From scylla:
+
+```sh
+ssh root@eltoro nix store info --connect-timeout 5 --store http://prostagma.dropbear-tortoise.ts.net:8199/fleet
+```
+
+It prints `Store URL: …` at once if eltoro can reach the cache. If it fails
+after about 30 seconds instead, eltoro cannot, and with the client on, each
+lookup there would wait out those 30 seconds before falling back to the other
+caches. Either grant eltoro `tcp:8199` on `prostagma` in the tailnet policy and
+check again, or keep eltoro's client off with
+`dotfiles.binaryCache.publicKey = null;` in `nix/hosts/eltoro/default.nix`.
+The same option gates `system.autoUpgrade`, so keeping the client off also
+keeps eltoro from upgrading itself; it is then deployed only by hand.
+
+### Turn the client on
+
+Setting the key turns on unattended upgrades on both servers, so first:
+
+- eltoro must run the chain-based egress fence, deployed by hand ("Deploying
+  fence changes" in [El Toro](eltoro.md#deploying-fence-changes)).
+- Preferably, finish steps 3 and 4 and let CI create `release` first. The key
+  can be set before that, but then every server upgrade fails until `release`
+  exists (see below).
+
+`attic cache info` prints a line `Public Key: fleet:…`. In
+`nix/modules/nixos/binary-cache.nix`, replace `default = null;` with that key in
+quotes:
+
+```nix
+    default = "fleet:…";
+```
+
+Commit, then deploy every Linux host: `./install` on scylla, then
+`./install prostagma` and `./install eltoro` from scylla. Every host's system derivation changes
+(new `substituters`, `trusted-public-keys`, `connect-timeout = 5`,
+`stalled-download-timeout = 30`, `fallback = true` in `nix.conf`); the
+MacBook's must not. prostagma and eltoro also gain `nixos-upgrade.timer` and
+from then on upgrade themselves every night (see
+[Server auto-upgrade](auto-upgrade.md)). Until CI first creates `release`
+(after steps 3 and 4), that upgrade fails every night because the branch does
+not exist. That is harmless; it only shows in `systemctl --failed`.
+
+Check on any Linux host:
+
+```sh
+nix config show substituters      # lists the fleet URL
+nix store info --store http://prostagma.dropbear-tortoise.ts.net:8199/fleet
+```
+
+## 3. Tokens (**You**)
+
+Hosts pull without a token, so no pull token is needed.
+
+CI needs a push token. Treat it like root on every Linux host: the cache signs
+whatever is pushed with the key every host trusts, so whoever holds the token
+can put any binary on scylla, prostagma and eltoro at their next rebuild. It is
+valid for 90 days.
+
+The `binary-cache` GitHub Environment must already exist (step 0). Then, from a
+machine where `gh` is logged in and `ssh prostagma` works, mint the token and
+store it there in one pipe, so it never reaches the screen:
+
+```sh
+ssh prostagma sudo atticd-atticadm make-token --sub github-actions --validity 90d --pull fleet --push fleet \
+  | gh secret set ATTIC_TOKEN --repo carterworks/dotfiles --env binary-cache
+```
+
+`gh` reads the value from standard input and drops the trailing newline.
+
+### Rotate the CI token
+
+Before the 90 days are up, run the same pipe again; `gh` replaces the secret.
+`gh secret list --repo carterworks/dotfiles --env binary-cache` shows when it
+was last set. Attic cannot revoke a single token, so the old one stays valid
+until it expires. If it may have leaked, revoke every token instead.
+
+### Revoke every token
+
+Attic tokens are signed JWTs with no revocation list. To revoke them all, delete
+the token signing secret and restart; a new one is generated. On prostagma:
+
+```sh
+sudo rm /var/lib/secrets/attic/environment
+sudo systemctl restart atticd.service
+```
+
+This also invalidates `ATTIC_TOKEN`, so CI pushes fail, and `release` stops,
+until you mint a new one with the pipe at the start of this step.
+
+## 4. CI workflow requirements
+
+The push is in `.github/workflows/fleet.yml` and is described in
+[ci.md](ci.md). A leaked push token or tailnet credential is the main risk this
+cache adds (step 3), so any change to it must keep all of these:
+
+- **Secrets in a GitHub Environment limited to `main`.** `ATTIC_TOKEN`,
+  `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` live in an Environment named
+  `binary-cache`, not in repository secrets, and only the NixOS hosts' build
+  jobs in a run for `main` name it. A workflow edited on another branch then
+  cannot read them.
+- **Only trusted triggers.** Push to the cache only in a run for `main`: a push
+  to `main`, a dispatch of Fleet on `main`, or Nightly (scheduled or
+  dispatched, always on `main`), which calls Fleet. Never use
+  `pull_request_target`, and never `workflow_run` on a run that built
+  pull-request code.
+- **Pinned and minimal.** Every action is pinned by full commit SHA. Attic is
+  the flake-pinned client (`nix run --inputs-from . nixpkgs#attic-client --`).
+  The workflow sets `permissions: contents: read`, and only a job that needs
+  more gets more. The Nix sandbox stays on. Secret values reach only the
+  Tailscale and push steps, which run after the build; the push step writes
+  the token to Attic's config file with a shell builtin, so it is in no
+  process's arguments. The Tailscale action puts the OAuth secret on
+  `tailscale up`'s command line itself; that is outside this repository.
+  The action's binary cache is off (`use-cache: "false"`): a cache hit
+  installs the cached `tailscale` binaries as root unverified.
+- **No repository secrets of the same names.** Every workflow call uses
+  `secrets: inherit`, which hands repository secrets to every branch (step 0).
+- **Tailnet access limited to `tag:ci`.** The Tailscale OAuth client may only
+  create keys for `tag:ci`, and those keys are ephemeral and preauthorised, so
+  each runner leaves the tailnet when its job ends. The action (v4.4.0) adds
+  `ephemeral=true&preauthorized=true` to every OAuth key itself and has no
+  input to change it.
+- **`release` follows the cache.** `release` advances only when all three
+  hosts' pushes succeeded. Missing secrets or an unreachable cache leave the
+  build green and `release` where it was; a push that fails turns the job red.
+
+### Why an OAuth client and not workload identity
+
+The pinned action can also log in with GitHub's OIDC token (`audience`), and a
+Tailscale federated identity can bind that to this repository, the
+`binary-cache` Environment and `refs/heads/main`, which would remove
+`TS_OAUTH_SECRET` and let Tailscale itself refuse other runs. Tailscale's
+documentation does not say whether federated identities are available on a
+Personal tailnet, so the workflow keeps the OAuth client. Switching later
+means `id-token: write` on the three host jobs only (a job of their own, apart
+from the Mac and the checks), `audience` in place of `oauth-secret`, and a
+federated identity with subject
+`repo:carterworks/Dotfiles:environment:binary-cache`, the custom claims
+`repository_id` and `ref: refs/heads/main`, the `auth_keys` scope and the tag
+`tag:ci`.
+
+Once all three secrets are set, the next Fleet run on `main` pushes and creates
+`release`; nothing in the workflow changes. To start one at once:
+`gh workflow run fleet.yml --repo carterworks/dotfiles --ref main`.
+
+`attic push` pushes the whole closure of `./result` minus anything signed by an
+upstream key. Paths CI downloaded keep the upstream signature, so only unfree
+repacks and local builds go up.
+
+### Tailscale policy (**You**)
+
+In the admin console, under **Access controls**, add the following to the
+tailnet policy file. Get each address with `tailscale ip -4 <host>` from any
+machine on the tailnet, and the routes prostagma advertises with
+`tailscale debug prefs | jq .AdvertiseRoutes` on prostagma.
+
+```jsonc
+"tagOwners": {
+  "tag:ci": ["autogroup:admin"],
+},
+"hosts": {
+  "prostagma": "<prostagma's 100.x address>",
+  "scylla": "<scylla's 100.x address>",
+  "eltoro": "<eltoro's 100.x address>",
+},
+"grants": [
+  // CI runners may reach the cache port on prostagma and nothing else.
+  {"src": ["tag:ci"], "dst": ["prostagma"], "ip": ["tcp:8199"]},
+],
+"tests": [
+  {
+    "src": "tag:ci",
+    "accept": ["prostagma:8199"],
+    "deny": [
+      "prostagma:22", "prostagma:443",
+      "scylla:22", "eltoro:22",
+      "<an address inside a route prostagma advertises>:443",
+      "1.1.1.1:443",
+    ],
+  },
+],
+```
+
+Merge these into your existing sections rather than adding second copies. The
+console rejects a policy that breaks a test, but a test checks only the
+destinations it lists: here prostagma's SSH and HTTPS ports, SSH on scylla and
+eltoro, one LAN address and one internet address. Add a `deny` entry for any
+other device you care about.
+
+Before the first CI runner joins, also read the whole policy and confirm:
+
+- No rule or grant has `src: "*"`. Tagged nodes match `*`, so such a rule
+  applies to CI. Narrow it to `autogroup:member` or the tags that need it.
+- No rule or grant that applies to `tag:ci` reaches `*`, `autogroup:internet`
+  (exit nodes), or a LAN range (prostagma advertises subnet routes).
+- No grant to a Tailscale Service (`svc:…`) applies to `tag:ci`. Services have
+  their own addresses, which the tests above cannot see.
+- No `ssh` rule applies to `tag:ci`; the tests do not cover Tailscale SSH.
+
+Then, under **Settings → OAuth clients**, create a client with the `auth_keys`
+write scope and the tag `tag:ci` only, and store its ID and secret in the
+Environment. `gh` prompts for each value without echoing it:
+
+```sh
+gh secret set TS_OAUTH_CLIENT_ID --repo carterworks/dotfiles --env binary-cache
+gh secret set TS_OAUTH_SECRET --repo carterworks/dotfiles --env binary-cache
+```
+
+## 5. Size and retention
+
+On prostagma:
+
+```sh
+sudo du -sh /srv/apps/attic
+df -h /srv/apps
+sudo -u postgres psql atticd -c "select pg_size_pretty(pg_database_size('atticd'))"
+sudo -u postgres psql atticd -c "select count(*) as paths, pg_size_pretty(sum(nar_size)) as uncompressed from nar"
+sudo -u postgres psql atticd -c "select pg_size_pretty(sum(file_size)) as stored from chunk"
+```
+
+A path is removed once it has been neither pushed nor fetched for the retention
+period. Garbage collection runs when atticd starts and every 12 hours after.
+
+To change the retention for every cache, edit
+`garbage-collection.default-retention-period` in
+`nix/hosts/prostagma/binary-cache.nix` and deploy prostagma. A
+per-cache value set with `attic` overrides the default until it is reset. The
+token from step 2 has expired and could not configure anyway, so log in with a
+fresh one-hour token that may only configure the cache. On prostagma, in the
+dotfiles checkout:
+
+```sh
+nix shell --inputs-from . nixpkgs#attic-client
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --configure-cache fleet --configure-cache-retention fleet)"
+attic cache configure prostagma:fleet --retention-period '7 days'
+attic cache configure prostagma:fleet --reset-retention-period
+```
+
+Every `attic cache configure` without `--retention-period` also resets the
+cache's retention to the default, so any configure token needs
+`--configure-cache-retention` as well as `--configure-cache`.
+
+The cache keeps the upstream key names it was created with. Whenever
+`nixConfig` in `flake.nix` adds or drops a cache, update them with the same login,
+from a checkout that has the change:
+
+```sh
+attic cache configure prostagma:fleet $(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)' | jq -r 'unique[] | "--upstream-cache-key-name", .')
+attic cache info prostagma:fleet
+```
+
+To collect now rather than waiting for the next run:
+
+```sh
+sudo systemctl restart atticd.service
+```
+
+To estimate how much a host adds per generation, sum the paths in its closure
+that no upstream cache signed. On a machine that has built the host's system:
+
+```sh
+nix path-info -r --json --json-format 1 "$(nix build --no-link --print-out-paths .#nixosConfigurations.scylla.config.system.build.toplevel)" | jq --argjson upstream "$(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)')" '[.[] | select(all(.signatures[]?; split(":")[0] as $name | any($upstream[]; . == $name) | not)) | .narSize] | add // 0 | . / 1073741824'
+```
+
+That is uncompressed NAR size in GiB. zstd and chunk deduplication across
+versions shrink what is stored.
+
+### Size cap
+
+Attic has no size limit, and `/srv/apps` also holds Postgres (Immich) and
+Docker. Every 5 minutes `atticd-size-guard.timer` measures `/srv/apps/attic`;
+over the cap (`sizeCapGiB` in `nix/hosts/prostagma/binary-cache.nix`,
+30 GiB) it stops atticd and fails. You see it in `systemctl --failed` on
+prostagma, and the reason in its journal:
+
+```sh
+journalctl -u atticd-size-guard.service -n 5 --no-pager
+```
+
+While atticd is stopped, hosts fall back to other caches (see "Behaviour when
+the cache is down") and CI reports the cache unreachable, so `release` waits.
+To recover (**You**), on prostagma, pick one:
+
+- **Collect with the current retention.** Garbage collection runs when atticd
+  starts, so `sudo systemctl start atticd.service`. If the cache is still over
+  the cap, the guard stops it again within 5 minutes.
+- **Shorten the retention**, as above, deploy prostagma, then
+  `sudo systemctl start atticd.service`.
+- **Raise the cap.** Check `df -h /srv/apps` first, change `sizeCapGiB`, deploy
+  prostagma, then `sudo systemctl start atticd.service`.
+
+Then clear the failed state: `sudo systemctl start atticd-size-guard.service`.
+
+## 6. New signing key (**You**)
+
+If the cache's signing key may have leaked (it is in the `atticd` database,
+under `/srv/apps/postgresql`), give the cache a new key pair. The paths stay:
+Attic signs each narinfo as it serves it, so everything is served under the new
+key at once. On prostagma, in the dotfiles checkout:
+
+```sh
+nix shell --inputs-from . nixpkgs#attic-client
+attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --configure-cache fleet --configure-cache-retention fleet --pull fleet)"
+attic cache configure prostagma:fleet --regenerate-keypair
+attic cache info prostagma:fleet
+```
+
+Like any `attic cache configure`, this resets a per-cache retention (step 5).
+As in step 2, put the new `Public Key` in `nix/modules/nixos/binary-cache.nix`,
+commit, and deploy every Linux host. Until a host is deployed it rejects the
+cache's paths and falls back to other caches or to building.
+
+Each host's Nix daemon also keeps the narinfo of every path it has looked up,
+old signature included, for up to 30 days (`narinfo-cache-positive-ttl`), and
+rejects those paths until the entry expires. After deploying, clear it on each
+Linux host:
+
+```sh
+sudo sh -c 'rm -f /root/.cache/nix/binary-cache-v*.sqlite*' && sudo systemctl restart nix-daemon.service
+```
+
+If the token signing secret may have leaked too, also revoke every token
+(step 3).
+
+## 7. Wipe and rebuild (**You**)
+
+Use this if the cache is ever corrupted. It deletes everything and gives the
+cache a new signing key. For a leaked signing key alone, step 6 is enough. On
+prostagma:
+
+```sh
+sudo systemctl stop atticd.service
+sudo -u postgres dropdb atticd
+sudo -u postgres createdb -O atticd atticd
+sudo find /srv/apps/attic -mindepth 1 -delete
+sudo systemctl start atticd.service
+```
+
+Then repeat step 2: create the cache, put its new public key in
+`nix/modules/nixos/binary-cache.nix`, deploy every Linux host, and clear each host's
+narinfo cache as in step 6. Until then, hosts reject the new cache's signatures
+and fall back to other caches or to building. The CI token keeps working,
+because tokens depend only on the signing secret, not on the database.
+
+## Behaviour when the cache is down
+
+Hosts keep working. With the tailnet or prostagma unreachable, the first
+lookup costs about 30 seconds (five 5-second connection attempts with backoff).
+Nix then disables the cache for 60 seconds and uses the other caches or builds.
+
+A host that looks up a path before CI has pushed it remembers the miss for an
+hour (Nix's `narinfo-cache-negative-ttl`), so it may build or download that
+path elsewhere during that hour.
+
+Nix drops a download that receives no data for 30 seconds
+(`stalled-download-timeout`), so a server that accepts connections and then
+hangs cannot stall a rebuild for Nix's default five minutes.
+
+`fallback = true` trades an error for a build: when the cache lists a path but
+serving it fails, Nix builds the path locally instead of stopping. Rebuilds keep
+working through a broken cache, but a host may start a long local build where
+it would otherwise have stopped. Remove `fallback` from
+`nix/modules/nixos/binary-cache.nix` if you would rather see the error.
+
+## El Toro
+
+eltoro's egress fence (`nix/hosts/eltoro/egress.nix`) restricts only the
+`hermes` user and Nix build users. The Nix daemon substitutes as root, which
+the first rule of the `hermes-egress` chain accepts in both address families,
+so it reaches the cache. `hermes` and build users get no new connection on
+`tailscale0` except MagicDNS, so they cannot reach the cache themselves.
+
+The tailnet policy is a separate fence, which step 2 checks before eltoro's
+client is turned on.

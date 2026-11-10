@@ -1,0 +1,596 @@
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+
+let
+  agentInhibitor =
+    if pkgs.stdenv.hostPlatform.isDarwin then
+      [
+        "/usr/bin/caffeinate"
+        "-is"
+      ]
+    else
+      [
+        (lib.getExe' pkgs.systemd "systemd-inhibit")
+        "--what=idle:sleep"
+        "--who=coding-agent"
+        "--why=Coding agent is running"
+        "--mode=block"
+      ];
+
+  # The README clones the repo here on every machine. Links point into this
+  # checkout rather than the store, so edits apply without a rebuild and
+  # programs that rewrite their own config (KDE does) can still write.
+  checkout = "${config.home.homeDirectory}/.config/dotfiles";
+  # force: Home Manager rejects the symlinks Dotbot made at these paths as
+  # collisions; Dotbot also replaced whatever it found.
+  link = path: {
+    source = config.lib.file.mkOutOfStoreSymlink "${checkout}/${path}";
+    force = true;
+  };
+  # One link per entry leaves other files in the target directory alone.
+  linkEach =
+    target: dir:
+    lib.mapAttrs' (name: _: lib.nameValuePair "${target}/${name}" (link "${dir}/${name}")) (
+      builtins.readDir ../../../${dir}
+    );
+in
+{
+  imports = [
+    ./agent-daemons.nix
+    ./desktop-theme
+    ./shell.nix
+  ];
+
+  dotfiles.desktopTheme = {
+    name = "nord-light";
+    obsidianVaults = [ "Documents/Notes" ];
+  };
+
+  home.packages = [
+    pkgs.inter
+    pkgs.iosevka-bin
+  ];
+
+  lib.dotfiles = { inherit link linkEach; };
+
+  home.file =
+    linkEach ".agents/skills" "agents/skills/personal"
+    // linkEach ".agents/skills" "agents/skills/generated"
+    // linkEach ".local/bin" "bin"
+    // {
+      ".npmrc" = link "npm/npmrc";
+      ".config/opencode/opencode.jsonc" = link "opencode/opencode.jsonc";
+      ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
+      ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
+      ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
+    };
+
+  # A missing checkout would leave every link above dangling. Evaluation
+  # cannot see the home directory, so stop before any link is touched.
+  home.activation.dotfilesCheckout = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    if [[ ! -e ${lib.escapeShellArg checkout}/flake.nix ]]; then
+      errorEcho ${lib.escapeShellArg "No dotfiles checkout at ${checkout}; clone the repo there (see README.md)."}
+      exit 1
+    fi
+  '';
+
+  home.shell.enableShellIntegration = true;
+  xdg.configFile."git/aliases".source = ../../../git/aliases;
+  xdg.configFile."fish/completions/codex.fish".source = ../../../fish/completions/codex.fish;
+  xdg.configFile."fish/completions/oc.fish".text = ''
+    complete -c oc -w opencode2
+  '';
+  xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
+  xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
+  xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
+
+  programs.fish = {
+    plugins = [
+      {
+        name = "done";
+        src = pkgs.fishPlugins.done.src;
+      }
+      {
+        name = "bang-bang";
+        src = pkgs.fishPlugins.bang-bang.src;
+      }
+      {
+        name = "fzf-fish";
+        src = pkgs.fishPlugins.fzf-fish.src;
+      }
+    ];
+    shellInit = ''
+      function mkcd --description 'Create a directory and enter it'
+          if test (count $argv) -ne 1
+              echo 'Usage: mkcd <directory>' >&2
+              return 2
+          end
+
+          command mkdir -p -- "$argv[1]"; and cd -- "$argv[1]"
+      end
+
+      function __herdr_agent_tab
+          set -l herdr_args
+          set -l workspace_args
+          set -l attach_to_herdr false
+          set -l agent_command ${lib.escapeShellArgs agentInhibitor} $argv
+
+          if set -q HERDR_ENV
+              command $agent_command
+              return
+          end
+
+          set herdr_args --session default
+          set attach_to_herdr true
+
+          set -l workspace_json (command herdr $herdr_args workspace list 2>&1)
+          set -l workspace_status $status
+
+          if test $workspace_status -ne 0
+              set -l error_code (printf '%s\n' $workspace_json | ${lib.getExe pkgs.jq} -r '.error.code // empty')
+              if test "$error_code" != server_not_running
+                  printf '%s\n' $workspace_json >&2
+                  return $workspace_status
+              end
+
+              command herdr $herdr_args server </dev/null >/dev/null 2>&1 &
+              disown $last_pid 2>/dev/null
+
+              for attempt in (seq 1 100)
+                  set workspace_json (command herdr $herdr_args workspace list 2>&1)
+                  set workspace_status $status
+                  test $workspace_status -eq 0; and break
+                  sleep 0.05
+              end
+
+              if test $workspace_status -ne 0
+                  printf '%s\n' $workspace_json >&2
+                  return $workspace_status
+              end
+          end
+
+          set -l workspace_id (printf '%s\n' $workspace_json | ${lib.getExe pkgs.jq} -er '.result.workspaces[] | select(.focused) | .workspace_id')
+          or return
+          set workspace_args --workspace "$workspace_id"
+
+          set -l tab_json (command herdr $herdr_args tab create $workspace_args --cwd "$PWD" --focus)
+          or return
+          set -l pane_id (printf '%s\n' $tab_json | ${lib.getExe pkgs.jq} -er '.result.root_pane.pane_id')
+          or return
+          set -l command_line (string join ' ' -- (string escape -- $agent_command))
+          command herdr $herdr_args pane run "$pane_id" "$command_line"
+          or return
+
+          if test "$attach_to_herdr" = true
+              command herdr session attach default
+          end
+      end
+
+      function __oc_copy_osc52 --description 'Copy text through OSC 52'
+          set -l text "$argv[1]"
+
+          set -l osc52_copied false
+          if test -w /dev/tty
+              if command -qs base64; and command -qs awk
+                  set -l osc52_payload (printf '%s' "$text" | command base64 | string collect)
+                  if printf '%s' "$osc52_payload" | command awk '{ payload = payload $0 } END { printf "%c]52;c;%s%c", 27, payload, 7 }' > /dev/tty
+                      set osc52_copied true
+                  end
+              end
+          end
+
+          if test "$osc52_copied" != true
+              echo 'oc: OSC 52 clipboard copy is unavailable; password was not copied' >&2
+              return 1
+          end
+      end
+
+      function oc --wraps=opencode2 --description 'Launch OpenCode in a new Herdr tab'
+          if test "$argv[1]" = pair
+              set -l pair_output_file (command mktemp)
+              or return
+
+              command opencode2 pair | command tee "$pair_output_file"
+              set -l pair_status $pipestatus[1]
+              set -l pair_output (command cat "$pair_output_file")
+              command rm -f "$pair_output_file"
+              if test $pair_status -ne 0
+                  return $pair_status
+              end
+
+              set -l password (string match --regex --groups-only '^  Password[[:space:]]+(.+)$' -- $pair_output)
+              if test (count $password) -ne 1
+                  echo 'oc: could not find the password in opencode2 pair output' >&2
+                  return 1
+              end
+
+              __oc_copy_osc52 "$password"
+              return $status
+          end
+
+          __herdr_agent_tab opencode2 $argv
+      end
+
+      function ocpw --description 'Print and copy the OpenCode pairing password'
+          set -l pair_output (command opencode2 pair)
+          or return
+
+          set -l password (string match --regex --groups-only '^  Password[[:space:]]+(.+)$' -- $pair_output)
+          if test (count $password) -ne 1
+              echo 'ocpw: could not find the password in opencode2 pair output' >&2
+              return 1
+          end
+
+          echo "$password"
+
+          __oc_copy_osc52 "$password"
+          return $status
+      end
+
+      if test -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" && command -qs babelfish
+          cat "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" | babelfish | source
+      end
+      if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+      end
+      if test -e /opt/homebrew/bin/brew
+          /opt/homebrew/bin/brew shellenv fish | source
+      end
+      if test -e ~/.lmstudio/bin
+          fish_add_path ~/.lmstudio/bin
+      end
+      fish_add_path ~/.local/bin
+    '';
+    interactiveShellInit = ''
+      ${lib.getExe' pkgs.fnox "fnox"} activate fish | source
+
+      if command -qs hx
+          set -gx EDITOR hx
+      else if command -qs helix
+          set -gx EDITOR helix
+          alias hx="helix"
+      else if command -qs nvim
+          set -gx EDITOR nvim
+      else if command -qs vim
+          set -gx EDITOR vim
+      else if command -qs vi
+          set -gx EDITOR vi
+      else if command -qs micro
+          set -gx EDITOR micro
+      else if command -qs nano
+          set -gx EDITOR nano
+      end
+
+      if set -q REX_BIN_DIR; and test -n "$REX_BIN_DIR"
+          fish_add_path --path --prepend --move "$REX_BIN_DIR"
+      end
+    '';
+  };
+
+  programs.atuin = {
+    settings = {
+      enter_accept = true;
+      sync.records = true;
+    };
+  };
+  programs.man.generateCaches = pkgs.stdenv.hostPlatform.isLinux;
+
+  programs.bat.enable = true;
+
+  home.sessionVariables = {
+    CODEHOME = "${config.home.homeDirectory}/Projects/code";
+    WORKTREEHOME = "${config.home.homeDirectory}/Projects/code/worktrees";
+  };
+
+  programs.gh = {
+    enable = true;
+    settings = {
+      version = "1";
+      git_protocol = "ssh";
+      prompt = "enabled";
+      aliases = {
+        co = "pr checkout";
+      };
+    };
+  };
+
+  programs.jujutsu = {
+    enable = true;
+    settings = {
+      ui = {
+        paginate = "never";
+        editor = "cat";
+      };
+    };
+  };
+
+  programs.zed-editor = {
+    package = if pkgs.stdenv.hostPlatform.isLinux then pkgs.zed-editor-fhs else null;
+    enable = true;
+    mutableUserSettings = false;
+    mutableUserKeymaps = false;
+    mutableUserTasks = false;
+    mutableUserDebug = false;
+    extensions = [
+      "astro"
+      "base16"
+      "colored-zed-icons-theme"
+      "dockerfile"
+      "emmet"
+      "markdown-oxide"
+      "nix"
+      "svelte"
+      "toml"
+    ];
+    userKeymaps = [
+      {
+        context = "Terminal";
+        bindings.shift-enter = [
+          "terminal::SendText"
+          "\u001b\r"
+        ];
+      }
+    ];
+    userSettings = {
+      debugger.button = false;
+      cli_default_open_behavior = "new_window";
+      project_panel = {
+        dock = "left";
+      };
+      outline_panel = {
+        button = false;
+        dock = "right";
+      };
+      collaboration_panel = {
+        button = false;
+        dock = "right";
+      };
+      git_panel = {
+        group_by = "status";
+        tree_view = false;
+        dock = "left";
+      };
+      lsp = {
+        vtsls = {
+          settings = {
+            typescript = {
+              updateImportsOnFileMove = {
+                enabled = "always";
+              };
+            };
+            javascript = {
+              updateImportsOnFileMove = {
+                enabled = "always";
+              };
+            };
+          };
+          enable_lsp_tasks = true;
+        };
+      };
+      colorize_brackets = true;
+      ui_font_family = lib.mkForce ".SystemUIFont";
+      ui_font_size = 16.0;
+      buffer_font_size = 17.333333333333332;
+      agent = {
+        sidebar_side = "right";
+        dock = "right";
+        play_sound_when_agent_done = "always";
+        model_parameters = [ ];
+      };
+      autosave = "on_focus_change";
+      auto_signature_help = true;
+      buffer_font_fallbacks = [
+        "Iosevka Nerd Font"
+        ".ZedMono"
+      ];
+      buffer_font_family = "Iosevka";
+      buffer_font_features = {
+        calt = true;
+      };
+      file_scan_exclusions = [
+        "**/.git"
+        "**/.svn"
+        "**/.hg"
+        "**/.jj"
+        "**/CVS"
+        "**/.DS_Store"
+        "**/Thumbs.db"
+        "**/.classpath"
+        "**/.settings"
+      ];
+      show_edit_predictions = true;
+      minimap = {
+        show = "auto";
+      };
+      tabs = {
+        file_icons = true;
+        git_status = true;
+      };
+      format_on_save = "on";
+      indent_guides = {
+        active_line_width = 6;
+        coloring = "indent_aware";
+        line_width = 3;
+      };
+      git = {
+        inline_blame = {
+          delay_ms = 300;
+          min_column = 80;
+        };
+      };
+      icon_theme = {
+        dark = "Colored Zed Icons Theme Dark";
+        light = "Colored Zed Icons Theme Light";
+      };
+      linked_edits = true;
+      show_whitespaces = "all";
+      tab_size = 2;
+      terminal = {
+        dock = "bottom";
+        font_family = "Iosevka Term";
+        font_size = 16;
+        shell = {
+          program = "fish";
+        };
+      };
+      title_bar = {
+        show_branch_status_icon = true;
+        show_menus = true;
+      };
+      agent_servers = {
+        cursor.type = "registry";
+        opencode = {
+          favorite_config_option_values.model = [
+            "openai/gpt-5.5/low"
+            "openai/gpt-5.5/high"
+          ];
+          type = "registry";
+        };
+      };
+      context_servers.fff = {
+        args = [ ];
+        command = "fff-mcp";
+        enabled = true;
+        env = { };
+        remote = false;
+      };
+      languages = {
+        Nix = {
+          language_servers = [
+            "nixd"
+            "!nil"
+          ];
+        };
+      };
+    };
+  };
+
+  programs.helix = {
+    languages = {
+      language = [
+        {
+          name = "toon";
+          scope = "text.toon";
+          file-types = [ "toon" ];
+          grammar = "yaml";
+          soft-wrap.enable = true;
+        }
+        {
+          name = "text";
+          scope = "text.plain";
+          file-types = [ "txt" ];
+          soft-wrap.enable = true;
+        }
+        {
+          name = "markdown";
+          scope = "source.md";
+          file-types = [
+            "md"
+            "markdown"
+          ];
+          soft-wrap.enable = true;
+        }
+      ];
+    };
+  };
+
+  programs.ghostty = {
+    enable = true;
+    package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
+    settings = {
+      command = lib.getExe pkgs.fish;
+      shell-integration-features = "ssh-terminfo,ssh-env";
+    };
+  };
+
+  programs.delta = {
+    enable = true;
+    enableGitIntegration = true;
+  };
+
+  programs.git = {
+    enable = true;
+
+    lfs.enable = true;
+
+    ignores = [
+      ".DS_Store"
+      "*.local.*"
+      ".cursor/"
+      ".worktrees/"
+      ".osgrep/"
+      ".scout/"
+    ];
+
+    includes = [
+      { path = "aliases"; }
+      { path = "identity"; }
+    ];
+
+    settings = {
+      format.pretty = "%H %ci %ce %ae %d %s";
+      push = {
+        default = "simple";
+        autoSetupRemote = true;
+        followTags = true;
+      };
+      fetch = {
+        prune = true;
+        pruneTags = true;
+        all = true;
+      };
+      init.defaultBranch = "main";
+      apply.whitespace = "fix";
+      log.date = "iso";
+      pull = {
+        ff = "only";
+        rebase = true;
+      };
+      column.ui = "auto";
+      branch.sort = "-committerdate";
+      tag.sort = "version:refname";
+      diff = {
+        algorithm = "histogram";
+        mnemonicPrefix = true;
+        colorMoved = "plain";
+        renames = true;
+      };
+      help.autocorrect = "prompt";
+      commit.verbose = true;
+      rerere = {
+        enabled = true;
+        autoupdate = true;
+      };
+      rebase = {
+        autoSquash = true;
+        autoStash = true;
+        updateRefs = true;
+      };
+      merge.conflictstyle = "zdiff3";
+      credential = {
+        "ssh://github.com" = {
+          helper = [
+            ""
+            "!${lib.getExe pkgs.gh} auth git-credential"
+          ];
+        };
+        "ssh://gist.github.com" = {
+          helper = [
+            ""
+            "!${lib.getExe pkgs.gh} auth git-credential"
+          ];
+        };
+        "ssh://git.corp.adobe.com" = {
+          helper = [
+            ""
+            "!${lib.getExe pkgs.gh} auth git-credential"
+          ];
+        };
+      };
+    };
+  };
+}
