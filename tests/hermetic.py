@@ -33,9 +33,11 @@ def hermetic_env(home, bin_dir):
         if not stub.exists():
             stub.write_text(UNEXPECTED)
             stub.chmod(0o755)
-    # Bash sources the system bashrc for `bash -c` when stdin is a socket, and
-    # NixOS's then puts the real tools back on PATH; NOSYSBASHRC stops it.
-    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "NOSYSBASHRC": "1"}
+    # A top-level `bash -c` whose stdin is a socket sources /etc/bashrc and
+    # ~/.bashrc, as if started by sshd, and on NixOS and under the Nix installer
+    # on macOS those put the real tools first on PATH. Bash does that only when
+    # SHLVL is unset or 0, so 1 skips it on every platform.
+    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "SHLVL": "1"}
 
 
 def check_stubs(args, env, bin_dir, stdin):

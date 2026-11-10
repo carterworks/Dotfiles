@@ -42,10 +42,20 @@ class HermeticTests(unittest.TestCase):
         self.env = hermetic_env(self.home, self.bin_dir)
         self.marker = self.home / "script-ran"
 
+    def plant_startup_file(self):
+        """A ~/.bashrc that puts a decoy nix first, as the system bashrc does on
+        NixOS and under the Nix installer on macOS."""
+        decoy = self.home / "decoy"
+        decoy.mkdir()
+        (decoy / "nix").write_text("#!/bin/sh\n")
+        (decoy / "nix").chmod(0o755)
+        (self.home / ".bashrc").write_text(f'PATH="{decoy}:$PATH"\n')
+
     def test_stubs_stay_first_on_path_when_stdin_is_a_socket(self):
+        self.plant_startup_file()
         stdin, _ = socket.socketpair()
-        result = run(["bash", "-c", "command -v nixos-rebuild"], self.env, self.bin_dir, stdin=stdin)
-        self.assertEqual(result.stdout.strip(), str(self.bin_dir / "nixos-rebuild"))
+        result = run(["bash", "-c", "command -v nix"], self.env, self.bin_dir, stdin=stdin)
+        self.assertEqual(result.stdout.strip(), str(self.bin_dir / "nix"))
 
     def test_script_does_not_run_when_a_guarded_tool_is_not_a_stub(self):
         decoy = self.home / "decoy"
@@ -61,10 +71,10 @@ class HermeticTests(unittest.TestCase):
                     run(args, env, self.bin_dir)
                 self.assertFalse(self.marker.exists())
 
-    @unittest.skipUnless(Path("/etc/set-environment").exists(), "needs NixOS's system bashrc")
-    def test_script_does_not_run_when_the_system_bashrc_restores_path(self):
+    def test_script_does_not_run_when_a_startup_file_restores_path(self):
+        self.plant_startup_file()
         env = {**self.env}
-        del env["NOSYSBASHRC"]
+        del env["SHLVL"]
         stdin, _ = socket.socketpair()
         with self.assertRaisesRegex(AssertionError, "resolves to"):
             run(["bash", "-c", f'touch "{self.marker}"'], env, self.bin_dir, stdin=stdin)
