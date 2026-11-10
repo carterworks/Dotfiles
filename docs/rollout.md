@@ -24,6 +24,22 @@ undone.
    need a bypass for Nightly's own push ([CI, trust roots](ci.md#trust-roots)).
 5. **Short account passwords.** Change them only if a person chose them
    ([Secrets](secrets.md#what-the-public-repository-reveals)).
+6. **`opencode2` on the LAN.** On both workstations it listens on every
+   interface (`--hostname 0.0.0.0` in `nix/modules/home/agent-daemons.nix`),
+   and Scylla's firewall is off, so anything on the LAN reaches it behind only
+   its pairing password, on the machine that holds the keys to both servers.
+   Binding it to loopback and reaching it through Tailscale Serve, as
+   [User services](user-services.md#t3-code-and-opencode) already describes,
+   closes that; a client would then always need Tailscale.
+7. **`hermes-settings-repair` on eltoro.** This timer is a root process working
+   inside the agent's own directory every minute, and it only repairs what
+   running the `hermes` CLI as root breaks, which the docs now say never to do.
+   Removing it and its test takes a root process out of the agent's territory;
+   a slip with the CLI as root would then stay broken until fixed by hand.
+8. **`copyparty`'s input.** It tracks upstream's default branch, so any
+   nightly can bring unreleased code to a service the internet reaches through
+   the Cloudflare tunnel. Pinning it to release tags narrows that, at the cost
+   of waiting for releases and moving the tag by hand.
 
 ## 1. Before merging
 
