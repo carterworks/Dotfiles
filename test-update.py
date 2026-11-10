@@ -128,7 +128,7 @@ main "$@"
         before = self.package("broken").read_text()
         result = self.run_update("--apply")
 
-        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(result.returncode, 3, result.stderr)
         self.assertEqual(result.stdout.splitlines(), [
             "nixpkgs aaaaaaa (1970-01-01) -> bbbbbbb (1970-01-01)",
             "agents/skills/generated/herdr/SKILL.md 1 -> 2",
@@ -141,6 +141,19 @@ main "$@"
         self.assertEqual(self.package("broken").read_text(), before)
         self.assertEqual(
             (self.root / "agents/skills/generated/herdr/SKILL.md").read_text(), "new skill\n")
+
+    # The nightly merges what a partial run updated, so an abort, even one
+    # whose failing command happened to exit 3, must not look like one.
+    def test_an_abort_after_a_failed_item_is_not_partial(self):
+        result = bash(FAKE_NIX + '''
+BASEDIR="$PWD"
+STATUS_TTY=/dev/null
+SKILLS=(herdr-skill:herdr)
+update_images() { return 3; }
+main "$@"
+''', "--apply", cwd=self.root, GH_TOKEN="test-token", TMPDIR=str(self.root))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("broken: could not update to 2.0", result.stderr)
 
     def test_token_reaches_nix_through_the_environment(self):
         self.run_update("--apply")
