@@ -28,7 +28,8 @@ host, `nixos/server.nix` for the two servers.
 5. On scylla and the Mac, run `./install`.
 
 `./drift [ref]`, run from scylla, shows whether each NixOS host runs what
-`release` (or `ref`) says it should, and when it last switched.
+`release` (or `ref`) says it should, when it last switched, and how many of
+its systemd units have failed.
 
 ## Deploy by hand
 

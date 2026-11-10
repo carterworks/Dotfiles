@@ -50,8 +50,8 @@ class DriftTests(unittest.TestCase):
             for name, body in (("ssh", SSH), ("nix", NIX)):
                 (bin_dir / name).write_text(body)
                 (bin_dir / name).chmod(0o755)
-            for target, (path, activated) in (running or {}).items():
-                (state / f"running-{target}").write_text(f"{path}\n{activated}\n")
+            for target, (path, activated, *failed) in (running or {}).items():
+                (state / f"running-{target}").write_text(f"{path}\n{activated}\n{failed[0] if failed else 0}\n")
             for host, path in (expected or {}).items():
                 (state / f"expected-{host}").write_text(path)
             script_env = {
@@ -103,6 +103,31 @@ class DriftTests(unittest.TestCase):
         for host in ("scylla", "prostagma", "eltoro"):
             self.assertIn("in sync", self.line(result, host))
 
+    def test_failed_units_are_shown_and_fail_the_run(self):
+        result = self.run_drift(
+            running={
+                "scylla": ("/nix/store/a", 1, 0),
+                "carter@prostagma": ("/nix/store/b", 1, 2),
+                "root@eltoro": ("/nix/store/old-c", 1, 1),
+            },
+            expected={"scylla": "/nix/store/a", "prostagma": "/nix/store/b", "eltoro": "/nix/store/c"},
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertNotIn("FAILED", self.line(result, "scylla"))
+        self.assertIn("in sync", self.line(result, "prostagma"))
+        self.assertIn("FAILED UNITS: 2", self.line(result, "prostagma"))
+        self.assertIn("behind", self.line(result, "eltoro"))
+        self.assertIn("FAILED UNITS: 1", self.line(result, "eltoro"))
+
+    def test_an_unreachable_host_shows_no_unit_count(self):
+        result = self.run_drift(
+            running={"scylla": ("/nix/store/a", 1, 0), "carter@prostagma": ("/nix/store/b", 1, 0)},
+            expected={"scylla": "/nix/store/a", "prostagma": "/nix/store/b", "eltoro": "/nix/store/c"},
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("unreachable", self.line(result, "eltoro"))
+        self.assertNotIn("FAILED", self.line(result, "eltoro"))
+
     def test_compares_every_host_with_one_revision_of_the_ref(self):
         result = self.run_drift(["main"])
         self.assertIn("github:carterworks/dotfiles/main", result.nix[0])
@@ -133,7 +158,9 @@ class DriftTests(unittest.TestCase):
         self.assertEqual(len(result.ssh), 3)
         for target, call in zip(("scylla", "admin@p", "admin@e"), result.ssh):
             self.assertIn(f" {target} ", call)
-            self.assertTrue(call.endswith("readlink /run/current-system; stat -c %Y /run/current-system"), call)
+            self.assertTrue(call.endswith(
+                "readlink /run/current-system; stat -c %Y /run/current-system; systemctl --failed --no-legend | wc -l"
+            ), call)
 
 
 if __name__ == "__main__":

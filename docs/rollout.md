@@ -165,7 +165,8 @@ unattended upgrade.
 ## Confirm the end state
 
 - From scylla, `./drift` lists scylla, prostagma and eltoro as `in sync` with
-  `release` ([Server auto-upgrade, when it fails](auto-upgrade.md#when-it-fails)).
+  `release`, with no `FAILED UNITS` on any line, and exits 0
+  ([Server auto-upgrade, when it fails](auto-upgrade.md#when-it-fails)).
   The Mac is not checked; run `./install` there.
 - The latest Nightly run is green and its summary reads "main and release are
   now `<commit>`." or "Nothing to update.", with no problems listed below it
