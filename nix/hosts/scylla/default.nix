@@ -119,8 +119,8 @@ in
 {
   imports = [
     ../../modules/nixos/common.nix
-    ../../modules/workstation.nix
     ./desktop.nix
+    ../../modules/workstation.nix
     inputs.disko.nixosModules.disko
     ./hardware.nix
     ./disk.nix

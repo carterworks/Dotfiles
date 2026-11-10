@@ -21,6 +21,31 @@ let
   ];
 in
 {
+  fonts.packages = [ pkgs.nerd-fonts.iosevka ];
+
+  environment.systemPackages = with pkgs; [
+    bambu-studio
+    bibata-cursors
+    discord
+    dolphin-emu
+    google-chrome
+    heroic
+    papirus-icon-theme
+    playerctl
+    protonplus
+    sgdboop
+    ship-of-harkinian
+    # Vulkan is the Linux counterpart of the Mac's Metal build.
+    stable-diffusion-cpp-vulkan
+    systemd-lsp
+    telegram-desktop
+    trayscale
+    # Use the host package set for compatibility with its GPU drivers and libc.
+    vicinae
+    wallust
+    wl-clipboard
+  ];
+
   environment.sessionVariables = {
     XCURSOR_THEME = "Bibata-Modern-Classic";
     XCURSOR_SIZE = "24";

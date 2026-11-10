@@ -6,14 +6,47 @@
   ...
 }:
 
+let
+  # Pinned to 0.1.9: newer kubelogin does not persist the Ethos device-code
+  # token, so every kubectl call re-prompts a browser login. 0.1.9 caches it.
+  # https://wiki.corp.adobe.com/spaces/ethos/pages/1710311412 (section 2.1.1)
+  kubelogin = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "kubelogin";
+    version = "0.1.9";
+    src = pkgs.fetchurl {
+      url = "https://github.com/Azure/kubelogin/releases/download/v${version}/kubelogin-darwin-arm64.zip";
+      hash = "sha256-lNmnm72mLKZWgiIN4mI6r/XM7MCe1rkT6E4Dd/7hBZw=";
+    };
+    nativeBuildInputs = [ pkgs.unzip ];
+    sourceRoot = ".";
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 bin/darwin_arm64/kubelogin $out/bin/kubelogin
+      runHook postInstall
+    '';
+  };
+in
 {
   home-manager.users.cmcbride = ../../modules/home/workstation.nix;
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.config.allowUnfree = true;
 
-  environment.systemPackages = [
-    pkgs.vorssaint
+  fonts.packages = [ pkgs.nerd-fonts.noto ];
+
+  environment.systemPackages = with pkgs; [
+    awscli2
+    github-copilot-cli
+    hex
+    kubectl
+    kubelogin
+    openspec
+    python3
+    rex-client
+    # The base package enables Metal by default on aarch64-darwin.
+    stable-diffusion-cpp
+    vault-bin
+    vorssaint
   ];
 
   system.stateVersion = 6;
