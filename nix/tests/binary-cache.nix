@@ -49,7 +49,7 @@ pkgs.testers.runNixOSTest {
     };
 
     client = {
-      imports = [ ../modules/binary-cache.nix ];
+      imports = [ ../modules/nixos/binary-cache.nix ];
       dotfiles.binaryCache.publicKey = placeholderKey;
       virtualisation.vlans = [
         1

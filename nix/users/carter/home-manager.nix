@@ -32,9 +32,9 @@ in
 {
   imports = [
     inputs.hex.homeManagerModules.hex
-    ./agent-daemons.nix
-    ./desktop-theme.nix
-    ./obsidian-sync.nix
+    ../../modules/home/agent-daemons.nix
+    ../../modules/home/desktop-theme
+    ../../modules/home/obsidian-sync.nix
   ];
 
   # Upstream's Home Manager module supports x86_64-linux only; macOS installs

@@ -9,7 +9,7 @@ let
   theme = import (./themes + "/${cfg.name}.nix");
   inherit (theme) colors;
   hex = color: lib.removePrefix "#" color;
-  toolkit = import ./desktop-theme-toolkit.nix {
+  toolkit = import ./toolkit.nix {
     inherit lib theme;
     name = cfg.name;
   };
@@ -96,7 +96,7 @@ let
         magick -size 64x64 'xc:${colors.background}' background.png
         zip -q "$out" colors.tdesktop-theme background.png
       '';
-  cliSettings = builtins.fromJSON (builtins.readFile ../../../opencode/cli.json);
+  cliSettings = builtins.fromJSON (builtins.readFile ../../../../opencode/cli.json);
   vicinaeSelection = (theme.apps.vicinae or { }).selection or colors.selection;
   herdrColors = theme.apps.herdrColors // {
     accent = colors.accent;
@@ -315,7 +315,7 @@ in
       };
       "herdr/config.toml" = {
         force = true;
-        text = builtins.readFile ../../../herdr/config.toml + ''
+        text = builtins.readFile ../../../../herdr/config.toml + ''
 
           [theme]
           name = ${builtins.toJSON theme.apps.herdr}
@@ -552,7 +552,7 @@ in
     home.activation.desktopThemeKde = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
       lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         run ${pkgs.python3}/bin/python3 ${./apply-kde-theme.py} \
-          ${lib.escapeShellArg "${config.xdg.configHome}/kdeglobals"} ${kdeScheme} ${lib.escapeShellArg cfg.name} ${../../../kde/kdeglobals}
+          ${lib.escapeShellArg "${config.xdg.configHome}/kdeglobals"} ${kdeScheme} ${lib.escapeShellArg cfg.name} ${../../../../kde/kdeglobals}
         run ${pkgs.dbus}/bin/dbus-send --session /KGlobalSettings org.kde.KGlobalSettings.notifyChange int32:0 int32:0
       ''
     );

@@ -15,7 +15,7 @@
 
 ## Obsidian Sync
 
-`nix/users/carter/obsidian-sync.nix` runs `ob sync --continuous` for `Documents/Notes` on Scylla (bidirectional) and Prostagma (pull-only). Scylla's `~/.config/obsidian-headless` was seeded from Prostagma's `auth_token`; if sync starts failing with an expired session, run `ob login` there.
+`nix/modules/home/obsidian-sync.nix` runs `ob sync --continuous` for `Documents/Notes` on Scylla (bidirectional) and Prostagma (pull-only). Scylla's `~/.config/obsidian-headless` was seeded from Prostagma's `auth_token`; if sync starts failing with an expired session, run `ob login` there.
 
 - [ ] Verify both hosts resume syncing after a reboot and that Scylla appears in the vault's version history as device `scylla`.
 

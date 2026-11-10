@@ -14,7 +14,7 @@ let
         };
       };
       modules = [
-        ../users/carter/obsidian-sync.nix
+        ../modules/home/obsidian-sync.nix
         {
           options = {
             home.homeDirectory = lib.mkOption {

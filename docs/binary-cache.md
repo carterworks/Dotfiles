@@ -8,7 +8,7 @@ fetched for 14 days is garbage-collected.
 | | |
 |---|---|
 | Server | `nix/hosts/prostagma/binary-cache.nix` |
-| Client (scylla, prostagma, eltoro) | `nix/modules/binary-cache.nix`, off until its public key is set |
+| Client (scylla, prostagma, eltoro) | `nix/modules/nixos/binary-cache.nix`, off until its public key is set |
 | VM test | `nix build .#checks.x86_64-linux.binary-cache` (`nix/tests/binary-cache.nix`) |
 | URL | `http://prostagma.dropbear-tortoise.ts.net:8199/fleet` |
 | Storage | `/srv/apps/attic` (chunks), Postgres database `atticd` |
@@ -102,7 +102,7 @@ check again, or keep eltoro's client off with
 `dotfiles.binaryCache.publicKey = null;` in `nix/hosts/eltoro/default.nix`.
 
 `attic cache info` prints a line `Public Key: fleet:…`. In
-`nix/modules/binary-cache.nix`, replace `default = null;` with that key in
+`nix/modules/nixos/binary-cache.nix`, replace `default = null;` with that key in
 quotes:
 
 ```nix
@@ -382,7 +382,7 @@ attic cache info prostagma:fleet
 ```
 
 Like any `attic cache configure`, this resets a per-cache retention (step 5).
-As in step 2, put the new `Public Key` in `nix/modules/binary-cache.nix`,
+As in step 2, put the new `Public Key` in `nix/modules/nixos/binary-cache.nix`,
 commit, and deploy every Linux host. Until a host is deployed it rejects the
 cache's paths and falls back to other caches or to building.
 
@@ -413,7 +413,7 @@ sudo systemctl start atticd.service
 ```
 
 Then repeat step 2: create the cache, put its new public key in
-`nix/modules/binary-cache.nix`, deploy every Linux host, and clear each host's
+`nix/modules/nixos/binary-cache.nix`, deploy every Linux host, and clear each host's
 narinfo cache as in step 6. Until then, hosts reject the new cache's signatures
 and fall back to other caches or to building. The CI token keeps working,
 because tokens depend only on the signing secret, not on the database.
@@ -436,7 +436,7 @@ hangs cannot stall a rebuild for Nix's default five minutes.
 serving it fails, Nix builds the path locally instead of stopping. Rebuilds keep
 working through a broken cache, but a host may start a long local build where
 it would otherwise have stopped. Remove `fallback` from
-`nix/modules/binary-cache.nix` if you would rather see the error.
+`nix/modules/nixos/binary-cache.nix` if you would rather see the error.
 
 ## El Toro
 

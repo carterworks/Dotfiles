@@ -214,14 +214,16 @@
           let
             pkgs = nixpkgs.legacyPackages.x86_64-linux;
             home = scylla.config.home-manager.users.carter;
-            theme = import (./nix/users/carter/themes + "/${home.dotfiles.desktopTheme.name}.nix");
+            theme = import (
+              ./nix/modules/home/desktop-theme/themes + "/${home.dotfiles.desktopTheme.name}.nix"
+            );
             obsidian = home.xdg.configFile."desktop-theme/obsidian".source;
             manifest = pkgs.writeText "desktop-theme-check.json" (
               builtins.toJSON {
                 inherit (theme) appearance apps colors;
-                palettes = map (file: (import (./nix/users/carter/themes + "/${file}")).colors) (
+                palettes = map (file: (import (./nix/modules/home/desktop-theme/themes + "/${file}")).colors) (
                   builtins.filter (nixpkgs.lib.hasSuffix ".nix") (
-                    builtins.attrNames (builtins.readDir ./nix/users/carter/themes)
+                    builtins.attrNames (builtins.readDir ./nix/modules/home/desktop-theme/themes)
                   )
                 );
                 fzfOptions = home.home.sessionVariables.FZF_DEFAULT_OPTS;
@@ -260,11 +262,11 @@
             );
           in
           pkgs.runCommandLocal "desktop-theme-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
-            python3 ${source}/nix/users/carter/test-obsidian-theme.py
-            python3 ${source}/nix/users/carter/test-kde-theme.py
-            python3 ${source}/nix/users/carter/test-live-desktop-theme.py
+            python3 ${source}/nix/modules/home/desktop-theme/test-obsidian-theme.py
+            python3 ${source}/nix/modules/home/desktop-theme/test-kde-theme.py
+            python3 ${source}/nix/modules/home/desktop-theme/test-live-desktop-theme.py
             python3 ${source}/nix/users/carter/test-vicinae-onboarding.py
-            python3 ${source}/nix/users/carter/test-desktop-theme.py ${manifest}
+            python3 ${source}/nix/modules/home/desktop-theme/test-desktop-theme.py ${manifest}
             touch "$out"
           '';
         sunshine-display =
