@@ -228,7 +228,6 @@
           hex
           rex-client
           nub
-          fff-mcp
           ;
         carters-macbook-pro = carters-macbook-pro.system;
       };
@@ -313,7 +312,6 @@
           dotbot
           nub
           obsidian-headless
-          fff-mcp
           ;
         eltoro = eltoro.config.system.build.toplevel;
         prostagma = prostagma.config.system.build.toplevel;

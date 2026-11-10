@@ -11,7 +11,6 @@ let
   bambu-studio = self.packages.${pkgs.stdenv.hostPlatform.system}.bambu-studio;
   codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
-  fff-mcp = self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp;
   hex = self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
   rex-client = self.packages.${pkgs.stdenv.hostPlatform.system}.rex-client;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;

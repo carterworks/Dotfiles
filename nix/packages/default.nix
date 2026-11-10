@@ -28,7 +28,6 @@ in
   hunk-skill = pkgs.runCommand "hunk-review-skill-${hunk.version}.md" { } ''
     cp "$(${hunk}/bin/hunk skill path)" "$out"
   '';
-  fff-mcp = localPackage ./fff-mcp.nix;
   fnox = localPackage ./fnox.nix;
   nub = localPackage ./nub.nix;
 }
