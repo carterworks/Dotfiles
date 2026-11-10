@@ -71,7 +71,9 @@ nix() {
       [[ -f "${file}" ]] || return 1
       case "${field}" in
         updateInfo.source) echo github-release ;;
-        updateInfo) echo "{\"source\":\"github-release\",\"owner\":\"o\",\"repo\":\"${pkg}\"}" ;;
+        updateInfo)
+          jq -nc --arg pkg "${pkg}" --argjson held "$(grep -q 'held = true' "${file}" && echo true || echo false)" \
+            '{source: "github-release", owner: "o", repo: $pkg} + if $held then {held: true} else {} end' ;;
         version) sed -n 's/.*version = "\([^"]*\)".*/\1/p' "${file}" ;;
         src.url) echo "https://example.com/${pkg}-$(sed -n 's/.*version = "\([^"]*\)".*/\1/p' "${file}").tar.gz" ;;
         # broken's hash lives somewhere the rewrite cannot reach.
@@ -175,6 +177,31 @@ update_images() { echo "MAJORS=${MAJORS}"; }
 main "$@"
 ''', "--majors", cwd=self.root)
         self.assertEqual((result.returncode, result.stdout.strip()), (0, "MAJORS=true"), result.stderr)
+
+    def hold(self, name):
+        self.package("broken").unlink()
+        self.package(name).write_text(
+            f'{{ pname = "{name}"; version = "1.0"; hash = "sha256-old-{name}"; held = true; }}\n')
+
+    def test_a_held_package_is_noted_and_left_alone(self):
+        self.hold("pinned")
+        before = self.package("pinned").read_text()
+        for args in ((), ("--apply",)):
+            result = self.run_update(*args)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("pinned 1.0 -> 2.0", result.stdout.splitlines())
+            self.assertIn("note: pinned: 1.0 -> 2.0 is held; read its release notes, "
+                          "then take it with ./update --apply --held", result.stdout)
+            self.assertIn("alpha 1.0 -> 2.0", result.stdout)
+            self.assertEqual(self.package("pinned").read_text(), before)
+
+    def test_held_flag_takes_a_held_package(self):
+        self.hold("pinned")
+        result = self.run_update("--apply", "--held")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("pinned 1.0 -> 2.0", result.stdout.splitlines())
+        self.assertIn("alpha 1.0 -> 2.0", result.stdout.splitlines())
+        self.assertIn('version = "2.0"', self.package("pinned").read_text())
 
     def test_dry_run_reports_without_changing_anything(self):
         result = self.run_update()
@@ -511,6 +538,11 @@ printf '%s\\n' "${{CHANGES[@]}}" "${{NOTES[@]/#/note: }}"
 
 
 class HeldInputTests(unittest.TestCase):
+    # fnox runs as root at boot on every Linux host, from a release binary
+    # whose signature nothing checks.
+    def test_fnox_is_held(self):
+        self.assertIn("held = true;", (ROOT / "nix/packages/fnox.nix").read_text())
+
     def test_hermes_agent_rev_survives_updating_all_inputs(self):
         lock = json.loads((ROOT / "flake.lock").read_text())
         node = lock["nodes"][lock["nodes"]["root"]["inputs"]["hermes-agent"]]

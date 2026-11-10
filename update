@@ -10,6 +10,7 @@ STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
 
 APPLY=false
 MAJORS=false
+HELD=false
 GITHUB_TOKEN_VALUE=""
 SKILLS=(agent-browser-skill:agent-browser herdr-skill:herdr hunk-skill:hunk-review)
 CHANGES=()
@@ -436,6 +437,10 @@ update_package() {
     log "${pkg}: up to date (${current})"
     return 0
   fi
+  if [[ "$(jq -r '.held // false' <<<"${update_info}")" == true && "${HELD}" != true ]]; then
+    note "${pkg}: ${current} -> ${latest} is held; read its release notes, then take it with ./update --apply --held"
+    return 0
+  fi
   if [[ "${APPLY}" != true ]]; then
     log "${pkg}: update available (${current} -> ${latest})"
     changed "${pkg} ${current} -> ${latest}"
@@ -623,7 +628,7 @@ usage() {
 Update flake inputs, generated skill files, manually packaged binaries and
 pinned container images.
 
-Usage: ./update [--apply [--majors] | --fetch PACKAGE]
+Usage: ./update [--apply [--majors] [--held] | --fetch PACKAGE]
 
   (none)    Report the package and image updates available; change nothing.
   --apply   Update every flake input, regenerate the skill files and bump
@@ -634,6 +639,9 @@ Usage: ./update [--apply [--majors] | --fetch PACKAGE]
   --majors  Also move images to a new major version. Without it, an image
             stays within its major (below 1.0, the second number) and a
             "note:" line names the newer major.
+  --held    Also bump packages marked held (held = true in updateInfo).
+            Without it, a held package stays put and a "note:" line names
+            the newer version. Read its release notes first.
   --fetch PACKAGE
             Cache a pinned private download without updating any files or inputs.
   -h, --help
@@ -653,6 +661,10 @@ main() {
         ;;
       --majors)
         MAJORS=true
+        shift
+        ;;
+      --held)
+        HELD=true
         shift
         ;;
       --fetch)

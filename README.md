@@ -60,7 +60,8 @@ changes nothing. `./update --apply` updates every flake input, regenerates
 
 It never prompts and needs no terminal. Each change prints as one
 `name old -> new` line, followed by `note:` lines worth a look (an image held
-back from a new major version, or one whose newest tag is ambiguous). It exits
+back from a new major version, a held package with a newer release, or an
+image whose newest tag is ambiguous). It exits
 3 if some items failed and keeps the updates that worked, and 1 if the updater
 itself failed. The GitHub token comes from
 `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`; `nix`, `git`, `curl` and `jq`
@@ -70,6 +71,11 @@ An image moves only within its major version, because a new major usually
 migrates the application's data one way; below 1.0 the second number counts
 as the major. Take a new major deliberately with `./update --apply --majors`
 and review that commit by hand.
+
+A package whose `updateInfo` says `held = true` does not move either, because
+a bad release of it would reach root on every server overnight; `fnox` is held
+for that reason. Read its release notes, take it with `./update --apply --held`,
+and review that commit by hand. The nightly never passes `--held`.
 
 Inputs whose URL names a revision do not move: `hermes-agent` is held on
 purpose (see TODO.md), and `hex` moves only with its package.

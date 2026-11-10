@@ -39,6 +39,10 @@ packageUtils.mkPlatformBinary {
     owner = "jdx";
     repo = "fnox";
     tagPrefix = "v";
+    # fnox runs as root at boot on every Linux host and reads its SSH host key,
+    # and nothing checks a signature on this binary, so a bad release would
+    # reach root within a night. ./update --apply --held takes a new one.
+    held = true;
   };
 
   sourceRoot = ".";
