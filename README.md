@@ -23,6 +23,8 @@ If `nix` is not installed, `./check` and `./install` exit early and point to:
 ./check
 ```
 
+On every push, [CI](.github/workflows/fleet.yml) builds each host and runs the flake checks on GitHub-hosted runners.
+
 Machine selection is automatic:
 
 - on macOS, via `scutil --get LocalHostName`
