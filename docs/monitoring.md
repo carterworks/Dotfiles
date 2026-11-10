@@ -50,7 +50,8 @@ or a deploy; nothing in the repository does them.
 
 ## First deployment
 
-1. **Owner:** deploy prostagma. The hub starts with no systems.
+1. **Owner:** deploy prostagma. With the hub key in the repository, the hub
+   starts with all three systems configured.
 2. **Owner:** in the Tailscale admin console, approve the `svc:beszel` Service
    and make sure the tailnet policy lets you, scylla and eltoro reach it on
    443. Grant it to them by name, not to `*`: tagged nodes match `*`, so such
@@ -60,9 +61,14 @@ or a deploy; nothing in the repository does them.
    route; Serve only prints that the Service awaits an admin's approval. If
    the dashboard does not answer after the approval, restart the unit:
    `ssh prostagma sudo systemctl restart tailscale-services`.
-3. Open `https://beszel.dropbear-tortoise.ts.net`: Authelia's login, then an
-   empty Beszel dashboard. Beszel's own login form means the header did not
-   arrive (see [A host shows as down](#a-host-shows-as-down)).
+3. Open `https://beszel.dropbear-tortoise.ts.net`: Authelia's login, then the
+   Beszel dashboard with prostagma, scylla and eltoro listed. Beszel's own
+   login form means the header did not arrive (see
+   [A host shows as down](#a-host-shows-as-down)).
+
+   Steps 4 to 7 set the hub key, the providers and the tokens, which are
+   committed, so a rebuild with the hub's data restored skips them. A hub
+   without its data makes a new key: redo steps 4 and 7.
 4. **Owner:** read the hub's public key (also shown in the "Add system"
    dialog):
 
@@ -137,8 +143,11 @@ fingerprint stays pinned.
 | Docker containers: CPU, memory, network, health, image updates | yes | no | no |
 | systemd service status | yes | no | no |
 | Other filesystems | `/srv/apps` | no | no |
-| GPU | Intel, from sysfs | AMD, from sysfs | no |
+| GPU | Intel, from sysfs (not reported) | AMD, from sysfs | no |
 | ZFS pools | no | yes | no |
+
+prostagma's Intel GPU is configured but not reported (2026-11-10); the cause is
+unknown.
 
 Every agent runs as an unprivileged `beszel-agent` user in the module's
 sandbox (no capabilities, read-only system and home directories, its own user
@@ -213,7 +222,10 @@ A hub superuser can make it run network probes from outside the fence (see
      7).
    - A failed `fnox-secret-…` unit: the token is missing from the store or not
      encrypted to this host.
-   - Connection errors: the host cannot reach the Service. From the host,
+   - Connection errors: the host cannot reach the Service. Until the Service
+     is granted to the host, its agent dials the hub's address through the
+     default route instead of the tailnet (observed on eltoro, 2026-11-10).
+     From the host,
      `curl -sI https://beszel.dropbear-tortoise.ts.net/` should answer (with a
      redirect to Authelia). Check `tailscale status`, the Service approval and
      the tailnet policy.
