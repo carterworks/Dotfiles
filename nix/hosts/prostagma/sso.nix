@@ -140,6 +140,15 @@ let
         "/healthz"
       ];
     }
+
+    # Beszel logs in whoever the Remote-Email header names (see beszel.nix).
+    # Its agents cannot complete an Authelia login, so their WebSocket path
+    # bypasses the gate; the hub authenticates them by token and signature.
+    {
+      name = "beszel";
+      port = 8091;
+      bypassPaths = [ "/api/beszel/agent-connect" ];
+    }
   ];
 in
 {
@@ -289,6 +298,11 @@ in
           # bind, so Serve's connection would be answered by the directory server
           # and never reach this site.
           bind 127.0.0.1 ::1
+
+          # forward_auth replaces these on the paths it gates, but a bypass path
+          # would pass a client's own copy through to an application that
+          # trusts them.
+          request_header -Remote-*
 
           ${lib.optionalString hasBypass "@unprotected not path ${lib.concatStringsSep " " bypassPaths}\n"}
           forward_auth ${lib.optionalString hasBypass "@unprotected "}127.0.0.1:9091 {
