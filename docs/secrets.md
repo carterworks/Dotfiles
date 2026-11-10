@@ -324,16 +324,20 @@ output shows names, owners and modes only.
 4. The services point at the new paths:
 
    ```bash
-   systemctl show -p LoadCredential authelia-main cloudflared-tunnel-56e33628-8005-4027-ae33-b55e7f0bd78b
+   systemctl cat authelia-main cloudflared-tunnel-56e33628-8005-4027-ae33-b55e7f0bd78b | grep '^LoadCredential='
    systemctl show -p BindReadOnlyPaths copyparty
-   systemctl cat docker-qbittorrent-vpn | grep -o -- '--env-file [^ ]*'
+   grep -o -- '--env-file [^ ]*' "$(systemctl show -p ExecStart --value docker-qbittorrent-vpn | grep -o 'path=[^ ;]*' | head -1 | cut -d= -f2)"
    ```
+
+   `systemctl show -p LoadCredential` prints `[unprintable]`, and the
+   container's `--env-file` flag is in its start script, not in the unit.
 
 5. Prove that nothing reads the old files. Rename only those ten files, restart
    the services, and check that they come back. Nothing else under
    `/var/lib/secrets` moves (the binary cache's generated secret, if present,
    stays where it is). Then log in to Authelia, copyparty and qBittorrent, and
-   confirm the tunnel serves `files.cartermcbri.de`:
+   confirm the tunnel serves `files.cartermcbri.de`. qBittorrent's page takes
+   a few minutes to answer, until its VPN has connected:
 
    ```bash
    sudo bash -c "for f in $files; do mv -n /var/lib/secrets/\$f /var/lib/secrets/\$f.pre-fnox; done"
