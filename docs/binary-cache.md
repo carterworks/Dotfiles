@@ -99,12 +99,13 @@ whatever is pushed with the key every host trusts, so whoever holds the token
 can put any binary on scylla, prostagma and eltoro at their next rebuild. It is
 valid for 90 days.
 
-From a machine where `gh` is logged in and `ssh prostagma` works, mint the
-token and store it in one pipe, so it never reaches the screen:
+Create the `binary-cache` GitHub Environment first (step 4). Then, from a
+machine where `gh` is logged in and `ssh prostagma` works, mint the token and
+store it there in one pipe, so it never reaches the screen:
 
 ```sh
 ssh prostagma sudo atticd-atticadm make-token --sub github-actions --validity 90d --pull fleet --push fleet \
-  | gh secret set ATTIC_TOKEN --repo carterworks/dotfiles
+  | gh secret set ATTIC_TOKEN --repo carterworks/dotfiles --env binary-cache
 ```
 
 `gh` reads the value from standard input and drops the trailing newline.
@@ -112,8 +113,9 @@ ssh prostagma sudo atticd-atticadm make-token --sub github-actions --validity 90
 ### Rotate the CI token
 
 Before the 90 days are up, run the same pipe again; `gh` replaces the secret.
-`gh secret list --repo carterworks/dotfiles` shows when it was last set. Attic
-cannot revoke a single token, so the old one stays valid until it expires. If it may have leaked, revoke every token instead.
+`gh secret list --repo carterworks/dotfiles --env binary-cache` shows when it
+was last set. Attic cannot revoke a single token, so the old one stays valid
+until it expires. If it may have leaked, revoke every token instead.
 
 ### Revoke every token
 
@@ -128,31 +130,61 @@ sudo systemctl restart atticd.service
 This also invalidates `ATTIC_TOKEN`, so CI pushes fail until you mint a new one
 with the pipe at the start of this step.
 
-## 4. What the CI job needs
+## 4. CI workflow requirements
 
-The workflow itself lives elsewhere. It needs:
+The push workflow is not written yet. A leaked push token or tailnet
+credential is the main risk this cache adds (step 3), so whoever writes it must
+meet all of these:
 
-- **URL**: `http://prostagma.dropbear-tortoise.ts.net:8199`, cache `fleet`.
-- **Token**: secret `ATTIC_TOKEN` (step 3). The repository is public, so only
-  push from workflows that pull requests from forks cannot trigger (pushes to
-  `main`, schedules). GitHub withholds secrets from fork pull requests.
-- **Tailnet access**: secrets `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET`, and
-  the tag `tag:ci`, described below.
+- **Secrets in a GitHub Environment limited to `main`.** `ATTIC_TOKEN`,
+  `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` live in an Environment named
+  `binary-cache`, not in repository secrets, and the push job declares
+  `environment: binary-cache`. A workflow edited on another branch then cannot
+  read them.
+- **Only trusted triggers.** Push to the cache only on `push` to `main` or on
+  `schedule`. Never use `pull_request_target`, and never `workflow_run` on a
+  run that built pull-request code.
+- **Pinned and minimal.** Every action is pinned by full commit SHA. Attic is
+  the flake-pinned client (`nix run --inputs-from . nixpkgs#attic-client --`).
+  The workflow sets `permissions: contents: read`, and only a job that needs
+  more gets more. The Nix sandbox stays on.
+- **Tailnet access limited to `tag:ci`.** The Tailscale OAuth client may only
+  create keys for `tag:ci`, and those keys are ephemeral and preauthorised (the
+  action's defaults; do not override them), so each runner leaves the tailnet
+  when its job ends.
 
-Workflow steps, for whoever writes the workflow:
+### GitHub Environment (**You**)
+
+In the repository's **Settings → Environments**, create `binary-cache`. Under
+**Deployment branches and tags**, choose **Selected branches and tags** and add
+`main` only. Step 3 and the Tailscale policy below store the secrets there.
+
+### Workflow steps
+
+For whoever writes the workflow; replace each `<SHA>` with the commit of the
+release you reviewed:
 
 ```yaml
-- uses: tailscale/github-action@v4
-  with:
-    oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-    oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-    tags: tag:ci
-    ping: prostagma.dropbear-tortoise.ts.net
-- run: |
-    nix run nixpkgs#attic-client -- login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$ATTIC_TOKEN"
-    nix run nixpkgs#attic-client -- push prostagma:fleet ./result
-  env:
-    ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+permissions:
+  contents: read
+jobs:
+  push-cache:
+    if: github.ref == 'refs/heads/main'
+    environment: binary-cache
+    runs-on: ubuntu-latest
+    steps:
+      # checkout and Nix install steps, also pinned by SHA
+      - uses: tailscale/github-action@<SHA> # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: prostagma.dropbear-tortoise.ts.net
+      - run: |
+          nix run --inputs-from . nixpkgs#attic-client -- login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$ATTIC_TOKEN"
+          nix run --inputs-from . nixpkgs#attic-client -- push prostagma:fleet ./result
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
 ```
 
 `attic push` pushes the whole closure of `./result` minus anything signed by an
@@ -162,8 +194,9 @@ repacks and local builds go up.
 ### Tailscale policy (**You**)
 
 In the admin console, under **Access controls**, add the following to the
-tailnet policy file. Get prostagma's address with `tailscale ip -4` on
-prostagma.
+tailnet policy file. Get each address with `tailscale ip -4 <host>` from any
+machine on the tailnet, and the routes prostagma advertises with
+`tailscale debug prefs | jq .AdvertiseRoutes` on prostagma.
 
 ```jsonc
 "tagOwners": {
@@ -171,32 +204,51 @@ prostagma.
 },
 "hosts": {
   "prostagma": "<prostagma's 100.x address>",
+  "scylla": "<scylla's 100.x address>",
+  "eltoro": "<eltoro's 100.x address>",
 },
 "grants": [
   // CI runners may reach the cache port on prostagma and nothing else.
   {"src": ["tag:ci"], "dst": ["prostagma"], "ip": ["tcp:8199"]},
 ],
 "tests": [
-  {"src": "tag:ci", "accept": ["prostagma:8199"], "deny": ["prostagma:22", "prostagma:443"]},
+  {
+    "src": "tag:ci",
+    "accept": ["prostagma:8199"],
+    "deny": [
+      "prostagma:22", "prostagma:443",
+      "scylla:22", "eltoro:22",
+      "<an address inside a route prostagma advertises>:443",
+      "1.1.1.1:443",
+    ],
+  },
 ],
 ```
 
-Merge these into your existing sections rather than adding second copies. Any
-existing rule whose `src` is `"*"` also matches tagged nodes, which would
-give CI the whole tailnet. Narrow such rules to `autogroup:member` (or the
-tags that need them). The `tests` block makes the console reject a policy that
-lets `tag:ci` reach anything else on prostagma.
+Merge these into your existing sections rather than adding second copies. The
+console rejects a policy that breaks a test, but a test checks only the
+destinations it lists: here prostagma's SSH and HTTPS ports, SSH on scylla and
+eltoro, one LAN address and one internet address. Add a `deny` entry for any
+other device you care about.
+
+Before the first CI runner joins, also read the whole policy and confirm:
+
+- No rule or grant has `src: "*"`. Tagged nodes match `*`, so such a rule
+  applies to CI. Narrow it to `autogroup:member` or the tags that need it.
+- No rule or grant that applies to `tag:ci` reaches `*`, `autogroup:internet`
+  (exit nodes), or a LAN range (prostagma advertises subnet routes).
+- No grant to a Tailscale Service (`svc:…`) applies to `tag:ci`. Services have
+  their own addresses, which the tests above cannot see.
+- No `ssh` rule applies to `tag:ci`; the tests do not cover Tailscale SSH.
 
 Then, under **Settings → OAuth clients**, create a client with the `auth_keys`
-write scope and the tag `tag:ci`, and store its ID and secret:
+write scope and the tag `tag:ci` only, and store its ID and secret in the
+Environment. `gh` prompts for each value without echoing it:
 
 ```sh
-gh secret set TS_OAUTH_CLIENT_ID --repo carterworks/dotfiles
-gh secret set TS_OAUTH_SECRET --repo carterworks/dotfiles
+gh secret set TS_OAUTH_CLIENT_ID --repo carterworks/dotfiles --env binary-cache
+gh secret set TS_OAUTH_SECRET --repo carterworks/dotfiles --env binary-cache
 ```
-
-The action joins each runner as an ephemeral node, so it disappears from the
-tailnet when the job ends.
 
 ## 5. Size and retention
 
