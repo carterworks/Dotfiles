@@ -74,3 +74,7 @@ together.
 macOS has no `hex-model-install` equivalent: its `model install` takes a model id
 and drives the running app over its control socket, so a launchd job would race
 the app. The app downloads its model during setup instead.
+
+## Monitoring
+
+- [ ] Add a Beszel hub and dashboard on prostagma, behind Authelia like the other dashboards, and Beszel agents on prostagma, Scylla and eltoro. Nothing on the Mac. On eltoro the agent may run as root; confirm the egress fence still restricts only Hermes and what acts for it.
