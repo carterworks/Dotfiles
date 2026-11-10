@@ -32,10 +32,17 @@ let
   # The first migration creates the account that the proxy's header logs in
   # to, and a superuser of the same address. Password logins are off, so the
   # random password is never stored anywhere.
+  #
+  # The migration makes that account an admin, which can read every agent's
+  # token back, make universal tokens and send notifications to internal
+  # addresses. Read-only keeps the dashboards, alerts and notification settings;
+  # systems are declared here anyway. No user can change a role, and setting
+  # it on every start also covers a hub that already exists.
   prepare = pkgs.writeShellScript "beszel-hub-prepare" ''
     set -euo pipefail
     USER_EMAIL=carter@carter.works USER_PASSWORD="$(${lib.getExe pkgs.openssl} rand -base64 32)" \
       ${hub.package}/bin/beszel-hub migrate up
+    ${lib.getExe pkgs.sqlite} beszel_data/data.db "UPDATE users SET role = 'readonly'"
     ${lib.optionalString systemsEnabled ''
       {
         echo "systems:"

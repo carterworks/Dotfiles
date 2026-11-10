@@ -310,6 +310,18 @@ in
         system = next(s for s in json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/collections/systems/records"))["items"] if s["name"] == "prostagma")
         assert not system["info"].get("jl"), system["info"]
 
+    with subtest("the owner's account is read-only, cannot read tokens and still sets alerts"):
+        me = json.loads(prostagma.succeed(f"curl -sSf -X POST {as_carter} {api}/collections/users/auth-refresh"))["record"]
+        assert me["role"] == "readonly", me
+        fingerprints = json.loads(prostagma.succeed(f"curl -sSf {as_carter} -d perPage=500 -G {api}/collections/fingerprints/records"))
+        assert fingerprints["items"] == [], fingerprints
+        status = prostagma.succeed(f"curl -s -o /dev/null -w '%{{http_code}}' -X POST {as_carter} {api}/beszel/universal-token")
+        assert status == "403", status
+        system = next(s["id"] for s in json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/collections/systems/records"))["items"] if s["name"] == "prostagma")
+        alert = {"user": me["id"], "system": system, "name": "CPU", "value": 80, "min": 10}
+        prostagma.succeed(f"curl -sSf {as_carter} --json '{json.dumps(alert)}' {api}/collections/alerts/records")
+        assert len(records("alerts", "prostagma")) == 1
+
     with subtest("a connected agent listens on nothing"):
         listens_on_nothing()
 
