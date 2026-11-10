@@ -120,13 +120,12 @@ jobs:
             exit 1
           fi
       - name: Advance release
+        id: release
         if: >-
           needs.build.outputs.scylla == 'pushed'
           && needs.build.outputs.prostagma == 'pushed'
           && needs.build.outputs.eltoro == 'pushed'
-        run: |
-          git push origin "$COMMIT:refs/heads/release" \
-            || { git fetch -q origin release && git merge-base --is-ancestor "$COMMIT" FETCH_HEAD; }
+        run: .github/advance-release "$COMMIT"
 
   report:
     needs: [update, build, promote]
