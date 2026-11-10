@@ -125,6 +125,24 @@ systemctl restart hermes-gateway hermes-dashboard
 - Snapshot before risky agent experiments: `pct snapshot 102 <name>` on
   herodotus.
 
+## Egress firewall
+
+`nix/machines/eltoro/egress.nix` restricts the `hermes` user with iptables. The
+rules live in a `hermes-egress` chain jumped to from `OUTPUT`, in both families:
+
+- On `eth0`, `hermes` may only reach addresses in the `egress-allowed` ipset
+  (filled from the domain and CIDR lists by `egress-allowlist.timer`). Its IPv6
+  egress is rejected. Other uids are unrestricted.
+- On `tailscale0`, `hermes` may not start connections into the tailnet; replies
+  to inbound sessions and MagicDNS (`100.100.100.100:53`) still work.
+
+Each rule is written once. Start, reload and stop all remove the chain and
+start rebuilds it, so a rule cannot outlive the generation that wrote it.
+
+```sh
+nix build .#checks.x86_64-linux.eltoro-egress   # exercises the fence in VMs
+```
+
 ## LAN isolation (host-enforced)
 
 Hermes runs as root inside the CT, so the guest's own NixOS firewall isn't a

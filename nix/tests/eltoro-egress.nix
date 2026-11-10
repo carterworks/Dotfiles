@@ -63,6 +63,9 @@ in
     };
 
   testScript = ''
+    import re
+
+
     def connect(user, proto, target):
         return eltoro.execute(
             f"echo hi | timeout 8 runuser -u {user} -- socat -t2 -T3 - {proto}:{target}",
@@ -114,14 +117,21 @@ in
 
 
     def output_rules(save):
-        return eltoro.execute(f"{save} -t filter | grep '^-A OUTPUT '")[1].splitlines()
+        return eltoro.execute(f"{save} -t filter | grep -E '^-A (OUTPUT|hermes-egress) '")[1].splitlines()
 
 
     def assert_rules_once():
-        for save, count in (("iptables-save", 9), ("ip6tables-save", 4)):
+        for save, count in (("iptables-save", 10), ("ip6tables-save", 5)):
             rules = output_rules(save)
             assert len(rules) == count, f"{save}: expected {count} rules, got {rules}"
             assert len(set(rules)) == count, f"{save}: duplicate rules in {rules}"
+
+
+    def unit_script(prop):
+        show = eltoro.succeed(f"systemctl show firewall -p {prop}")
+        match = re.search(r"path=(\S+)", show)
+        assert match, show
+        eltoro.succeed(match.group(1))
 
 
     def peer_listener(unit, spec):
@@ -186,6 +196,25 @@ in
         assert output_rules("iptables-save") == []
         assert output_rules("ip6tables-save") == []
         eltoro.succeed("systemctl start firewall")
+        assert_rules_once()
+        assert_fence()
+
+    with subtest("no rule survives from an earlier generation"):
+        # The stale-uid incident: an old generation's rule, for a uid the current
+        # delete commands would no longer match.
+        for ipt in ("iptables", "ip6tables"):
+            eltoro.succeed(f"{ipt} -w -A OUTPUT -o eth1 -m owner ! --uid-owner 1234 -j ACCEPT")
+        eltoro.succeed("systemctl reload firewall")
+        assert_rules_once()
+        assert_fence()
+
+    with subtest("start and stop are idempotent"):
+        unit_script("ExecStop")
+        unit_script("ExecStop")
+        assert output_rules("iptables-save") == []
+        assert output_rules("ip6tables-save") == []
+        unit_script("ExecStart")
+        unit_script("ExecStart")
         assert_rules_once()
         assert_fence()
   '';

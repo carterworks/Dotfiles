@@ -12,7 +12,7 @@ let
   # domains the agent may reach on the internet. a root-run oneshot
   # resolves them into the `egress-allowed` ipset (refreshed every 5
   # min, entries self-expire after 2h so dead cdn ips fall away), and
-  # the OUTPUT rules only let hermes-uid packets into that set. cdn
+  # firewall rules only let hermes-uid packets into that set. cdn
   # caveat: shared cdn ips (cloudflare/fastly) mean hermes can also
   # reach other tenants on those ips — accepted residual.
   egressAllowedDomains = [
@@ -92,6 +92,22 @@ let
       ${pkgs.ipset}/bin/ipset add egress-allowed "$c" -exist
     done
   '';
+
+  chain = "hermes-egress";
+  # Start, reload and stop all go through this, so no generation can leave
+  # rules behind that a later generation's delete commands fail to match.
+  removeRules = ''
+    for ipt in iptables ip6tables; do
+      while $ipt -w -D OUTPUT -j ${chain} 2>/dev/null; do :; done
+      $ipt -w -F ${chain} 2>/dev/null || true
+      $ipt -w -X ${chain} 2>/dev/null || true
+      # TODO: delete after eltoro first switches to this generation. Older
+      # generations appended straight to OUTPUT, and a switch only reloads.
+      $ipt -w -S OUTPUT | grep -E '^-A OUTPUT .*-o (${uplink}|tailscale0) ' | while read -r _ rule; do
+        $ipt -w -D $rule || true
+      done
+    done
+  '';
 in
 {
   options.eltoro.egress.uplink = lib.mkOption {
@@ -110,45 +126,37 @@ in
       # tailscale itself is unaffected: its control plane and
       # DERP relays run over eth0, not tailscale0.
       extraCommands = ''
-        iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        iptables  -w -A OUTPUT -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT
-        iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT
-        iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT
-        iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited
-        ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited
+        ${removeRules}
+        iptables  -w -N ${chain}
+        ip6tables -w -N ${chain}
+        iptables  -w -A ${chain} -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        iptables  -w -A ${chain} -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT
+        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT
+        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT
+        iptables  -w -A ${chain} -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited
+        ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited
         # internet egress: hermes-uid traffic may only reach ips in
         # the egress-allowed ipset (refreshed by egress-allowlist
         # .timer); root and every other uid are unrestricted. the
         # agent's ipv6 egress is rejected outright — allowlisted
         # hosts all resolve over v4.
         ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
-        iptables  -w -A OUTPUT -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
-        iptables  -w -A OUTPUT -o ${uplink} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        iptables  -w -A OUTPUT -o ${uplink} -m set --match-set egress-allowed dst -j ACCEPT
-        iptables  -w -A OUTPUT -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited
-        ip6tables -w -A OUTPUT -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
-        ip6tables -w -A OUTPUT -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited
+        iptables  -w -A ${chain} -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
+        iptables  -w -A ${chain} -o ${uplink} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        iptables  -w -A ${chain} -o ${uplink} -m set --match-set egress-allowed dst -j ACCEPT
+        iptables  -w -A ${chain} -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited
+        ip6tables -w -A ${chain} -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
+        ip6tables -w -A ${chain} -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited
+        # hook last so a half-filled chain is never live
+        iptables  -w -A OUTPUT -j ${chain}
+        ip6tables -w -A OUTPUT -j ${chain}
       '';
-      extraStopCommands = ''
-        iptables  -w -D OUTPUT -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited 2>/dev/null || true
-        ip6tables -w -D OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-        ip6tables -w -D OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited 2>/dev/null || true
-        iptables  -w -D OUTPUT -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o ${uplink} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o ${uplink} -m set --match-set egress-allowed dst -j ACCEPT 2>/dev/null || true
-        iptables  -w -D OUTPUT -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited 2>/dev/null || true
-        ip6tables -w -D OUTPUT -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-        ip6tables -w -D OUTPUT -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited 2>/dev/null || true
-      '';
+      extraStopCommands = removeRules;
     };
 
     # resolve the egress allowlist domains into the ipset the
-    # OUTPUT rules reference; entries expire so stale cdn ips
+    # firewall rules reference; entries expire so stale cdn ips
     # fall away if a domain stops resolving
     systemd.services.egress-allowlist = {
       description = "Refresh hermes egress ip allowlist";
