@@ -14,6 +14,7 @@ let
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
   filesHostname = "files.cartermcbri.de";
+  truenas = "192.168.5.252";
 
   prostagmaDirectory = pkgs.writeTextDir "index.html" ''
     <!doctype html>
@@ -220,7 +221,7 @@ in
     appRoot = "/srv/apps";
     mediaRoot = "/mnt/truenas/media-direct";
     torrentDataRoot = "/mnt/truenas/vm-data/qbittorrent-downloads";
-    torrentDataMountSource = "192.168.5.252:/mnt/river-rapid/vm-data";
+    torrentDataMountSource = config.fileSystems."/mnt/truenas/vm-data".device;
     sharedDataRoot = "/mnt/truenas/syncthing-root";
     apps."qbittorrent-vpn".enable = true;
     apps.prowlarr.enable = true;
@@ -301,115 +302,30 @@ in
     "e /mnt/truenas/immich - - - -"
   ];
 
-  fileSystems."/mnt/truenas/media" = {
-    device = "192.168.5.252:/mnt/reservoir/media";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/vm-data" = {
-    device = "192.168.5.252:/mnt/river-rapid/vm-data";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/media-direct/tvshows" = {
-    device = "192.168.5.252:/mnt/reservoir/media/tvshows";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/media-direct/movies" = {
-    device = "192.168.5.252:/mnt/reservoir/media/movies";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/media-direct/comics" = {
-    device = "192.168.5.252:/mnt/reservoir/media/comics";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/media-direct/audiobooks" = {
-    device = "192.168.5.252:/mnt/reservoir/media/audiobooks";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/syncthing-root/media/games" = {
-    device = "192.168.5.252:/mnt/reservoir/media/games";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/syncthing-root/media/ebooks" = {
-    device = "192.168.5.252:/mnt/reservoir/media/ebooks";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/syncthing-root/users/carter" = {
-    device = "192.168.5.252:/mnt/reservoir/users/carter";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/photos" = {
-    device = "192.168.5.252:/mnt/reservoir/media/photos";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
-
-  fileSystems."/mnt/truenas/immich" = {
-    device = "192.168.5.252:/mnt/reservoir/media/photos/immich";
-    fsType = "nfs";
-    options = [
-      "_netdev"
-      "nofail"
-      "x-systemd.mount-timeout=30s"
-    ];
-  };
+  fileSystems =
+    lib.mapAttrs
+      (_: export: {
+        device = "${truenas}:/mnt/${export}";
+        fsType = "nfs";
+        options = [
+          "_netdev"
+          "nofail"
+          "x-systemd.mount-timeout=30s"
+        ];
+      })
+      {
+        "/mnt/truenas/media" = "reservoir/media";
+        "/mnt/truenas/vm-data" = "river-rapid/vm-data";
+        "/mnt/truenas/media-direct/tvshows" = "reservoir/media/tvshows";
+        "/mnt/truenas/media-direct/movies" = "reservoir/media/movies";
+        "/mnt/truenas/media-direct/comics" = "reservoir/media/comics";
+        "/mnt/truenas/media-direct/audiobooks" = "reservoir/media/audiobooks";
+        "/mnt/truenas/syncthing-root/media/games" = "reservoir/media/games";
+        "/mnt/truenas/syncthing-root/media/ebooks" = "reservoir/media/ebooks";
+        "/mnt/truenas/syncthing-root/users/carter" = "reservoir/users/carter";
+        "/mnt/truenas/photos" = "reservoir/media/photos";
+        "/mnt/truenas/immich" = "reservoir/media/photos/immich";
+      };
 
   services.fstrim.enable = false;
   services.dbus.implementation = "dbus";
