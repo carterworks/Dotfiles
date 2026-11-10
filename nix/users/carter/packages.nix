@@ -132,7 +132,6 @@ let
     dolphin-emu
     google-chrome
     heroic
-    lmstudio
     papirus-icon-theme
     playerctl
     protonplus
