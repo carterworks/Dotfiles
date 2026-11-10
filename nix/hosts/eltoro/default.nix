@@ -245,6 +245,7 @@ in
     uv
     fnox # secret manager: resolves /root/.hermes/fnox.toml via age
     pkgs.age # age-keygen; fnox reads the key from ~/.config/fnox/age.txt
+    ipset # the post-deploy fence check in docs/eltoro.md lists egress-allowed
   ];
 
   # hard resource ceiling for the whole hermes family (both units
