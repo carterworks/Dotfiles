@@ -217,13 +217,6 @@ in
   # is unprivileged and administration happens as root over ssh
   security.sudo.enable = false;
 
-  # flakes on by default so interactive nix commands
-  # (nix build, nix run, nix flake ...) work without flags
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
-  ];
-
   # tailscale
   services.tailscale.enable = true;
   # tailscaled creates its control socket world-writable by
