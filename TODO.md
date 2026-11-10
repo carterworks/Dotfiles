@@ -119,4 +119,5 @@ Servers follow the `release` branch with `system.autoUpgrade` once the binary ca
 
 Fleet pushes the NixOS builds to the private cache from `main` and advances `release`; Nightly updates and merges when green (`docs/ci.md`).
 
-- [ ] After `docs/binary-cache.md` steps 1–4, run Fleet on `main` and confirm all three hosts push and `release` is created. Set the `binary-cache` Environment's branch rule to `main` before adding any secret; the first Fleet run on `main` creates the Environment empty. Until then the cache push, Fleet's `release` job and Nightly's release step have run only in trials without secrets.
+- [ ] Before merging the CI workflows into `main`, create the `binary-cache` Environment limited to the branch `main` and check no repository secret shares its secrets' names (`docs/binary-cache.md` step 0), and require approval for all outside contributors' workflow runs (`docs/ci.md`, "What you set up once").
+- [ ] After `docs/binary-cache.md` steps 1–4, run Fleet on `main` and confirm all three hosts push and `release` is created. Until then the cache push, the Tailscale join, Fleet's `release` job and Nightly's release step have run only in trials without secrets.
