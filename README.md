@@ -6,8 +6,8 @@ One Nix flake for four machines.
 |---|---|---|---|
 | `scylla` | NixOS desktop | `nix/hosts/scylla/` | `./install` on it |
 | `carters-macbook-pro` | nix-darwin laptop (employer-owned) | `nix/hosts/carters-macbook-pro/` | `./install` on it |
-| `prostagma` | NixOS LXC on Proxmox: media, photos, SSO, binary cache | `nix/hosts/prostagma/` | itself, nightly |
-| `eltoro` | NixOS LXC on Proxmox: a fenced Hermes agent | `nix/hosts/eltoro/` | itself, nightly |
+| `prostagma` | NixOS LXC on Proxmox: media, photos, SSO, binary cache | `nix/hosts/prostagma/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 4) |
+| `eltoro` | NixOS LXC on Proxmox: a fenced Hermes agent | `nix/hosts/eltoro/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 4) |
 
 Shared modules are in `nix/modules/`: `nixos/common.nix` for every NixOS
 host, `nixos/server.nix` for the two servers.
