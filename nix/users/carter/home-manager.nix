@@ -32,7 +32,6 @@ in
 {
   imports = [
     inputs.hex.homeManagerModules.hex
-    inputs.hunk.homeManagerModules.default
     ./agent-daemons.nix
     ./desktop-theme.nix
     ./obsidian-sync.nix
@@ -69,7 +68,6 @@ in
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
   programs.home-manager.enable = true;
-  programs.hunk.enable = true;
   programs.direnv = {
     enable = true;
     enableFishIntegration = true;

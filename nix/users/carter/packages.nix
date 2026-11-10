@@ -14,6 +14,7 @@ let
   hex = self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
   rex-client = self.packages.${pkgs.stdenv.hostPlatform.system}.rex-client;
   herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
+  hunk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
   openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
   nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
   ship-of-harkinian = self.packages.${pkgs.stdenv.hostPlatform.system}.ship-of-harkinian;
@@ -77,6 +78,7 @@ let
     gum
     herdr
     home-assistant-cli
+    hunk
     hyperfine
     jq
     markdown-oxide
