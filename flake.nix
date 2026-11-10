@@ -171,13 +171,7 @@
       eltoro = nixosSystem "eltoro";
       carters-macbook-pro = inputs.nix-darwin.lib.darwinSystem {
         inherit specialArgs;
-        modules = [
-          ./nix/modules/common.nix
-          inputs.home-manager.darwinModules.home-manager
-          ./nix/hosts/carters-macbook-pro
-          ./nix/modules/workstation.nix
-          inputs.determinate.darwinModules.default
-        ];
+        modules = [ ./nix/hosts/carters-macbook-pro ];
       };
     in
     {

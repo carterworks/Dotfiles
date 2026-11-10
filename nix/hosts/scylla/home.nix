@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -35,6 +36,11 @@ let
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
 in
 {
+  imports = [
+    inputs.hex.homeManagerModules.hex
+    ../../modules/home/obsidian-sync.nix
+  ];
+
   # Upstream's Home Manager module supports x86_64-linux only; macOS installs
   # the same package as a system app instead.
   # installModel downloads the speech model from the module's own service, so
