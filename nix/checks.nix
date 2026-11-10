@@ -70,6 +70,14 @@ let
             python3 ${source}/test-update.py
             touch "$out"
           '';
+      secrets-encrypted =
+        assert import ./tests/secrets-encrypted.nix {
+          inherit lib;
+          store = ../secrets/fnox.toml;
+        };
+        pkgs.runCommandLocal "secrets-encrypted-check" { } ''
+          touch "$out"
+        '';
       obsidian-sync-module =
         assert import ./tests/obsidian-sync.nix { inherit lib; };
         pkgs.runCommandLocal "obsidian-sync-module-check" { } ''
