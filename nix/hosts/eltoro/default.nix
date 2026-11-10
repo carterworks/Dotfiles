@@ -1,14 +1,13 @@
 {
   config,
   fleet,
-  inputs,
   lib,
   pkgs,
   ...
 }:
 
 let
-  hermes = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  hermes = pkgs.hermes-agent;
   fnox = pkgs.fnox;
   # hermes services get their secrets from fnox (age-encrypted
   # /var/lib/hermes/.hermes/fnox.toml; age key at
