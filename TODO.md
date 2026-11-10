@@ -26,7 +26,7 @@
 - [ ] After eltoro first switches to the chain-based egress firewall, delete the one-time migration block in `nix/machines/eltoro/egress.nix` that strips the old generation's rules from `OUTPUT`. Remove or rewrite the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests in the same change; both exercise that block.
 - [ ] Close DNS exfiltration from eltoro: hermes can send arbitrary names to the local resolver and MagicDNS, which forward them upstream as other users. Needs a filtering resolver.
 - [ ] Stop the `hermes` CLI from being a root code-execution path: run as root with `HERMES_HOME` at the service home, it reads configuration hermes can write. Until fixed, admins must use `runuser -u hermes -- hermes …` (see `docs/eltoro.md`).
-- [ ] Before deploying the KittenTTS removal, change `tts.provider` in eltoro's `/var/lib/hermes/.hermes/config.yaml`; it still selects `kittentts`, which no longer exists.
+- [ ] When deploying the KittenTTS removal, turn TTS off in eltoro's `/var/lib/hermes/.hermes/config.yaml`; its `tts.provider` still selects `kittentts`, which no longer exists.
 
 ## Claude Code
 
