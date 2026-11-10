@@ -311,7 +311,6 @@
           bambu-studio
           dotbot
           nub
-          obsidian-headless
           ;
         eltoro = eltoro.config.system.build.toplevel;
         prostagma = prostagma.config.system.build.toplevel;
