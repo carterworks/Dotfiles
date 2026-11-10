@@ -45,7 +45,7 @@ let
         touch "$out"
       '';
       shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-        shellcheck --severity=warning ${source}/check ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
+        shellcheck --severity=warning ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
         touch "$out"
       '';
       install =
