@@ -19,19 +19,21 @@ builds software. Two workflows do it:
 - **Audit who and what holds push access**: your SSH keys and personal access
   tokens, the repository's deploy keys, GitHub Apps and collaborators, and any
   automation or AI agent that can push. Each one can put code on the servers.
-- Protecting `main` with a branch rule would also stop Nightly's own push; it
-  would need a bypass for GitHub Actions.
-- **`release` is what the servers trust, completely.** Without a rule, a
-  workflow on any branch can grant itself `contents: write` and push `release`
-  directly, past `main` and CI. That is the same set of people as "can push",
-  but once `main` is protected, `release` would be the easier way in. The
-  rulesets in [item 3](#what-you-set-up-once) allow only GitHub Actions to
-  create or move it, so a person's key or token cannot push it, and forbid
-  anyone to delete or force-push it. They cannot tell this repository's
-  `release` job from a workflow someone pushed to another branch: both run as
-  GitHub Actions, and either can still fast-forward `release`. Nor can the
-  read-only default in [item 4](#what-you-set-up-once), since a workflow may ask
-  for `contents: write` itself. Push access stays the boundary.
+- Protecting `main` with a branch rule would also stop Nightly's own push, and
+  GitHub does not take GitHub Actions as a bypass on a personal repository
+  (see `release` below), so Nightly would need to push with another credential.
+- **`release` is what the servers trust, completely.** Anything that can push
+  to this repository can create or fast-forward it: your keys and tokens, and
+  any workflow on any branch, which can grant itself `contents: write` and push
+  `release` directly, past `main` and CI. Such a commit is on both servers at
+  their next nightly upgrade, running as root. No rule limits who may do it:
+  GitHub refused GitHub Actions as a ruleset bypass actor on this personal
+  repository (2026-11-10), so a ruleset cannot reserve `release` for the
+  `release` job. The ruleset in [item 3](#what-you-set-up-once) only forbids
+  deleting or force-pushing `release`, so nothing can rewind or delete it, you
+  included, until you lift it. The read-only default in
+  [item 4](#what-you-set-up-once) does not help either, since a workflow may ask
+  for `contents: write` itself. Push access is the boundary.
 - **The generated skill files are an upstream path to the servers.**
   `./update --apply` regenerates `agents/skills/generated/` from upstream
   tools' own output. The coding agents on Scylla read those files as
@@ -73,20 +75,15 @@ on `main`.
 ### When `release` does not move
 
 GitHub refuses the workflow token some pushes that touch
-`.github/workflows/`. A trial showed it accepts fast-forwarding a branch across
-existing commits that change workflow files, and creating one on such a
-history, so this should not happen; if it does, the `release` job or
+`.github/workflows/`. A trial (2026-11-10) showed it accepts fast-forwarding a
+branch across existing commits that change workflow files, and creating one on
+such a history, so this should not happen; if it does, the `release` job or
 Nightly's promote job fails with "release did not move" and the push output
 says why. Move it yourself after checking that the commit's Fleet run pushed
-all three hosts. The `release: actions only` ruleset refuses your push, so lift
-it for the push and restore it straight after (skip both `gh api` lines if you
-kept only `release: no rewrite`) (the ruleset ids come from the
-listing in [item 3](#what-you-set-up-once)):
+all three hosts. Your own fast-forward is not refused:
 
 ```sh
-gh api -X PUT repos/carterworks/dotfiles/rulesets/<actions-only-id> -f enforcement=disabled
 git push git@github.com:carterworks/dotfiles.git <commit>:refs/heads/release
-gh api -X PUT repos/carterworks/dotfiles/rulesets/<actions-only-id> -f enforcement=active
 ```
 
 ## The nightly loop
@@ -156,28 +153,22 @@ to save at most a day.
    branch rule.
 2. Under **Settings → Actions → General → Approval for running fork pull
    request workflows from contributors**, choose **Require approval for all
-   external contributors**.
-3. **Protect `release`** with two branch rulesets, under **Settings → Rules →
-   Rulesets → New ruleset → New branch ruleset**, each targeting the branch
-   name `release`, enforcement **Active**:
-   - `release: actions only`: **Restrict creations** and **Restrict updates**,
-     with **GitHub Actions** as the only bypass (mode **Always**).
-   - `release: no rewrite`: **Restrict deletions** and **Block force pushes**,
-     with no bypass.
-
-   Two rulesets, because a bypass covers every rule in its ruleset, and GitHub
-   Actions must not be able to rewind or delete `release`. With `gh` (GitHub
-   Actions' app id, 15368, is verified with `gh api /apps/github-actions`; the
-   calls below were not run, so that GitHub accepts them as written is
-   unverified):
+   external contributors**. With `gh`:
 
    ```sh
-   gh api -X POST repos/carterworks/dotfiles/rulesets --input - <<'EOF'
-   {"name": "release: actions only", "target": "branch", "enforcement": "active",
-    "conditions": {"ref_name": {"include": ["refs/heads/release"], "exclude": []}},
-    "rules": [{"type": "creation"}, {"type": "update"}],
-    "bypass_actors": [{"actor_id": 15368, "actor_type": "Integration", "bypass_mode": "always"}]}
-   EOF
+   gh api -X PUT repos/carterworks/dotfiles/actions/permissions/fork-pr-contributor-approval \
+     -f approval_policy=all_external_contributors
+   gh api repos/carterworks/dotfiles/actions/permissions/fork-pr-contributor-approval
+   ```
+3. **Stop `release` being rewound or deleted** with a branch ruleset, under
+   **Settings → Rules → Rulesets → New ruleset → New branch ruleset**, named
+   `release: no rewrite`, targeting the branch name `release`, enforcement
+   **Active**, with **Restrict deletions** and **Block force pushes** and no
+   bypass. It does not stop anyone creating or fast-forwarding `release`: a
+   ruleset that did would need GitHub Actions as its bypass, which GitHub
+   refuses on a personal repository (HTTP 422, 2026-11-10). With `gh`:
+
+   ```sh
    gh api -X POST repos/carterworks/dotfiles/rulesets --input - <<'EOF'
    {"name": "release: no rewrite", "target": "branch", "enforcement": "active",
     "conditions": {"ref_name": {"include": ["refs/heads/release"], "exclude": []}},
@@ -186,18 +177,16 @@ to save at most a day.
    gh api repos/carterworks/dotfiles/rulesets --jq '.[] | "\(.id) \(.name) \(.enforcement)"'
    ```
 
-   If GitHub will not take GitHub Actions as a bypass on a personal
-   repository, keep only the second ruleset: it still stops deletion and
-   rewinds, and anything that can push can fast-forward `release`, as today.
-   With the rulesets on, your own pushes to `release` need them lifted for the
-   push; "When `release` does not move" and
-   [Moving `release` back](#moving-release-back) show how.
+   On a stand-in branch (2026-11-10) the `release` job's token created and
+   fast-forwarded it, and both it and an admin's SSH push were refused a
+   rewind and a delete. Rewinding `release` needs the ruleset lifted:
+   [Moving `release` back](#moving-release-back).
 4. **Make the workflow token read-only by default**: **Settings → Actions →
    General → Workflow permissions → Read repository contents and packages
    permissions**, and clear **Allow GitHub Actions to create and approve pull
    requests**. Every job here that writes asks for `contents: write` itself,
-   so nothing else changes. With `gh` (the endpoint is verified: on 2026-11-10
-   it read `"default_workflow_permissions":"write"`; the change was not run):
+   so nothing else changes. With `gh` (the read-back lags the call by a few
+   seconds):
 
    ```sh
    gh api -X PUT repos/carterworks/dotfiles/actions/permissions/workflow \
@@ -287,17 +276,14 @@ gh run list --repo carterworks/dotfiles --status in_progress --json databaseId -
   | xargs -r -n1 gh run cancel --repo carterworks/dotfiles
 gh run list --repo carterworks/dotfiles --status queued --json databaseId --jq '.[].databaseId' \
   | xargs -r -n1 gh run cancel --repo carterworks/dotfiles
-gh api -X PUT repos/carterworks/dotfiles/rulesets/<actions-only-id> -f enforcement=disabled
 gh api -X PUT repos/carterworks/dotfiles/rulesets/<no-rewrite-id> -f enforcement=disabled
 git push --force git@github.com:carterworks/dotfiles.git <good-commit>:refs/heads/release
 gh api -X PUT repos/carterworks/dotfiles/rulesets/<no-rewrite-id> -f enforcement=active
-gh api -X PUT repos/carterworks/dotfiles/rulesets/<actions-only-id> -f enforcement=active
 ```
 
-The force push needs both rulesets lifted: one refuses any push but GitHub
-Actions', the other any rewind. Turn both back on straight after; with
-Nightly disabled and its runs cancelled, nothing else should push meanwhile.
-The same switches are
+The force push needs the ruleset lifted, because it refuses any rewind. Turn
+it back on straight after; with Nightly disabled and its runs cancelled,
+nothing else should push meanwhile. The same switch is
 under **Settings → Rules → Rulesets**, as **Enforcement status**. (Unverified:
 that a `PUT` with only `enforcement` leaves the rest of a ruleset as it was.)
 
