@@ -32,6 +32,42 @@ let
       fi
     done
   '';
+
+  hermesService = lib.recursiveUpdate {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    unitConfig.ConditionPathExists = "/var/lib/hermes/.hermes/config.yaml";
+    environment = {
+      HOME = "/var/lib/hermes";
+      HERMES_HOME = "/var/lib/hermes/.hermes";
+      PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
+    };
+    serviceConfig = {
+      User = "hermes";
+      Group = "hermes";
+      Slice = "hermes.slice";
+      WorkingDirectory = "/var/lib/hermes";
+      RestartSec = "5s";
+      # keep the agent from escalating even if it escapes its own config
+      NoNewPrivileges = true;
+      ProtectSystem = "full";
+      ProtectHome = true;
+      # Keep credentials and the fnox-managed gateway/channel
+      # allowlists read-only in the service namespace. config.yaml
+      # stays writable for interactive and dashboard settings;
+      # restrictions stored there are therefore not immutable.
+      ReadOnlyPaths = [
+        "/var/lib/hermes/.hermes/fnox.toml"
+        "/var/lib/hermes/.hermes/.env"
+        "/var/lib/hermes/.hermes/auth.json"
+      ];
+      # no tailscaled control socket in the service namespace —
+      # the tailscale cli is root's job (see UMask note above;
+      # this keeps it blocked even if socket perms ever regress)
+      InaccessiblePaths = [ "/run/tailscale" ];
+    };
+  };
 in
 {
   imports = [
@@ -201,17 +237,10 @@ in
   # Secrets come from fnox (age-encrypted fnox.toml) via the fnoxCmd wrapper;
   # if a new secret is added through the wizard it lands in the plaintext .env,
   # so re-import it: cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force
-  systemd.services.hermes-gateway = {
+  systemd.services.hermes-gateway = hermesService {
     description = "Hermes Agent Gateway";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    unitConfig.ConditionPathExists = "/var/lib/hermes/.hermes/config.yaml";
     environment = {
-      HOME = "/var/lib/hermes";
-      HERMES_HOME = "/var/lib/hermes/.hermes";
       MESSAGING_CWD = "/var/lib/hermes/workspace";
-      PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
       # no approval prompts: the agent is fenced from the LAN by
       # the host-side proxmox firewall and from the internet by
       # the egress ipset, so "ask carter" is a dead end that only
@@ -220,64 +249,17 @@ in
       HERMES_YOLO_MODE = "1";
     };
     serviceConfig = {
-      User = "hermes";
-      Group = "hermes";
-      Slice = "hermes.slice";
       ExecStart = "${fnoxCmd} ${hermes}/bin/hermes gateway run --replace";
-      WorkingDirectory = "/var/lib/hermes";
       Restart = "always";
-      RestartSec = "5s";
-      # keep the agent from escalating even if it escapes its own config
-      NoNewPrivileges = true;
-      ProtectSystem = "full";
-      ProtectHome = true;
-      # Keep credentials and the fnox-managed gateway/channel
-      # allowlists read-only in the service namespace. config.yaml
-      # stays writable for interactive and dashboard settings;
-      # restrictions stored there are therefore not immutable.
-      ReadOnlyPaths = [
-        "/var/lib/hermes/.hermes/fnox.toml"
-        "/var/lib/hermes/.hermes/.env"
-        "/var/lib/hermes/.hermes/auth.json"
-      ];
-      # no tailscaled control socket in the service namespace —
-      # the tailscale cli is root's job (see UMask note above;
-      # this keeps it blocked even if socket perms ever regress)
-      InaccessiblePaths = [ "/run/tailscale" ];
     };
   };
 
   # hermes dashboard (http://eltoro:9119 from the tailnet)
-  systemd.services.hermes-dashboard = {
+  systemd.services.hermes-dashboard = hermesService {
     description = "Hermes Agent Web Dashboard";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    unitConfig.ConditionPathExists = "/var/lib/hermes/.hermes/config.yaml";
-    environment = {
-      HOME = "/var/lib/hermes";
-      HERMES_HOME = "/var/lib/hermes/.hermes";
-      PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
-    };
     serviceConfig = {
-      User = "hermes";
-      Group = "hermes";
-      Slice = "hermes.slice";
       ExecStart = "${fnoxCmd} ${hermes}/bin/hermes dashboard --host 0.0.0.0 --port 9119 --no-open";
-      WorkingDirectory = "/var/lib/hermes";
       Restart = "on-failure";
-      RestartSec = "5s";
-      NoNewPrivileges = true;
-      ProtectSystem = "full";
-      ProtectHome = true;
-      # see hermes-gateway: settings writable, credentials read-only
-      ReadOnlyPaths = [
-        "/var/lib/hermes/.hermes/fnox.toml"
-        "/var/lib/hermes/.hermes/.env"
-        "/var/lib/hermes/.hermes/auth.json"
-      ];
-      # see hermes-gateway: no tailscaled control socket here
-      InaccessiblePaths = [ "/run/tailscale" ];
     };
   };
 
