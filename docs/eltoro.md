@@ -45,7 +45,10 @@ the target with `ELTORO_HOST` if needed.
 Once the binary cache is on, eltoro also upgrades itself every night to the
 `release` branch; see [Server auto-upgrade](auto-upgrade.md).
 
-Garbage collection runs nightly at 03:15, deleting store paths older than 7 days.
+Garbage collection runs nightly at 03:15, deleting store paths older than 3
+days (the other hosts keep 7; eltoro's disk is 32 GB). The store
+deduplicates new paths as they are added; to deduplicate what was there
+before, run `nix-store --optimise` once as root.
 
 ## First-run agent onboarding
 
