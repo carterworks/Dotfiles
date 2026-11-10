@@ -110,6 +110,8 @@ in
               zellijBuiltin = "${pkgs.zellij-unwrapped.src}/zellij-utils/assets/themes/${theme.apps.zellij}.kdl";
               zed = home.xdg.configFile."zed/themes/desktop-theme.json".source;
               obsidianSettings = home.xdg.configFile."desktop-theme/obsidian.json".source;
+              audit =
+                (lib.findFirst (package: package.name == "desktop-theme-audit") null home.home.packages).settings;
               obsidianManifest = "${obsidian}/manifest.json";
               obsidianCss = "${obsidian}/theme.css";
               kde = home.xdg.dataFile."color-schemes/${home.dotfiles.desktopTheme.name}.colors".source;

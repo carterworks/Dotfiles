@@ -127,9 +127,10 @@ let
     cssTheme = theme.apps.obsidian.name;
     theme = if theme.appearance == "light" then "moonstone" else "obsidian";
   };
+  obsidianVaults = map (vault: "${config.home.homeDirectory}/${vault}") cfg.obsidianVaults;
   obsidianSettings = pkgs.writeText "obsidian-theme-settings.json" (
     builtins.toJSON {
-      vaults = map (vault: "${config.home.homeDirectory}/${vault}") cfg.obsidianVaults;
+      vaults = obsidianVaults;
       appearance = obsidianAppearance;
     }
   );
@@ -188,47 +189,46 @@ in
         };
       };
       home.packages = [
-        (pkgs.writeShellApplication {
+        (pkgs.writeShellApplication rec {
           name = "desktop-theme-audit";
           text = ''
-            exec ${pkgs.python3}/bin/python3 ${./audit-desktop-theme.py} ${
-              pkgs.writeText "live-desktop-theme.json" (
-                builtins.toJSON {
-                  files = lib.listToAttrs (
-                    map
-                      (file: {
-                        name = "${config.xdg.configHome}/${file}";
-                        value = config.xdg.configFile.${file}.source;
-                      })
-                      (
-                        [
-                          "opencode/cli.json"
-                          "herdr/config.toml"
-                          "helix/config.toml"
-                          "zellij/config.kdl"
-                          "zed/settings.json"
-                          "zed/themes/desktop-theme.json"
-                          "fish/config.fish"
-                        ]
-                        ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
-                          "desktop-theme/zen.css"
-                          "gtk-3.0/colors.css"
-                          "gtk-4.0/colors.css"
-                          "gtk-4.0/gtk.css"
-                          "satty/overrides.css"
-                        ]
-                      )
-                  );
-                  kde = "${config.xdg.configHome}/kdeglobals";
-                  palette = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux (
-                    builtins.removeAttrs toolkit.scheme [ "General" ]
-                  );
-                  vaults = cfg.obsidianVaults;
-                  appearance = obsidianAppearance;
-                }
-              )
-            }
+            exec ${pkgs.python3}/bin/python3 ${./audit-desktop-theme.py} ${passthru.settings}
           '';
+          passthru.settings = pkgs.writeText "live-desktop-theme.json" (
+            builtins.toJSON {
+              files = lib.listToAttrs (
+                map
+                  (file: {
+                    name = "${config.xdg.configHome}/${file}";
+                    value = config.xdg.configFile.${file}.source;
+                  })
+                  (
+                    [
+                      "opencode/cli.json"
+                      "herdr/config.toml"
+                      "helix/config.toml"
+                      "zellij/config.kdl"
+                      "zed/settings.json"
+                      "zed/themes/desktop-theme.json"
+                      "fish/config.fish"
+                    ]
+                    ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+                      "desktop-theme/zen.css"
+                      "gtk-3.0/colors.css"
+                      "gtk-4.0/colors.css"
+                      "gtk-4.0/gtk.css"
+                      "satty/overrides.css"
+                    ]
+                  )
+              );
+              kde = "${config.xdg.configHome}/kdeglobals";
+              palette = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux (
+                builtins.removeAttrs toolkit.scheme [ "General" ]
+              );
+              vaults = obsidianVaults;
+              appearance = obsidianAppearance;
+            }
+          );
         })
       ];
       # Global values shadow old mutable universal colors without discarding them.
