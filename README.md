@@ -6,8 +6,8 @@ One Nix flake for four machines.
 |---|---|---|---|
 | `scylla` | NixOS desktop | `nix/hosts/scylla/` | `./install` on it |
 | `carters-macbook-pro` | nix-darwin laptop (employer-owned) | `nix/hosts/carters-macbook-pro/` | `./install` on it |
-| `prostagma` | NixOS LXC on Proxmox: media, photos, SSO, binary cache | `nix/hosts/prostagma/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 4) |
-| `eltoro` | NixOS LXC on Proxmox: a fenced Hermes agent | `nix/hosts/eltoro/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 4) |
+| `prostagma` | NixOS LXC on Proxmox: media, photos, SSO, binary cache | `nix/hosts/prostagma/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 5) |
+| `eltoro` | NixOS LXC on Proxmox: a fenced Hermes agent | `nix/hosts/eltoro/` | itself, nightly, once the cache key is set ([rollout](docs/rollout.md) stage 5) |
 
 Shared modules are in `nix/modules/`: `nixos/common.nix` for every NixOS
 host, `nixos/server.nix` for the two servers.
@@ -111,7 +111,7 @@ must match a flake host.
 
 ## By hand, by the owner
 
-- The first rollout, in order: [Rollout](docs/rollout.md).
+- What is left of the first rollout, in order: [Rollout](docs/rollout.md).
 - Run `./install` on scylla and the Mac.
 - Check `systemctl --failed` on the servers, or run `./drift`: a failed
   auto-upgrade notifies nobody.
@@ -119,8 +119,8 @@ must match a flake host.
 
 ## Runbooks
 
-- [Rollout](docs/rollout.md): the owner's steps, in order, from merging the
-  fleet rework to a fleet that runs unattended. Start here.
+- [Rollout](docs/rollout.md): the owner's steps still to do, in order, to a
+  fleet that runs unattended. Start here.
 - [CI](docs/ci.md): the workflows, the nightly update, `release` and the trust
   roots
 - [Binary cache](docs/binary-cache.md)
