@@ -145,7 +145,7 @@ on `windowsIn`, `windowsOut`, `fadeIn`, and `fadeOut`. Reload with Super+Shift+R
 - `../quickshell/AudioRow.qml`: one device or application row in the popover.
 - `../quickshell/dev.qml`: isolated preview entry point for panel work.
 - `../bin/qs-preview`: preview-and-screenshot helper for shell development.
-- `../nix/machines/scylla/hyprland.nix`: packages, portals, UWSM environment,
+- `../nix/hosts/scylla/hyprland.nix`: packages, portals, UWSM environment,
   and session services.
 
 The sidebar reuses Dolphin, PipeWire, KWallet, KDE authentication prompts, and

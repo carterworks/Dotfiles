@@ -47,7 +47,7 @@ systemFunc {
         users.${systemUsername} = homeConfig;
       };
     }
-    ../machines/${name}.nix
+    ../hosts/${name}
     ../users/${profile}/packages.nix
     userConfig
   ]

@@ -54,7 +54,7 @@ in
       };
     in
     {
-      imports = [ ../machines/eltoro/egress.nix ];
+      imports = [ ../hosts/eltoro/egress.nix ];
       eltoro.egress.uplink = "eth1";
 
       users.groups.hermes = { };
