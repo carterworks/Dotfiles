@@ -1,6 +1,5 @@
 {
   pkgs,
-  self,
   ...
 }:
 
@@ -10,7 +9,7 @@
     btop
     curl
     fd
-    self.packages.${pkgs.stdenv.hostPlatform.system}.fff-mcp
+    fff-mcp
     fnox
     jq
     nfs-utils
