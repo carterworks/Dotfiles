@@ -10,7 +10,7 @@ host in this flake: `nix/machines/eltoro.nix` holds the configuration,
 
 - fish (root shell)
 - tailscale
-- hermes-agent gateway + dashboard (`:9119`), gated on
+- hermes-agent gateway + dashboard (`:9119`, tailnet only), gated on
   `/var/lib/hermes/.hermes/config.yaml` existing — nothing starts until the
   agent is onboarded
 - key-only SSH for root (deploy target)
@@ -50,17 +50,17 @@ Run onboarding as the `hermes` user so it writes the service's
 
 ```sh
 ssh root@eltoro   # resolves via the tailnet (the LAN IP is firewalled off)
-su hermes -c 'hermes auth login'   # or however the agent wants to authenticate
-su hermes -c 'hermes'              # interactive onboarding
+runuser -u hermes -- hermes auth login   # or however the agent wants to authenticate
+runuser -u hermes -- hermes              # interactive onboarding
 systemctl start hermes-gateway hermes-dashboard
 ```
 
 No LiteLLM/MCP servers are configured — authenticate when needed.
 
-Running `hermes` as root can create root-owned settings under `/root/.hermes`
-or, if `HERMES_HOME` points at the service home, under
-`/var/lib/hermes/.hermes`; prefer `su hermes -c 'hermes'` for admin (see
-[Changing settings](#changing-settings)).
+Never run `hermes` as root. With `HERMES_HOME` pointed at the service home it
+reads configuration that the agent can write (see [Known gaps](#known-gaps)),
+and it leaves root-owned settings the gateway cannot read (see
+[Changing settings](#changing-settings)). Always use `runuser -u hermes -- hermes …`.
 
 ## Changing settings
 
@@ -77,17 +77,22 @@ cannot read. It then silently
 falls back to a default config and fails every turn with `No LLM provider
 configured`, so Discord stops replying. The gateway does not exit when this
 happens, so it used to stay broken until the next deploy; it now self-heals
-within a minute. Prefer `su hermes -c '...'` for admin, and if the gateway goes
-quiet, check `journalctl -u hermes-gateway | grep 'Permission denied'`.
+within a minute. Run admin commands as `runuser -u hermes -- …`, and if the
+gateway goes quiet, check `journalctl -u hermes-gateway | grep 'Permission denied'`.
+
+The repair runs as root inside a directory the agent owns, so it refuses, and
+its unit fails, unless `/var/lib/hermes/.hermes` is a real directory owned by
+`hermes`; otherwise a symlink there could aim its `chown` anywhere.
 
 Allowlists in `config.yaml` are editable settings, not a containment boundary.
 The system-level network, privilege, and resource restrictions still apply.
 
 Approval prompts are deliberately off — `approvals.mode: off` in
 `config.yaml` and `HERMES_YOLO_MODE=1` on the gateway — because the agent runs
-unattended and the real fence is the host-side Proxmox firewall plus the egress
-ipset (see [LAN isolation](#lan-isolation-host-enforced)). Hardline command
-blocks still apply even in yolo mode.
+unattended and the real fence is the network: the container's egress firewall
+plus the host-side Proxmox firewall (see [Egress firewall](#egress-firewall)
+and [LAN isolation](#lan-isolation-host-enforced)). Hardline command blocks
+still apply even in yolo mode.
 
 Check settings permissions without modifying them:
 
@@ -112,7 +117,7 @@ If onboarding or a wizard writes a new secret into the plaintext `.env`,
 re-import it and restart the services:
 
 ```sh
-su hermes -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
+runuser -u hermes -- sh -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
 systemctl restart hermes-gateway hermes-dashboard
 ```
 
@@ -127,14 +132,35 @@ systemctl restart hermes-gateway hermes-dashboard
 
 ## Egress firewall
 
-`nix/machines/eltoro/egress.nix` restricts the `hermes` user with iptables. The
-rules live in a `hermes-egress` chain jumped to from `OUTPUT`, in both families:
+`nix/machines/eltoro/egress.nix` fences what the agent can reach, with iptables
+rules in a `hermes-egress` chain jumped to from `OUTPUT`, in both address
+families. It applies to the `hermes` user and to Nix build users (group
+`nixbld`); root and every other user are unrestricted.
 
-- On `eth0`, `hermes` may only reach addresses in the `egress-allowed` ipset
-  (filled from the domain and CIDR lists by `egress-allowlist.timer`). Its IPv6
-  egress is rejected. Other uids are unrestricted.
-- On `tailscale0`, `hermes` may not start connections into the tailnet; replies
-  to inbound sessions and MagicDNS (`100.100.100.100:53`) still work.
+For those two, the chain is an allowlist. Everything it does not accept is
+rejected, on every interface except loopback:
+
+- Replies on established and related connections, so inbound sessions (SSH,
+  the dashboard) keep working.
+- On `eth0`, IPv4 addresses in the `egress-allowed` ipset, which
+  `egress-allowlist.timer` fills from the domain and CIDR lists. IPv6 egress is
+  rejected.
+- On `tailscale0`, MagicDNS (`100.100.100.100:53`) only: no new connection into
+  the tailnet, and nothing routed through it, such as a subnet route or an exit
+  node.
+
+Nix builds are fenced because any user may ask the daemon for one, and
+fixed-output builds run as a build user with the host's network: unfenced, the
+agent could fetch any address from a derivation and read the reply in the build
+log. Substitution is done by the daemon as root and is unaffected. Builds that
+root starts on eltoro are fenced too; build on Scylla, as `install-eltoro` does.
+
+The fence fails closed. Whenever the chain is down (the firewall stopped, a
+failed reload, or the moment inside every reload) a catch-all
+`hermes-egress-closed` chain rejects every new connection from the fenced
+users, while established sessions carry on. Start builds the chain, hooks it,
+and only then removes the catch-all. The Hermes units require
+`firewall.service`, so they do not start without the fence and stop with it.
 
 Each rule is written once. Start, reload and stop all remove the chain and
 start rebuilds it, so a rule cannot outlive the generation that wrote it.
@@ -143,12 +169,24 @@ start rebuilds it, so a rule cannot outlive the generation that wrote it.
 nix build .#checks.x86_64-linux.eltoro-egress   # exercises the fence in VMs
 ```
 
+### Known gaps
+
+- DNS exfiltration: hermes can send arbitrary names to the local resolver and
+  MagicDNS, which forward them upstream as other users. Closing it needs a
+  filtering resolver; not done.
+- Running the `hermes` CLI as root with `HERMES_HOME` pointed at the service
+  home reads configuration that hermes can write, which may let the agent run
+  code as root. Run it as `runuser -u hermes -- hermes …` instead.
+- Shared CDN addresses in the allowlist (Cloudflare, Fastly) also reach other
+  tenants on those addresses.
+
 ## LAN isolation (host-enforced)
 
-Hermes runs as root inside the CT, so the guest's own NixOS firewall isn't a
-real containment boundary — the agent could flush it. The real fence is the
-Proxmox firewall, enforced by the host kernel from outside the container. Both
-directions between eltoro and the LAN (`192.168.4.0/22`) are blocked:
+Hermes runs as the unprivileged `hermes` user, so it cannot change the
+container's own firewall. That firewall still sits inside the container, so it
+falls if root there is compromised. The Proxmox firewall, enforced by the host
+kernel from outside the container, holds even then. Both directions between
+eltoro and the LAN (`192.168.4.0/22`) are blocked:
 
 - herodotus: `pct set 102 -net0 ...,firewall=1` plus `/etc/pve/firewall/102.fw`
   (per-CT rules) and `/etc/pve/firewall/cluster.fw` (enables the datacenter

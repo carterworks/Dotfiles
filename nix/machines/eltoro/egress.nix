@@ -8,11 +8,11 @@
 let
   uplink = config.eltoro.egress.uplink;
 
-  # --- outbound egress allowlist (hermes user only; root unrestricted) ---
+  # --- outbound egress allowlist (hermes and nix builds; root unrestricted) ---
   # domains the agent may reach on the internet. a root-run oneshot
   # resolves them into the `egress-allowed` ipset (refreshed every 5
   # min, entries self-expire after 2h so dead cdn ips fall away), and
-  # firewall rules only let hermes-uid packets into that set. cdn
+  # firewall rules let hermes and nix builds reach only that set. cdn
   # caveat: shared cdn ips (cloudflare/fastly) mean hermes can also
   # reach other tenants on those ips — accepted residual.
   egressAllowedDomains = [
