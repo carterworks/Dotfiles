@@ -147,11 +147,13 @@ Independent of stage 4; it needs only stage 3.
 
 ## 6. Workstations
 
-1. scylla: confirm `./install` left no `*.hm-backup` files and every config
-   link resolves through `home-manager-files`
-   ([README, config files](../README.md#config-files)). Delete the links Dotbot
-   left that Home Manager does not own: `~/.config/rex/init.lua` and the
-   dangling links in `~/.local/bin`.
+1. scylla: confirm `./install` left no new `*.hm-backup` files and every
+   config link resolves through `home-manager-files`
+   ([README, config files](../README.md#config-files)). Backups dated before
+   the install come from earlier Home Manager runs and can be deleted. Delete
+   the links Dotbot left that Home Manager does not own:
+   `~/.config/rex/init.lua` and the dangling links in `~/.local/bin`,
+   `~/.config`, `~/.claude` and `~/.agents`.
 2. scylla: reboot, then confirm `opencode2` and `t3` are running and Obsidian
    Sync resumed, with scylla in the vault's version history
    ([User services](user-services.md)).

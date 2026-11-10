@@ -45,6 +45,10 @@ rest over SSH. As with `./update`, the GitHub token comes from `GH_TOKEN`,
 `GITHUB_TOKEN` or `gh auth token`; Nix gets it through `NIX_CONFIG`, never on a
 command line, and root never gets it. `PROSTAGMA_HOST` and `ELTORO_HOST` override the SSH targets.
 
+When a remote switch ends with a failed unit, `nixos-rebuild`'s last line asks
+whether you forgot `--ask-elevate-password`. That line is generic; the unit
+that failed is named a few lines above it.
+
 To build a host without switching to it:
 
 ```bash
