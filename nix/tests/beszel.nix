@@ -84,6 +84,10 @@ in
           };
         };
         networking.firewall.interfaces.eth1.allowedTCPPorts = [ 80 ];
+        environment.systemPackages = [
+          pkgs.mkpasswd
+          pkgs.sqlite
+        ];
 
         services.authelia.instances.main.settings.authentication_backend.file.path = lib.mkForce (
           pkgs.writeText "authelia-test-users.yml" (
@@ -361,6 +365,19 @@ in
 
     with subtest("a connected agent listens on nothing"):
         listens_on_nothing()
+
+    with subtest("the runbook sets a superuser password without putting it in an argument"):
+        prostagma.succeed("systemctl stop beszel-hub.service")
+        prostagma.succeed(
+            "printf %s super-test-password | mkpasswd -m bcrypt -R 10 -s > /root/hash",
+            "printf \"UPDATE _superusers SET password = '%s' WHERE email = 'carter@carter.works';\\n\" \"$(cat /root/hash)\""
+            " | runuser -u beszel-hub -- sqlite3 /srv/apps/beszel-hub/beszel_data/data.db",
+            "systemctl start beszel-hub.service",
+        )
+        prostagma.wait_for_open_port(8091, "127.0.0.1")
+        superuser = {"identity": "carter@carter.works", "password": "super-test-password"}
+        out = json.loads(prostagma.succeed(f"curl -sSf --json '{json.dumps(superuser)}' {api}/collections/_superusers/auth-with-password"))
+        assert out["record"]["email"] == "carter@carter.works", out
 
     with subtest("no agent token reaches Caddy's logs or the journal"):
         # An upstream error makes Caddy log the request, headers and all.
