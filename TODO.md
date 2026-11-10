@@ -44,7 +44,7 @@ Prostagma's services read their secrets from fnox (`secrets/fnox.toml`, decrypte
 - [x] Deploy the integrated `eltoro` host with `./install eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
 - [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before bumping the pinned rev. `flake.nix` names the rev in the input URL, so `./update` cannot move it; to bump, edit that rev and run `nix flake update hermes-agent`.
 - [ ] After eltoro first switches to the chain-based egress firewall, delete the one-time migration block in `nix/hosts/eltoro/egress.nix` that strips the old generation's rules from `OUTPUT`. Remove or rewrite the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests in the same change; both exercise that block.
-- [ ] Deploy the hardened egress fence and settings repair to eltoro following "Deploying fence changes" in `docs/eltoro.md` (snapshot, pre-flight `OUTPUT` check, then the post-deploy checks).
+- [ ] Deploy the hardened egress fence and settings repair to eltoro following "Deploying fence changes" in `docs/eltoro.md` (snapshot, pre-flight `OUTPUT` check, then the post-deploy checks). Do this before setting the binary cache key: the key turns on unattended upgrades, and the first switch to the chain-based fence needs the pre-flight check.
 - [ ] Close DNS exfiltration from eltoro: hermes can send arbitrary names to the local resolver and MagicDNS, which forward them upstream as other users. Needs a filtering resolver.
 - [ ] Stop the `hermes` CLI from being a root code-execution path: run as root with `HERMES_HOME` at the service home, it reads configuration hermes can write. Until fixed, admins must use `runuser --pty -u hermes -- hermes …` (see `docs/eltoro.md`).
 - [ ] When deploying the KittenTTS removal, turn TTS off in eltoro's `/var/lib/hermes/.hermes/config.yaml`; its `tts.provider` still selects `kittentts`, which no longer exists.
@@ -101,3 +101,9 @@ the app. The app downloads its model during setup instead.
 ## Monitoring
 
 - [ ] Add a Beszel hub and dashboard on prostagma, behind Authelia like the other dashboards, and Beszel agents on prostagma, Scylla and eltoro. Nothing on the Mac. On eltoro the agent may run as root; confirm the egress fence still restricts only Hermes and what acts for it. The prostagma agent should also record its Docker containers, systemd services, and whatever else Beszel can collect there, such as processes.
+
+## Fleet deploys
+
+Servers follow the `release` branch with `system.autoUpgrade` once the binary cache key is set; see `docs/auto-upgrade.md`.
+
+- [ ] After setting the cache key and deploying both servers, confirm the first night's run on each: `systemctl list-timers nixos-upgrade.timer` shows the next run and `journalctl -u nixos-upgrade.service` shows a switch to `release`, with nothing built locally.
