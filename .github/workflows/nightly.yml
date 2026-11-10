@@ -1,0 +1,203 @@
+name: Nightly
+
+on:
+  # 00:17 in Denver in winter, 01:17 in summer: quiet, and over three hours
+  # before the servers upgrade at 04:30, enough for a late start and a long
+  # build. Off the hour, when GitHub delays schedules the most.
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  update:
+    # A dispatch on another branch runs that branch's copy of this file, which
+    # would still update and move main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.update.outputs.base }}
+      commit: ${{ steps.update.outputs.commit }}
+      status: ${{ steps.update.outputs.status }}
+      failed: ${{ steps.update.outputs.failed }}
+      summary: ${{ steps.update.outputs.summary }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      # Nix's installer fetches its tarball once, without retrying, and a
+      # runner's network occasionally drops that download.
+      - name: Install Nix
+        id: nix
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        continue-on-error: true
+        with:
+          github_access_token: ${{ github.token }}
+      - name: Install Nix, second attempt
+        if: steps.nix.outcome == 'failure'
+        uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        with:
+          github_access_token: ${{ github.token }}
+      - name: Use the flake's binary caches
+        run: |
+          mkdir -p ~/.config/nix
+          nix eval --raw --impure -f .github/ci.nix nixConf >> ~/.config/nix/nix.conf
+      # Exit 1 means some items failed and the rest are in the tree: build and
+      # merge those, and let the report turn the run red.
+      - name: Update
+        id: update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base=$(git rev-parse HEAD)
+          echo "base=$base" >>"$GITHUB_OUTPUT"
+          status=0
+          ./update --apply 2>&1 >"$RUNNER_TEMP/summary" | tee "$RUNNER_TEMP/log" || status=$?
+          echo "status=$status" >>"$GITHUB_OUTPUT"
+          if (( status > 1 )); then exit "$status"; fi
+          echo "failed=$(sed -n 's/^Failed: //p' "$RUNNER_TEMP/log")" >>"$GITHUB_OUTPUT"
+          { echo 'summary<<__SUMMARY__'; cat "$RUNNER_TEMP/summary"; echo __SUMMARY__; } >>"$GITHUB_OUTPUT"
+          git add -A -- flake.nix flake.lock nix agents
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -F - <<<"nix: update"$'\n\n'"$(cat "$RUNNER_TEMP/summary")"
+          echo "commit=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+          git bundle create "$RUNNER_TEMP/update.bundle" "$base..HEAD"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.update.outputs.commit
+        with:
+          name: update
+          path: ${{ runner.temp }}/update.bundle
+          retention-days: 7
+          overwrite: true
+
+  build:
+    needs: update
+    if: needs.update.outputs.commit
+    uses: ./.github/workflows/fleet.yml
+    # Only the ceiling: fleet.yml's release job asks for write and never runs
+    # here, and its build jobs keep contents: read.
+    permissions:
+      contents: write
+    secrets: inherit
+    with:
+      base: ${{ needs.update.outputs.base }}
+      commit: ${{ needs.update.outputs.commit }}
+
+  promote:
+    needs: [update, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      COMMIT: ${{ needs.update.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.update.outputs.base }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: update
+          path: ${{ runner.temp }}
+      # Without --force the push succeeds only while main is still the update's
+      # parent. If someone pushed meanwhile, stop: their commit gets its own
+      # build, and the next nightly updates on top of it.
+      - name: Fast-forward main
+        run: |
+          git fetch -q "$RUNNER_TEMP/update.bundle"
+          if ! git push origin "$COMMIT:refs/heads/main"; then
+            git fetch -q origin main
+            echo "::error title=main moved::main moved to $(git rev-parse --short FETCH_HEAD) during the nightly, so the update was not merged. Run Nightly again to update on top of it."
+            exit 1
+          fi
+      - name: Advance release
+        if: >-
+          needs.build.outputs.scylla == 'pushed'
+          && needs.build.outputs.prostagma == 'pushed'
+          && needs.build.outputs.eltoro == 'pushed'
+        run: |
+          git push origin "$COMMIT:refs/heads/release" \
+            || { git fetch -q origin release && git merge-base --is-ancestor "$COMMIT" FETCH_HEAD; }
+
+  report:
+    needs: [update, build, promote]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE: ${{ needs.update.result }}
+          STATUS: ${{ needs.update.outputs.status }}
+          FAILED: ${{ needs.update.outputs.failed }}
+          SUMMARY: ${{ needs.update.outputs.summary }}
+          COMMIT: ${{ needs.update.outputs.commit }}
+          BUILD: ${{ needs.build.result }}
+          PROMOTE: ${{ needs.promote.result }}
+          CACHE: >-
+            scylla=${{ needs.build.outputs.scylla || 'none' }}
+            prostagma=${{ needs.build.outputs.prostagma || 'none' }}
+            eltoro=${{ needs.build.outputs.eltoro || 'none' }}
+        run: |
+          # The failed step tells a broken update (Build) from a runner or
+          # network problem anywhere else, which a rerun fixes.
+          mapfile -t failures < <(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+            --jq '.jobs[] | select(.conclusion == "failure") | "\(.name)\t\([.steps[] | select(.conclusion == "failure") | .name] | last // "Set up job")"')
+          problems=()
+          broken=()
+          flaky=()
+          for failure in "${failures[@]}"; do
+            job=${failure%%$'\t'*}
+            step=${failure#*$'\t'}
+            case "$job/$step" in
+              "build / "*/Build) broken+=("${job#build / }") ;;
+              update/Update) problems+=("./update --apply failed (exit $STATUS); nothing was built") ;;
+              "promote/Fast-forward main") problems+=("main did not move; see the promote job") ;;
+              *) flaky+=("$job (in \"$step\")") ;;
+            esac
+          done
+          (( ${#broken[@]} == 0 )) || problems+=("the update does not build: ${broken[*]}; main and release did not move")
+          (( ${#flaky[@]} == 0 )) || problems+=("failed before or outside the build, which a rerun of the failed jobs usually fixes: ${flaky[*]}")
+          if [[ " $UPDATE $BUILD $PROMOTE " == *" failure "* ]] && (( ${#failures[@]} == 0 )); then
+            problems+=("a job failed; see the run")
+          fi
+          [[ $STATUS != 1 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
+          if [[ $PROMOTE == success && $CACHE == *unreachable* ]]; then
+            problems+=("main moved but release did not: the binary cache was unreachable")
+          fi
+
+          if [[ -z $COMMIT ]]; then
+            outcome="Nothing to update."
+          elif [[ $PROMOTE != success ]]; then
+            outcome="Not merged: main and release are unchanged."
+          elif [[ $CACHE == *skipped* || $CACHE == *unreachable* ]]; then
+            outcome="main is now \`$COMMIT\`; release did not move ($CACHE)."
+          else
+            outcome="main and release are now \`$COMMIT\`."
+          fi
+          {
+            echo "## Nightly update"
+            echo
+            echo "$outcome"
+            if [[ -n $SUMMARY ]]; then
+              printf '\n~~~\n%s\n~~~\n' "$SUMMARY"
+            fi
+            if (( ${#problems[@]} > 0 )); then
+              echo
+              printf -- '- **%s**\n' "${problems[@]}"
+            fi
+          } >>"$GITHUB_STEP_SUMMARY"
+          for problem in "${problems[@]}"; do
+            echo "::error::$problem"
+          done
+          (( ${#problems[@]} == 0 ))
