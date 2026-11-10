@@ -108,7 +108,7 @@ in
 {
   imports = [
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
-    ./eltoro/egress.nix
+    ./egress.nix
   ];
 
   # the proxmox-lxc module forces networking.hostName to "" by default

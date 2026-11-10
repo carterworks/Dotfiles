@@ -118,9 +118,9 @@ let
 in
 {
   imports = [
-    ./hardware/scylla.nix
-    ./disko/scylla.nix
-    ./scylla/hyprland.nix
+    ./hardware.nix
+    ./disk.nix
+    ./hyprland.nix
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -140,7 +140,7 @@ in
   # Only works while the BIOS supplies standby power to the slot (ErP disabled).
   networking.interfaces.enp7s0.wakeOnLan.enable = true;
   home-manager.users.${systemUsername} = {
-    imports = [ ./scylla/home-manager.nix ];
+    imports = [ ./home.nix ];
   };
 
   time.timeZone = "America/Denver";

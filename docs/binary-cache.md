@@ -7,7 +7,7 @@ fetched for 14 days is garbage-collected.
 
 | | |
 |---|---|
-| Server | `nix/machines/prostagma/binary-cache.nix` |
+| Server | `nix/hosts/prostagma/binary-cache.nix` |
 | Client (scylla, prostagma, eltoro) | `nix/modules/binary-cache.nix`, off until its public key is set |
 | VM test | `nix build .#checks.x86_64-linux.binary-cache` (`nix/tests/binary-cache.nix`) |
 | URL | `http://prostagma.dropbear-tortoise.ts.net:8199/fleet` |
@@ -99,7 +99,7 @@ after about 30 seconds instead, eltoro cannot, and with the client on, each
 lookup there would wait out those 30 seconds before falling back to the other
 caches. Either grant eltoro `tcp:8199` on `prostagma` in the tailnet policy and
 check again, or keep eltoro's client off with
-`dotfiles.binaryCache.publicKey = null;` in `nix/machines/eltoro.nix`.
+`dotfiles.binaryCache.publicKey = null;` in `nix/hosts/eltoro/default.nix`.
 
 `attic cache info` prints a line `Public Key: fleet:…`. In
 `nix/modules/binary-cache.nix`, replace `default = null;` with that key in
@@ -299,7 +299,7 @@ period. Garbage collection runs when atticd starts and every 12 hours after.
 
 To change the retention for every cache, edit
 `garbage-collection.default-retention-period` in
-`nix/machines/prostagma/binary-cache.nix` and deploy prostagma. A
+`nix/hosts/prostagma/binary-cache.nix` and deploy prostagma. A
 per-cache value set with `attic` overrides the default until it is reset. The
 token from step 2 has expired and could not configure anyway, so log in with a
 fresh one-hour token that may only configure the cache. On prostagma, in the
@@ -345,7 +345,7 @@ versions shrink what is stored.
 
 Attic has no size limit, and `/srv/apps` also holds Postgres (Immich) and
 Docker. Every 5 minutes `atticd-size-guard.timer` measures `/srv/apps/attic`;
-over the cap (`sizeCapGiB` in `nix/machines/prostagma/binary-cache.nix`,
+over the cap (`sizeCapGiB` in `nix/hosts/prostagma/binary-cache.nix`,
 30 GiB) it stops atticd and fails. You see it in `systemctl --failed` on
 prostagma, and the reason in its journal:
 
@@ -440,7 +440,7 @@ it would otherwise have stopped. Remove `fallback` from
 
 ## El Toro
 
-eltoro's firewall (`nix/machines/eltoro/egress.nix`) lets the Nix daemon,
+eltoro's firewall (`nix/hosts/eltoro/egress.nix`) lets the Nix daemon,
 which runs as root, reach the cache over IPv4: the `tailscale0` OUTPUT rules
 accept any packet not owned by `hermes`. The `hermes` user gets no new
 connections into `100.64.0.0/10`. Its packets reach only the DNS and

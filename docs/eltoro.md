@@ -2,8 +2,8 @@
 
 A pet NixOS LXC on the Proxmox host **herodotus** (CT 102) running its own
 [Hermes agent](https://github.com/NousResearch/hermes-agent). It is a normal
-host in this flake: `nix/machines/eltoro.nix` holds the configuration,
-`nix/machines/eltoro/egress.nix` holds the agent's network restrictions, and
+host in this flake: `nix/hosts/eltoro/default.nix` holds the configuration,
+`nix/hosts/eltoro/egress.nix` holds the agent's network restrictions, and
 `hermes-agent` is a flake input.
 
 ## What's in the box
@@ -116,7 +116,7 @@ bash tests/hermes-settings-writable
 ## Secrets and environment
 
 The systemd units declare their non-secret environment directly in
-`nix/machines/eltoro.nix`: `HOME`, `HERMES_HOME`, `MESSAGING_CWD`, `PATH`, and
+`nix/hosts/eltoro/default.nix`: `HOME`, `HERMES_HOME`, `MESSAGING_CWD`, `PATH`, and
 `HERMES_YOLO_MODE`.
 
 Secrets come from `fnox`, not from Nix or Git. Both units run through
@@ -145,7 +145,7 @@ systemctl restart hermes-gateway hermes-dashboard
 
 ## Egress firewall
 
-`nix/machines/eltoro/egress.nix` fences what the agent can reach, with iptables
+`nix/hosts/eltoro/egress.nix` fences what the agent can reach, with iptables
 rules in a `hermes-egress` chain jumped to from `OUTPUT`, in both address
 families. It applies to the `hermes` user and to Nix build users (group
 `nixbld`); root and every other user are unrestricted.

@@ -33,8 +33,8 @@ pkgs.testers.runNixOSTest {
   nodes = {
     server = {
       imports = [
-        ../machines/prostagma/app-storage.nix
-        ../machines/prostagma/binary-cache.nix
+        ../hosts/prostagma/app-storage.nix
+        ../hosts/prostagma/binary-cache.nix
       ];
       virtualisation = {
         vlans = [
