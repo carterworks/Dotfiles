@@ -113,6 +113,8 @@ in
 
   nixpkgs.hostPlatform = "x86_64-linux";
 
+  nix.settings.auto-optimise-store = true;
+
   networking.hostName = "eltoro";
   i18n.defaultLocale = "en_US.UTF-8";
 
