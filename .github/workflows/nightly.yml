@@ -99,6 +99,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      main: ${{ steps.main.outcome }}
+      release: ${{ steps.release.outcome }}
     env:
       COMMIT: ${{ needs.update.outputs.commit }}
     steps:
@@ -114,6 +117,7 @@ jobs:
       # parent. If someone pushed meanwhile, stop: their commit gets its own
       # build, and the next nightly updates on top of it.
       - name: Fast-forward main
+        id: main
         run: |
           git fetch -q "$RUNNER_TEMP/update.bundle"
           if ! git push origin "$COMMIT:refs/heads/main"; then
@@ -145,7 +149,8 @@ jobs:
           SUMMARY: ${{ needs.update.outputs.summary }}
           COMMIT: ${{ needs.update.outputs.commit }}
           BUILD: ${{ needs.build.result }}
-          PROMOTE: ${{ needs.promote.result }}
+          MAIN: ${{ needs.promote.outputs.main }}
+          RELEASE: ${{ needs.promote.outputs.release }}
           CACHE: >-
             scylla=${{ needs.build.outputs.scylla || 'none' }}
             prostagma=${{ needs.build.outputs.prostagma || 'none' }}
@@ -165,27 +170,30 @@ jobs:
               "build / "*/Build) broken+=("${job#build / }") ;;
               update/Update) problems+=("./update --apply failed (exit $STATUS); nothing was built") ;;
               "promote/Fast-forward main") problems+=("main did not move; see the promote job") ;;
+              "promote/Advance release") problems+=("main moved but release could not be moved; see the promote job") ;;
               *) flaky+=("$job (in \"$step\")") ;;
             esac
           done
           (( ${#broken[@]} == 0 )) || problems+=("the update does not build: ${broken[*]}; main and release did not move")
           (( ${#flaky[@]} == 0 )) || problems+=("failed before or outside the build, which a rerun of the failed jobs usually fixes: ${flaky[*]}")
-          if [[ " $UPDATE $BUILD $PROMOTE " == *" failure "* ]] && (( ${#failures[@]} == 0 )); then
+          if [[ " $UPDATE $BUILD $MAIN $RELEASE " == *" failure "* ]] && (( ${#failures[@]} == 0 )); then
             problems+=("a job failed; see the run")
           fi
           [[ $STATUS != 3 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
-          if [[ $PROMOTE == success && $CACHE == *unreachable* ]]; then
+          if [[ $MAIN == success && $CACHE == *unreachable* ]]; then
             problems+=("main moved but release did not: the binary cache was unreachable")
           fi
 
           if [[ -z $COMMIT ]]; then
             outcome="Nothing to update."
-          elif [[ $PROMOTE != success ]]; then
+          elif [[ $MAIN != success ]]; then
             outcome="Not merged: main and release are unchanged."
-          elif [[ $CACHE == *skipped* || $CACHE == *unreachable* ]]; then
-            outcome="main is now \`$COMMIT\`; release did not move ($CACHE)."
-          else
+          elif [[ $RELEASE == success ]]; then
             outcome="main and release are now \`$COMMIT\`."
+          elif [[ $RELEASE == failure ]]; then
+            outcome="main is now \`$COMMIT\`; moving release failed."
+          else
+            outcome="main is now \`$COMMIT\`; release did not move ($CACHE)."
           fi
           {
             echo "## Nightly update"
