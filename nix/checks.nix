@@ -171,6 +171,13 @@ in
       bambu-studio
       nub
       ;
+    beszel =
+      let
+        pkgs = nixpkgs.legacyPackages.x86_64-linux.extend (
+          _: _: { inherit (self.packages.x86_64-linux) fnox; }
+        );
+      in
+      pkgs.testers.runNixOSTest ./tests/beszel.nix;
     binary-cache = import ./tests/binary-cache.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
     eltoro = eltoro.config.system.build.toplevel;
     eltoro-egress = nixpkgs.legacyPackages.x86_64-linux.testers.runNixOSTest ./tests/eltoro-egress.nix;
