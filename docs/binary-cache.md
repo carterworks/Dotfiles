@@ -83,13 +83,15 @@ gh secret list --repo carterworks/dotfiles | grep -E '^(ATTIC_TOKEN|TS_OAUTH_CLI
 
 ## 1. First deployment (**You**)
 
-On prostagma, in the dotfiles checkout, on a branch that contains this change:
+From scylla, on a checkout that contains this change:
 
 ```sh
-./install
+./install prostagma
 ```
 
-Check the result on prostagma:
+This is also prostagma's first deployment in [Secrets](secrets.md#prostagma)
+and [Monitoring](monitoring.md#first-deployment); do their checks after the
+same deploy. Check the result on prostagma:
 
 ```sh
 systemctl status atticd.service atticd-secret.service atticd-size-guard.timer --no-pager
@@ -101,8 +103,9 @@ curl -sS http://prostagma.dropbear-tortoise.ts.net:8199/       # any HTTP reply
 
 The cache's signing key is created with the cache and kept in its database.
 
-On prostagma, in the dotfiles checkout, open a shell with the Attic client this
-flake pins, so that client and server versions match:
+On prostagma, in the dotfiles checkout (`~/.config/dotfiles`, at the commit you
+deployed), open a shell with the Attic client this flake pins, so that client
+and server versions match:
 
 ```sh
 nix shell --inputs-from . nixpkgs#attic-client
@@ -140,6 +143,18 @@ lookup there would wait out those 30 seconds before falling back to the other
 caches. Either grant eltoro `tcp:8199` on `prostagma` in the tailnet policy and
 check again, or keep eltoro's client off with
 `dotfiles.binaryCache.publicKey = null;` in `nix/hosts/eltoro/default.nix`.
+The same option gates `system.autoUpgrade`, so keeping the client off also
+keeps eltoro from upgrading itself; it is then deployed only by hand.
+
+### Turn the client on
+
+Setting the key turns on unattended upgrades on both servers, so first:
+
+- eltoro must run the chain-based egress fence, deployed by hand ("Deploying
+  fence changes" in [El Toro](eltoro.md#deploying-fence-changes)).
+- Preferably, finish steps 3 and 4 and let CI create `release` first. The key
+  can be set before that, but then every server upgrade fails until `release`
+  exists (see below).
 
 `attic cache info` prints a line `Public Key: fleet:…`. In
 `nix/modules/nixos/binary-cache.nix`, replace `default = null;` with that key in
@@ -483,13 +498,11 @@ it would otherwise have stopped. Remove `fallback` from
 
 ## El Toro
 
-eltoro's firewall (`nix/hosts/eltoro/egress.nix`) lets the Nix daemon,
-which runs as root, reach the cache over IPv4: the `tailscale0` OUTPUT rules
-accept any packet not owned by `hermes`. The `hermes` user gets no new
-connections into `100.64.0.0/10`. Its packets reach only the DNS and
-established-connection rules, then hit the REJECT. IPv6 to the tailnet is
-rejected for every user, root included, so the daemon's lookup falls back to
-prostagma's IPv4 record straight away.
+eltoro's egress fence (`nix/hosts/eltoro/egress.nix`) restricts only the
+`hermes` user and Nix build users. The Nix daemon substitutes as root, which
+the first rule of the `hermes-egress` chain accepts in both address families,
+so it reaches the cache. `hermes` and build users get no new connection on
+`tailscale0` except MagicDNS, so they cannot reach the cache themselves.
 
 The tailnet policy is a separate fence, which step 2 checks before eltoro's
 client is turned on.

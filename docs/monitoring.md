@@ -53,9 +53,12 @@ or a deploy; nothing in the repository does them.
 1. **Owner:** deploy prostagma. The hub starts with no systems.
 2. **Owner:** in the Tailscale admin console, approve the `svc:beszel` Service
    and make sure the tailnet policy lets you, scylla and eltoro reach it on
-   443. Serve's line for it is last in `tailscale-services`, so until then
-   that unit fails without stranding the other routes; restart it after the
-   approval: `ssh prostagma sudo systemctl restart tailscale-services`.
+   443. Grant it to them by name, not to `*`: tagged nodes match `*`, so such
+   a grant would also reach CI's `tag:ci` runners ("Tailscale policy" in
+   [Binary cache](binary-cache.md#tailscale-policy-you)). Serve's line for it
+   is last in `tailscale-services`, so until then that unit fails without
+   stranding the other routes; restart it after the approval:
+   `ssh prostagma sudo systemctl restart tailscale-services`.
 3. Open `https://beszel.dropbear-tortoise.ts.net`: Authelia's login, then an
    empty Beszel dashboard. Beszel's own login form means the header did not
    arrive (see [A host shows as down](#a-host-shows-as-down)).
@@ -97,10 +100,13 @@ or a deploy; nothing in the repository does them.
    `nix/modules/nixos/beszel-agent.nix`, replace `default = null;` with
    `default = "ssh-ed25519 AAAA…";`. Run `nix flake check --no-build`, commit,
    and deploy prostagma first, then scylla (`./install`) and eltoro. Once the
-   binary cache is on, the servers take it in their nightly upgrade. eltoro's
-   fence does not change, but if its first switch to the chain-based fence is
-   still pending, this deploy carries it: follow "Deploying fence changes" in
-   [El Toro](eltoro.md).
+   binary cache is on, the servers take it in their nightly upgrade. Put the
+   providers, the tokens and the key in one commit: every change to the store
+   restarts all of prostagma's secret units and their services (see
+   [Secrets](secrets.md#how-it-works)). eltoro's fence does not change; if
+   eltoro still runs a generation from before the chain-based fence, this
+   deploy carries the first switch to it, so follow "Deploying fence changes"
+   in [El Toro](eltoro.md#deploying-fence-changes).
 8. The dashboard lists prostagma, scylla and eltoro, each `up` within a minute
    of its agent starting.
 

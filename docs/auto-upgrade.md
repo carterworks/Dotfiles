@@ -45,7 +45,7 @@ upgrade unit itself is never restarted mid-run. What that means here:
     changes, `docker.service` restarts, and with live restore off every
     container restarts with it.
   - Any change to `secrets/fnox.toml`, even to an admin-only record, restarts
-    all ten `fnox-secret-*` units and every service that requires them (see
+    every `fnox-secret-*` unit and every service that requires them (see
     [Secrets](secrets.md)).
   - Caddy, Authelia, Immich, atticd and the rest restart when their package or
     configuration changes. While atticd restarts, a host upgrading at the same

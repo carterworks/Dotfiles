@@ -256,6 +256,7 @@ The old key stays in place until a deploy with the new one has succeeded.
    hashes() { for k in $(sfnox list | awk 'NR > 1 && $1 ~ /^[A-Z0-9_]+$/ { print $1 }'); do
      printf '%s %s\n' "$k" "$(sfnox get "$k" | base64 -d | sha256sum | cut -d' ' -f1)"; done; }
    hashes > ~/.config/fnox/hashes.old
+   providers=$(sed -n 's/^\[providers\.\(.*\)\]$/\1/p' secrets/fnox.toml)
    ```
 
 2. **Add** the new public key (`$new`) to every provider's `recipients` in
@@ -263,7 +264,7 @@ The old key stays in place until a deploy with the new one has succeeded.
    the identity:
 
    ```bash
-   for p in admin prostagma; do sfnox reencrypt -p "$p" -f; done
+   for p in $providers; do sfnox reencrypt -p "$p" -f; done
    ```
 
 3. Prove that the new key opens every value, by hash:
@@ -278,7 +279,7 @@ The old key stays in place until a deploy with the new one has succeeded.
 
    ```bash
    export FNOX_AGE_KEY_FILE="$HOME/.config/fnox/age.new.txt"
-   for p in admin prostagma; do sfnox reencrypt -p "$p" -f; done
+   for p in $providers; do sfnox reencrypt -p "$p" -f; done
    hashes | diff ~/.config/fnox/hashes.old - && echo "still every value"
    ```
 
@@ -297,10 +298,11 @@ stay until the steps below confirm the services use the new ones.
 
 ### prostagma
 
-Run these steps in one shell on prostagma, since later steps reuse the `files`
-list from step 3. Their output shows names, owners and modes only.
+Deploy from scylla, then run the remaining steps in one shell on prostagma
+(`ssh prostagma`), since later steps reuse the `files` list from step 3. Their
+output shows names, owners and modes only.
 
-1. `cd ~/.config/dotfiles && git pull && ./install`.
+1. From scylla: `./install prostagma`.
 2. Every secret unit succeeded, and nothing failed:
 
    ```bash
@@ -353,9 +355,10 @@ sudo nixos-rebuild switch --rollback
 
 ### eltoro
 
-Eltoro's system does not change: the agent keeps its own fnox store, and the
+Nothing moves on eltoro: the agent keeps its own fnox store, and the
 repository only holds an admin-only backup of what a rebuild would lose (see
-below). There is nothing to deploy.
+below). The only secret eltoro reads from this store is its Beszel agent's
+token, once [Monitoring](monitoring.md#first-deployment) enrols it.
 
 ### Clean-up: removing the old plain-text files
 
@@ -371,7 +374,10 @@ Plain text left on the hosts besides those, removed by the same rule:
 
 - **Operator records under `/var/lib/secrets`** that no service reads (OIDC
   client secrets, an Authelia user password, app credentials). Each is now an
-  admin-only record in fnox, so the host copies can go.
+  admin-only record in fnox, so the host copies can go. Leave
+  `/var/lib/secrets/attic/` alone: atticd generated that secret on the host,
+  it is not in fnox, and deleting it revokes every cache token (see
+  [Binary cache](binary-cache.md#revoke-every-token)).
 - **Stray copies and backups** of values that fnox now manages, on both hosts.
 - **Leftovers of services that are not in the Nix configuration.** A
   hand-started container could still use them, so check before deleting.
