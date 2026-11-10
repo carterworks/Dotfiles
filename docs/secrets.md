@@ -217,7 +217,7 @@ identity, so restoring it lets a rebuilt prostagma read its secrets again with
 no re-enrolment. Clients' `known_hosts` keep matching too.
 
 Restore the keys onto the new container before its first deploy from this
-repository (before `./install` on prostagma, or `./install-eltoro`). Each key
+repository (before `./install prostagma` or `./install eltoro`). Each key
 goes straight from fnox into its file, 0600 root, and the public key is
 re-derived on the host:
 

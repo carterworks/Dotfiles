@@ -158,5 +158,87 @@ run_darwin_activation "$HOME/system with spaces"
             self.assertEqual(installer.wait(timeout=5), 0)
 
 
+class DeployTests(unittest.TestCase):
+    def run_script(self, args=(), env=None):
+        with tempfile.TemporaryDirectory() as temp:
+            bin_dir = Path(temp) / "bin"
+            bin_dir.mkdir()
+            calls = Path(temp) / "calls"
+            stubs = {
+                "nixos-rebuild": f'printf "%s\\n" "$@" > "{calls}"',
+                "gh": "exit 1",
+                "nix": "exit 0",
+                "hostname": "echo localhost",
+                "uname": "echo Plan9",
+            }
+            for name, body in stubs.items():
+                (bin_dir / name).write_text(f"#!/bin/sh\n{body}\n")
+                (bin_dir / name).chmod(0o755)
+            script_env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"}
+            for name in ("ELTORO_HOST", "PROSTAGMA_HOST"):
+                script_env.pop(name, None)
+            script_env.update(env or {})
+            result = subprocess.run(
+                ["bash", str(ROOT / "install"), *args],
+                env=script_env, text=True, capture_output=True, timeout=10,
+            )
+            result.rebuild = None
+            if calls.exists():
+                rebuild = calls.read_text().splitlines()
+                # Progress reporting adds `--option json-log-path <fifo>` when jq is on PATH.
+                if "json-log-path" in rebuild:
+                    index = rebuild.index("json-log-path")
+                    del rebuild[index - 1:index + 2]
+                result.rebuild = rebuild
+            return result
+
+    def test_no_host_installs_the_local_machine(self):
+        result = self.run_script()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Unsupported system: Plan9", result.stderr)
+        self.assertIsNone(result.rebuild)
+
+    def test_eltoro_switches_as_root(self):
+        result = self.run_script(["eltoro"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.rebuild, [
+            "--flake", f"{ROOT}#eltoro", "--target-host", "root@eltoro",
+            "--use-substitutes", "switch",
+        ])
+
+    def test_prostagma_switches_as_carter_with_sudo(self):
+        result = self.run_script(["prostagma"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.rebuild, [
+            "--flake", f"{ROOT}#prostagma", "--target-host", "carter@prostagma",
+            "--use-substitutes", "--sudo", "switch",
+        ])
+
+    def test_explicit_action_and_flags_are_passed_through(self):
+        result = self.run_script(["eltoro", "dry-activate", "--show-trace"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.rebuild[-2:], ["dry-activate", "--show-trace"])
+        self.assertNotIn("switch", result.rebuild)
+
+    def test_flags_alone_still_switch(self):
+        result = self.run_script(["eltoro", "--show-trace"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.rebuild[-2:], ["--show-trace", "switch"])
+
+    def test_target_can_be_overridden_per_host(self):
+        for host, variable in (("eltoro", "ELTORO_HOST"), ("prostagma", "PROSTAGMA_HOST")):
+            with self.subTest(host=host):
+                result = self.run_script([host], env={variable: "admin@example"})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                target = result.rebuild.index("--target-host") + 1
+                self.assertEqual(result.rebuild[target], "admin@example")
+
+    def test_unknown_host_is_refused(self):
+        result = self.run_script(["nowhere"])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("nowhere", result.stderr)
+        self.assertIsNone(result.rebuild)
+
+
 if __name__ == "__main__":
     unittest.main()

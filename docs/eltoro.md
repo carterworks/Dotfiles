@@ -30,13 +30,14 @@ out of band. The system firewall allows GitHub and the npm registry.
 ## Deploy from Scylla
 
 ```sh
-./install-eltoro              # build locally on scylla, activate on the container
-./install-eltoro dry-run      # any nixos-rebuild action works, e.g. dry-run, boot, repl
+./install eltoro              # build locally on scylla, activate on the container
+./install eltoro dry-activate # any nixos-rebuild action works, e.g. dry-run, boot, repl
 ```
 
-`install-eltoro` builds the `eltoro` configuration on the current machine and
-copies it to the target over SSH. Override the target with `ELTORO_HOST` if
-needed.
+`./install eltoro` builds the `eltoro` configuration on the current machine,
+logs in as `root@eltoro`, and has the container fetch from its binary caches
+whatever they hold (`--use-substitutes`); scylla sends only the rest. Override
+the target with `ELTORO_HOST` if needed.
 
 (`eltoro` is on the tailnet as `eltoro.dropbear-tortoise.ts.net`; LAN IP
 `192.168.4.34` is DHCP from vmbr0, so prefer the tailnet name.)
@@ -166,7 +167,7 @@ Nix builds are fenced because any user may ask the daemon for one, and
 fixed-output builds run as a build user with the host's network: unfenced, the
 agent could fetch any address from a derivation and read the reply in the build
 log. Substitution is done by the daemon as root and is unaffected. Builds that
-root starts on eltoro are fenced too; build on Scylla, as `install-eltoro` does.
+root starts on eltoro are fenced too; build on Scylla, as `./install eltoro` does.
 
 The fence fails closed. Whenever the chain is down (the firewall stopped, a
 failed reload, or the moment inside every reload) a catch-all

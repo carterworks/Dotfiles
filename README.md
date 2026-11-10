@@ -77,7 +77,7 @@ On a Mac without nix-darwin, the installer builds the selected configuration fro
 container over SSH:
 
 ```bash
-./install-eltoro
+./install eltoro
 ```
 
 See [El Toro](docs/eltoro.md) for onboarding, settings, and the host-side
