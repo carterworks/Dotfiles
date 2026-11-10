@@ -34,6 +34,27 @@ Machine selection is automatic:
 
 Those names must match the flake host names. Multiple names may point to the same configuration when a machine has an alias.
 
+## Update
+
+`./update` reports the package and container image updates available and
+changes nothing. `./update --apply` updates every flake input, regenerates
+`agents/skills/generated/`, and bumps the packages in `nix/packages/` and the
+`name:tag@sha256:…` images under `nix/hosts/`. Run `./check` afterwards.
+
+```bash
+./update --apply
+```
+
+It never prompts and needs no terminal. Each change prints as one
+`name old -> new` line on stdout, followed by `note:` lines worth a look (a
+major version, or an image whose newest tag is ambiguous). It exits 1 if
+anything failed and keeps the updates that worked. The GitHub token comes from
+`GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`; `nix`, `git`, `curl` and `jq`
+must be on `PATH`, and `skopeo` comes from the pinned nixpkgs.
+
+Inputs whose URL names a revision do not move: `hermes-agent` is held on
+purpose (see TODO.md), and `hex` moves only with its package.
+
 ## Install
 
 `./install` switches the current machine to a new generation with the appropriate rebuild command for the live system.

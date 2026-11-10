@@ -588,15 +588,17 @@ update_images() {
 
 usage() {
   cat <<EOF
-Update flake inputs, generated skill files and manually packaged binaries.
+Update flake inputs, generated skill files, manually packaged binaries and
+pinned container images.
 
 Usage: ./update [--apply | --fetch PACKAGE]
 
-  (none)    Report the package updates available; change nothing.
+  (none)    Report the package and image updates available; change nothing.
   --apply   Update every flake input, regenerate the skill files and bump
-            every out-of-date package. Never prompts. Prints one line per
-            change on stdout (name old -> new) and exits 1 if anything
-            failed; the updates that succeeded stay in the tree.
+            every out-of-date package and image. Never prompts. Prints one
+            line per change on stdout (name old -> new), then "note:" lines,
+            and exits 1 if anything failed; the updates that succeeded stay
+            in the tree.
   --fetch PACKAGE
             Cache a pinned private download without updating any files or inputs.
   -h, --help
