@@ -23,6 +23,8 @@
 
 - [x] Deploy the integrated `eltoro` host with `./install-eltoro` and verify the Hermes gateway/dashboard, egress allowlist, and settings repair after the move from the standalone repo.
 - [ ] Reassess the newer upstream `hermes-agent` packaging (reports `0.0.0`) before `./update` bumps the pinned rev.
+- [ ] After eltoro first switches to the chain-based egress firewall, delete the one-time migration block in `nix/machines/eltoro/egress.nix` that strips the old generation's rules from `OUTPUT`.
+- [ ] Before deploying the KittenTTS removal, change `tts.provider` in eltoro's `/var/lib/hermes/.hermes/config.yaml`; it still selects `kittentts`, which no longer exists.
 
 ## Claude Code
 
