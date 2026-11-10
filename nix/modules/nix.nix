@@ -1,12 +1,8 @@
 {
   nixpkgs.overlays = [
+    # nixpkgs' fnox fails to build, so it is never cached. See TODO.md.
     (final: prev: {
-      fnox = prev.fnox.overrideAttrs (old: {
-        buildInputs = old.buildInputs ++ [
-          final.aws-lc
-          final.sqlcipher
-        ];
-      });
+      fnox = final.callPackage ../packages/fnox.nix { };
     })
   ];
 
