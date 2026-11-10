@@ -31,6 +31,13 @@ let
   # to anywhere, and --no-dereference guards only the last component.
   # Working from inside the checked directory pins it: a swap after
   # the check no longer changes which files the chown reaches.
+  #
+  # Inside it, hermes can also swap a file between check and chown, or
+  # leave a hard link to a root-owned file elsewhere (only the host-wide
+  # fs.protected_hardlinks stops it making one). So each file is opened
+  # without following a symlink and checked and chowned through that one
+  # descriptor: a regular file with a single link is hermes' own. -I keeps
+  # Python from importing modules out of this hermes-owned directory.
   hermesSettingsRepair = pkgs.writeShellScript "hermes-settings-repair" ''
     dir=/var/lib/hermes/.hermes
     if [ ! -e "$dir" ] && [ ! -L "$dir" ]; then
@@ -40,11 +47,19 @@ let
       echo "hermes-settings-repair: $dir is not a real directory owned by hermes; refusing" >&2
       exit 1
     fi
-    for settings in config.yaml SOUL.md; do
-      if [ -f "$settings" ] && [ ! -L "$settings" ]; then
-        ${pkgs.coreutils}/bin/chown --no-dereference hermes:hermes "$settings"
-      fi
-    done
+    exec ${pkgs.python3.interpreter} -I -c '
+    import os, pwd, stat
+    hermes = pwd.getpwnam("hermes")
+    for name in ("config.yaml", "SOUL.md"):
+        try:
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY)
+        except OSError:
+            continue
+        st = os.fstat(fd)
+        if stat.S_ISREG(st.st_mode) and st.st_nlink == 1:
+            os.fchown(fd, hermes.pw_uid, hermes.pw_gid)
+        os.close(fd)
+    '
   '';
 
   hermesService = lib.recursiveUpdate {

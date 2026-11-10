@@ -293,6 +293,10 @@
         binary-cache = import ./nix/tests/binary-cache.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
         eltoro = eltoro.config.system.build.toplevel;
         eltoro-egress = nixpkgs.legacyPackages.x86_64-linux.testers.runNixOSTest ./nix/tests/eltoro-egress.nix;
+        hermes-settings-repair = import ./nix/tests/hermes-settings-repair.nix {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          repair = eltoro.config.systemd.services.hermes-settings-repair.serviceConfig.ExecStart;
+        };
         prostagma = prostagma.config.system.build.toplevel;
         scylla = scylla.config.system.build.toplevel;
       };
