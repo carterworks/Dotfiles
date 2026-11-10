@@ -5,6 +5,14 @@
 - [ ] Linux server support is removed until there is preview access (Discord `#alpha-registration`). Restore it from git history by reverting "rex: remove the gated Linux server module and package", "update: remove the private Rex server flake refresh" and "docs: trim the Rex guide to the macOS client".
 - [ ] Deploy the macOS `rex-client` package with `./install` and verify Finder launch. `./update` reads the preview feed from the external private-source manifest; `./update --fetch rex-client` caches the hash-pinned installer without recording its URL in Git.
 
+## Config file links
+
+Home Manager now makes the links Dotbot made, into `~/.config/dotfiles`.
+
+- [ ] Deploy to Scylla and the Mac and confirm no `*.hm-backup` files appeared and each link resolves through `home-manager-files`. On the Mac, activation stops at `dotfilesCheckout` if the checkout is not at `~/.config/dotfiles`.
+- [ ] Delete the links Dotbot left that Home Manager does not own; nothing removes them: on the Mac the KDE, Hyprland, Quickshell and Vicinae links; on Scylla `~/.config/rex/init.lua` and the dangling `~/.local/bin` links to removed scripts; on prostagma all of them.
+- [ ] Decide whether to stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`).
+
 ## Temporary pins and workarounds
 
 - [ ] Replace `nix/packages/fnox.nix` and its overlay in `nix/modules/common.nix` with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs and `cache.nixos.org` has it. Until then nixpkgs' build fails on Hydra (`aws-lc-sys` finds no system AWS-LC), so the repo installs upstream's prebuilt release.

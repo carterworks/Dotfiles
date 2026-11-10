@@ -15,16 +15,6 @@ let
       pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      dotbot-config = pkgs.runCommandLocal "dotbot-config-check" { } ''
-        export HOME="$TMPDIR/home"
-        mkdir -p "$HOME"
-        ${pkgs.dotbot}/bin/dotbot \
-          --exit-on-failure \
-          --dry-run \
-          --base-directory ${source} \
-          --config-file ${source}/install.conf.yaml
-        touch "$out"
-      '';
       agent-browser-skill =
         pkgs.runCommandLocal "agent-browser-skill-check" { nativeBuildInputs = [ pkgs.diffutils ]; }
           ''
@@ -96,7 +86,6 @@ in
 {
   aarch64-darwin = repositoryChecks "aarch64-darwin" // {
     inherit (self.packages.aarch64-darwin)
-      dotbot
       hex
       rex-client
       nub
@@ -181,7 +170,6 @@ in
         '';
     inherit (self.packages.x86_64-linux)
       bambu-studio
-      dotbot
       nub
       ;
     binary-cache = import ./tests/binary-cache.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };

@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-CONFIG="install.conf.yaml"
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NIX_ACCESS_TOKEN_ARGS=()
 
@@ -189,10 +188,6 @@ if ! command -v nix >/dev/null 2>&1; then
   exit 1
 fi
 
-run_dotbot() {
-  nix "${NIX_ACCESS_TOKEN_ARGS[@]}" run ".#dotbot" -- --verbose --base-directory "${BASEDIR}" --config-file "${CONFIG}" "$@"
-}
-
 current_machine_name() {
   local name
 
@@ -322,9 +317,6 @@ section "Dotfiles install"
 log_message info "Machine: $(current_machine_name)"
 log_message info "System: $(uname -s)"
 warn_if_git_dirty
-
-section "Apply dotfiles"
-run_quiet_step "Running dotbot" run_dotbot "$@"
 
 section "Rebuild system"
 log_message info "Starting system rebuild"

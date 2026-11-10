@@ -50,7 +50,7 @@ matched to its server without adding empty path entries outside Rex. See the
 ## Configuration
 
 `rex/init.lua` preserves Rex's defaults and is linked to
-`~/.config/rex/init.lua` by Dotbot. Edit that file to customize Rex using the
+`~/.config/rex/init.lua` by Home Manager. Edit that file to customize Rex using the
 [configuration guide](https://www.superlogical.com/rex/docs/customize/config).
 If `XDG_CONFIG_HOME` or `REX_CONFIG` is set, Rex may read a different path.
 
