@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   self,
@@ -14,7 +13,7 @@
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = [
-    self.packages.${pkgs.stdenv.hostPlatform.system}.vorssaint
+    pkgs.vorssaint
   ];
 
   system.stateVersion = 6;

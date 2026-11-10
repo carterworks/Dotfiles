@@ -7,24 +7,9 @@
 }:
 
 let
-  agent-browser = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.agent-browser;
-  bambu-studio = self.packages.${pkgs.stdenv.hostPlatform.system}.bambu-studio;
-  codex = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.codex;
+  # Kept out of the overlay: there it would also replace the nixpkgs delta
+  # that programs.delta in Home Manager runs as Git's pager.
   delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
-  hex = self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
-  rex-client = self.packages.${pkgs.stdenv.hostPlatform.system}.rex-client;
-  herdr = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.herdr;
-  hunk = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.hunk;
-  openspec = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.openspec;
-  nub = self.packages.${pkgs.stdenv.hostPlatform.system}.nub;
-  ship-of-harkinian = self.packages.${pkgs.stdenv.hostPlatform.system}.ship-of-harkinian;
-  opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
-  opencode2-desktop =
-    inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2-desktop;
-  # Nightly desktop app and CLI. Upstream publishes self-contained builds, so
-  # these are fetch-and-wrap instead of llm-agents source builds.
-  t3code-cli = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-cli;
-  t3code-desktop = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-nightly;
   # The base package enables Metal by default on aarch64-darwin; Vulkan is the
   # Linux equivalent.
   stableDiffusionCppMetal = pkgs.stable-diffusion-cpp;
@@ -98,8 +83,10 @@ let
     spotify
     sshpass
     superhtml
+    # Nightly desktop app and CLI. Upstream publishes self-contained builds, so
+    # these are fetch-and-wrap instead of llm-agents source builds.
     t3code-cli
-    t3code-desktop
+    t3code-nightly
     taplo
     tmux
     typescript-language-server

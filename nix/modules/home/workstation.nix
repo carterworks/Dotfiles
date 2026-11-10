@@ -3,7 +3,6 @@
   inputs,
   pkgs,
   lib,
-  self,
   ...
 }:
 
@@ -46,9 +45,7 @@ in
     enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     autostart = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     installModel = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
-    package =
-      lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-        self.packages.${pkgs.stdenv.hostPlatform.system}.hex;
+    package = lib.mkIf pkgs.stdenv.hostPlatform.isLinux pkgs.hex;
     # The Hyprland bind in hypr/bindings.lua names the portal shortcut by this
     # trigger, so changing it means changing that bind too.
     shortcut = lib.mkIf pkgs.stdenv.hostPlatform.isLinux "option+space";

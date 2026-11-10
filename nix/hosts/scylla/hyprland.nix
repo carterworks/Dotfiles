@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  self,
   ...
 }:
 let
@@ -85,7 +84,7 @@ in
           After = [ "wayland-session-waitenv.service" ];
         };
         Service = {
-          ExecStart = "${lib.getExe self.packages.${pkgs.stdenv.hostPlatform.system}.cua-driver} serve";
+          ExecStart = "${lib.getExe pkgs.cua-driver} serve";
           Environment = [ "CUA_DRIVER_RS_ENABLE_WAYLAND=1" ];
           Restart = "on-failure";
           RestartSec = 2;

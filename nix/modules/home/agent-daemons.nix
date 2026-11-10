@@ -1,16 +1,14 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
-  self,
   ...
 }:
 
 let
   home = config.home.homeDirectory;
-  opencode2 = inputs.numtide-llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.opencode2;
-  t3 = self.packages.${pkgs.stdenv.hostPlatform.system}.t3code-cli;
+  inherit (pkgs) opencode2;
+  t3 = pkgs.t3code-cli;
 
   opencode2Port = 49374;
   t3Port = 3773;
