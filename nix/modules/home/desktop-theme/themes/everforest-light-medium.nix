@@ -1,5 +1,5 @@
+# Palette: https://github.com/sainnhe/everforest/blob/master/autoload/everforest.vim
 {
-  source = "https://github.com/sainnhe/everforest/blob/master/autoload/everforest.vim";
   appearance = "light";
   colors = {
     background = "#efebd4";

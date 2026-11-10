@@ -1,3 +1,4 @@
+# Palette: https://github.com/mbadolato/iTerm2-Color-Schemes/blob/master/ghostty/Nord%20Light
 let
   colors = {
     background = "#e5e9f0";
@@ -19,9 +20,8 @@ let
     positive = "#526c3d";
     warning = "#806125";
   };
-  component = background: {
-    base = colors.text;
-    inherit background;
+  component = base: background: {
+    inherit base background;
     emphasis_0 = colors.warning;
     emphasis_1 = colors.link;
     emphasis_2 = colors.positive;
@@ -29,7 +29,6 @@ let
   };
 in
 {
-  source = "https://github.com/mbadolato/iTerm2-Color-Schemes/blob/master/ghostty/Nord%20Light";
   appearance = "light";
   inherit colors;
   ghostty.theme = "Nord Light";
@@ -55,22 +54,18 @@ in
       proc_box = colors.warning;
       div_line = colors.border;
     }
-    // builtins.listToAttrs (
-      builtins.concatMap
-        (name: [
-          {
-            name = "${name}_start";
-            value = colors.link;
+    //
+      builtins.foldl'
+        (
+          gradients: name:
+          gradients
+          // {
+            "${name}_start" = colors.link;
+            "${name}_mid" = colors.positive;
+            "${name}_end" = colors.negative;
           }
-          {
-            name = "${name}_mid";
-            value = colors.positive;
-          }
-          {
-            name = "${name}_end";
-            value = colors.negative;
-          }
-        ])
+        )
+        { }
         [
           "temp"
           "cpu"
@@ -81,8 +76,7 @@ in
           "download"
           "upload"
           "process"
-        ]
-    );
+        ];
     # Darker than `colors.selection` so the focused row reads against
     # `background`, while staying above 4.5:1 against `text`.
     vicinae.selection = "#b4c2d3";
@@ -98,30 +92,20 @@ in
     # Zellij ships only dark Nord; supply light UI components locally.
     zellij = "nord-light";
     zellijTheme = {
-      text_unselected = component colors.background;
-      text_selected = component colors.selection;
-      ribbon_unselected = component colors.surface;
-      ribbon_selected = component colors.selection;
-      table_title = component colors.background;
-      table_cell_unselected = component colors.background;
-      table_cell_selected = component colors.selection;
-      list_unselected = component colors.background;
-      list_selected = component colors.selection;
-      frame_unselected = (component colors.background) // {
-        base = colors.border;
-      };
-      frame_selected = (component colors.background) // {
-        base = colors.focus;
-      };
-      frame_highlight = (component colors.background) // {
-        base = colors.link;
-      };
-      exit_code_success = (component colors.background) // {
-        base = colors.positive;
-      };
-      exit_code_error = (component colors.background) // {
-        base = colors.negative;
-      };
+      text_unselected = component colors.text colors.background;
+      text_selected = component colors.text colors.selection;
+      ribbon_unselected = component colors.text colors.surface;
+      ribbon_selected = component colors.text colors.selection;
+      table_title = component colors.text colors.background;
+      table_cell_unselected = component colors.text colors.background;
+      table_cell_selected = component colors.text colors.selection;
+      list_unselected = component colors.text colors.background;
+      list_selected = component colors.text colors.selection;
+      frame_unselected = component colors.border colors.background;
+      frame_selected = component colors.focus colors.background;
+      frame_highlight = component colors.link colors.background;
+      exit_code_success = component colors.positive colors.background;
+      exit_code_error = component colors.negative colors.background;
     };
     zed = {
       name = "Nord Light";
