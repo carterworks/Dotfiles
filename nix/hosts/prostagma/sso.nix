@@ -299,25 +299,29 @@ in
           # and never reach this site.
           bind 127.0.0.1 ::1
 
-          # forward_auth replaces these on the paths it gates, but a bypass path
-          # would pass a client's own copy through to an application that
-          # trusts them.
-          request_header -Remote-*
-
           ${lib.optionalString hasBypass "@unprotected not path ${lib.concatStringsSep " " bypassPaths}\n"}
-          forward_auth ${lib.optionalString hasBypass "@unprotected "}127.0.0.1:9091 {
-            uri /api/authz/forward-auth
-            copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+          # Caddy sorts directives into its own order, which runs forward_auth
+          # before request_header; route keeps the order written here. A
+          # client's Remote-* headers go first, so only Authelia's reach the
+          # application, and a bypass path carries none.
+          route {
+            request_header -Remote-*
 
-            # Serve terminates TLS, so the browser is on https while this hop is
-            # plain http. Authelia derives the target URL from the request scheme
-            # and refuses anything that is not https or wss, so state the
-            # external scheme explicitly or every request fails with "has an
-            # insecure scheme 'http'".
-            header_up X-Original-URL "https://{host}{uri}"
-            header_up X-Forwarded-Proto https
+            forward_auth ${lib.optionalString hasBypass "@unprotected "}127.0.0.1:9091 {
+              uri /api/authz/forward-auth
+              copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+
+              # Serve terminates TLS, so the browser is on https while this hop is
+              # plain http. Authelia derives the target URL from the request scheme
+              # and refuses anything that is not https or wss, so state the
+              # external scheme explicitly or every request fails with "has an
+              # insecure scheme 'http'".
+              header_up X-Original-URL "https://{host}{uri}"
+              header_up X-Forwarded-Proto https
+            }
+
+            reverse_proxy 127.0.0.1:${toString app.port}
           }
-          reverse_proxy 127.0.0.1:${toString app.port}
         '';
       }
     ) gatedApps

@@ -16,6 +16,8 @@ let
   # A well-formed key whose private half was thrown away, so every agent
   # rejects the hub until the test puts the key the running hub made in place.
   placeholderKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOvlaMHWFtmQqctghQPLolJ2Vdaj50RhHJbiwjogIJOx";
+  # The owner's Authelia account with a password known to the test.
+  testPassword = "test-password";
 
   common =
     { pkgs, ... }:
@@ -42,7 +44,7 @@ in
 
   nodes = {
     prostagma =
-      { pkgs, ... }:
+      { lib, pkgs, ... }:
       {
         imports = [
           common
@@ -68,6 +70,37 @@ in
           };
         };
         networking.firewall.interfaces.eth1.allowedTCPPorts = [ 80 ];
+
+        services.authelia.instances.main.settings.authentication_backend.file.path = lib.mkForce (
+          pkgs.writeText "authelia-test-users.yml" (
+            builtins.toJSON {
+              users.carter = {
+                displayname = "Carter";
+                password = "$argon2id$v=19$m=65536,t=3,p=4$Fryz0ithW78pc/O5zKXJFA$ZPwqGGM7DlE96n+hF3TClFgz0vXJNElq3GcV4ebTmfo";
+                email = "carter@carter.works";
+                groups = [ "admins" ];
+              };
+            }
+          )
+        );
+
+        # Takes the hub's port while the hub is stopped and answers with the
+        # request headers it received, to show what Caddy passes on.
+        systemd.services.header-echo = {
+          conflicts = [ "beszel-hub.service" ];
+          serviceConfig.ExecStart = "${lib.getExe pkgs.python3} ${pkgs.writeText "header-echo.py" ''
+            import http.server, json
+
+            class Echo(http.server.BaseHTTPRequestHandler):
+                def do_GET(self):
+                    body = json.dumps(dict(self.headers)).encode()
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(body)
+
+            http.server.HTTPServer(("127.0.0.1", 8091), Echo).serve_forever()
+          ''}";
+        };
       };
 
     scylla =
@@ -85,12 +118,39 @@ in
 
     api = "http://127.0.0.1:8091/api"
     as_carter = "-H 'Remote-Email: carter@carter.works'"
+    forged = "-H 'Remote-Email: intruder@example.com' -H 'Remote-User: intruder'"
+    gate = "http://${hubName}"
     addresses = json.loads('${builtins.toJSON addresses}')
 
 
     def systems(header=as_carter):
         out = prostagma.succeed(f"curl -sSf {header} {api}/collections/systems/records")
         return {s["name"]: s["status"] for s in json.loads(out)["items"]}
+
+
+    def login():
+        """Authelia's first factor, as the portal's form sends it; returns the session cookie."""
+        headers = prostagma.succeed(
+            "curl -sS -D - -o /dev/null -H 'Host: authelia.${tailnetDomain}' -H 'X-Forwarded-Proto: https'"
+            " --json '{\"username\":\"carter\",\"password\":\"${testPassword}\"}'"
+            " http://127.0.0.1:9091/api/firstfactor"
+        )
+        cookie = [line for line in headers.splitlines() if line.lower().startswith("set-cookie: authelia_session=")]
+        assert cookie, headers
+        return cookie[0].split(":", 1)[1].split(";")[0].strip()
+
+
+    def through_gate(path, args=""):
+        """Status and body of a request from scylla through Serve and Caddy."""
+        out = scylla.succeed(f"curl -sS -w '\\n%{{http_code}}' {args} {gate}{path}")
+        body, status = out.rsplit("\n", 1)
+        return int(status), body
+
+
+    def echoed(path, args=""):
+        status, body = through_gate(path, args)
+        assert status == 200, (status, body)
+        return {k.lower(): v for k, v in json.loads(body).items()}
 
 
     def listens_on_nothing():
@@ -141,14 +201,21 @@ in
       token BESZEL_TOKEN_PROSTAGMA prostagma
       token BESZEL_TOKEN_ELTORO prostagma
       token BESZEL_TOKEN_SCYLLA beszel-scylla
+      secret() { base64 -w0 | fnox --no-daemon -c fnox.toml set "$1" -p prostagma >/dev/null; }
+      for name in JWT_SECRET SESSION_SECRET STORAGE_ENCRYPTION_KEY OIDC_HMAC_SECRET; do
+        openssl rand -hex 32 | tr -d '\\n' | secret "AUTHELIA_$name"
+      done
+      openssl genrsa 2048 2>/dev/null | secret AUTHELIA_OIDC_ISSUER_PRIVATE_KEY
     """
     scylla_key = scylla.succeed("cat /etc/ssh/ssh_host_ed25519_key.pub").strip()
     prostagma.succeed(store_script.replace("SCYLLA_KEY", scylla_key))
     store = prostagma.succeed("cat /root/fnox.toml")
     scylla.succeed(f"cat > /root/fnox.toml <<'EOF'\n{store}EOF")
-    # Both failed at boot, before their tokens were in the store.
+    # These failed at boot, before their secrets were in the store.
     for machine in [prostagma, scylla]:
         machine.succeed("systemctl restart beszel-agent.service")
+    prostagma.succeed("systemctl restart authelia-main.service")
+    prostagma.wait_for_open_port(9091, "127.0.0.1")
 
     with subtest("the hub starts on app storage, listening on loopback only"):
         prostagma.succeed("systemctl restart beszel-hub.service")
@@ -166,15 +233,40 @@ in
         methods = json.loads(prostagma.succeed(f"curl -sSf {api}/collections/users/auth-methods"))
         assert not methods["password"]["enabled"], methods
 
-    with subtest("through the gate, a client's own header does not log it in"):
-        out = scylla.succeed(f"curl -s {as_carter} http://${hubName}/api/collections/systems/records")
-        assert "prostagma" not in out, f"a spoofed header logged in: {out}"
+    # Any local process on prostagma that can reach the hub's port with this
+    # header is the owner; nothing but the loopback binding keeps others out.
+    with subtest("on prostagma, the header alone logs in at the hub's own port"):
+        me = json.loads(prostagma.succeed(f"curl -sSf -X POST {as_carter} {api}/collections/users/auth-refresh"))
+        assert me["record"]["email"] == "carter@carter.works", me
+
+    session = f"-H 'Cookie: {login()}'"
+
+    with subtest("a logged-in owner reaches the hub through the gate"):
+        status, body = through_gate("/api/collections/systems/records", session)
+        assert status == 200, (status, body)
+        names = {s["name"] for s in json.loads(body)["items"]}
+        assert names == {"prostagma", "scylla", "eltoro"}, names
+
+    with subtest("without a session the gate refuses, forged header or not"):
+        for args in ["", forged, as_carter]:
+            status, body = through_gate("/api/collections/systems/records", args)
+            assert status in (302, 401), (args, status, body)
+            assert "prostagma" not in body, body
 
     with subtest("the agents' path bypasses the gate and the hub refuses a wrong token"):
-        out = scylla.succeed(
-            "curl -s -w ' %{http_code}' -H 'X-Token: wrong' -H 'X-Beszel: 0.21.1' http://${hubName}/api/beszel/agent-connect"
-        )
-        assert out == "Invalid token 401", out
+        status, body = through_gate("/api/beszel/agent-connect", f"{forged} -H 'X-Token: wrong' -H 'X-Beszel: 0.21.1'")
+        assert (status, body) == (401, "Invalid token"), (status, body)
+
+    with subtest("Caddy passes on Authelia's identity and never a client's"):
+        prostagma.succeed("systemctl start header-echo.service")
+        prostagma.wait_for_open_port(8091, "127.0.0.1")
+        gated = echoed("/api/collections/systems/records", f"{session} {forged}")
+        assert gated.get("remote-email") == "carter@carter.works", gated
+        assert gated.get("remote-user") == "carter", gated
+        bypass = echoed("/api/beszel/agent-connect", forged)
+        assert not any(k.startswith("remote-") for k in bypass), bypass
+        prostagma.succeed("systemctl start beszel-hub.service")
+        prostagma.wait_for_open_port(8091, "127.0.0.1")
 
     with subtest("an agent refuses a hub whose key it does not have"):
         scylla.wait_until_succeeds("journalctl -u beszel-agent | grep -q 'invalid signature - check KEY value'", timeout=60)
