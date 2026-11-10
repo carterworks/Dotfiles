@@ -77,6 +77,11 @@ journalctl -u nixos-upgrade.service -n 50 --no-pager
 systemctl list-timers nixos-upgrade.timer
 ```
 
+From scylla, `./drift` lists each host as `in sync` or `behind` against
+`release`, with when its running generation was activated. A failed fetch or
+build leaves the server `behind`. A failed activation does not: the host runs
+`release`, and only `systemctl --failed` shows the unit that failed.
+
 To go back: `sudo nixos-rebuild switch --rollback` on the host, or fix the
 problem on `main`. The next night tries again with whatever `release` then
 holds.
