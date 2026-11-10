@@ -3,7 +3,11 @@
 .osgrep
 node_modules/
 /sources.private.json
-# A local fnox.toml may hold values in plain text; only the encrypted store is
-# tracked, and nix/checks.nix fails if any of its values is not ciphertext.
+# A local fnox config may hold values in plain text. These are every name fnox
+# reads (local and per-profile files included); only the encrypted store is
+# tracked, and nix/checks.nix fails on any other store or any non-ciphertext.
 fnox.toml
+.fnox.toml
+fnox.*.toml
+.fnox.*.toml
 !/secrets/fnox.toml
