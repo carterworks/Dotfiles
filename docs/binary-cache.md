@@ -113,7 +113,9 @@ Commit, then deploy every Linux host: `./install` on scylla, then
 `./install prostagma` and `./install eltoro` from scylla. Every host's system derivation changes
 (new `substituters`, `trusted-public-keys`, `connect-timeout = 5`,
 `stalled-download-timeout = 30`, `fallback = true` in `nix.conf`); the
-MacBook's must not.
+MacBook's must not. prostagma and eltoro also gain `nixos-upgrade.timer` and
+from then on upgrade themselves every night (see
+[Server auto-upgrade](auto-upgrade.md)).
 
 Check on any Linux host:
 

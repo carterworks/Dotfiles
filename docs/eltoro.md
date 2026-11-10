@@ -42,7 +42,10 @@ the target with `ELTORO_HOST` if needed.
 (`eltoro` is on the tailnet as `eltoro.dropbear-tortoise.ts.net`; LAN IP
 `192.168.4.34` is DHCP from vmbr0, so prefer the tailnet name.)
 
-Garbage collection runs weekly, deleting store paths older than 7 days.
+Once the binary cache is on, eltoro also upgrades itself every night to the
+`release` branch; see [Server auto-upgrade](auto-upgrade.md).
+
+Garbage collection runs nightly at 03:15, deleting store paths older than 7 days.
 
 ## First-run agent onboarding
 
@@ -196,6 +199,29 @@ nix build .#checks.x86_64-linux.hermes-settings-repair  # and the settings repai
 ```
 
 ### Deploying fence changes
+
+Once the binary cache is on, a fence change reaches eltoro unattended, in the
+nightly upgrade (see [Server auto-upgrade](auto-upgrade.md)). Three things
+stand between such a change and an open fence:
+
+- **The VM test.** CI runs `eltoro-egress` on every push, and `release` only
+  moves to a commit whose checks passed.
+- **Failing closed.** The switch reloads the firewall; during the reload, and
+  after a failed one, the catch-all rejects every new connection from the
+  fenced users.
+- **The start interlock.** The Hermes units refuse to start unless `OUTPUT`
+  jumps to `hermes-egress` in both address families.
+
+None of them sees state outside the repository: rules added to `OUTPUT` by
+hand, or the Proxmox firewall. Deploy by hand with the checklist below:
+
+- The first switch to the chain-based fence, from the generation before it. Its
+  one-time migration needs the pre-flight `OUTPUT` check. Do it before the cache
+  key is set, because setting the key turns on unattended upgrades.
+- Any fence change you want to watch land, with a snapshot to return to.
+
+After an unattended fence change, the post-deploy checks below still confirm it
+on the real host.
 
 Before deploying:
 

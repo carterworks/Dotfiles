@@ -72,7 +72,8 @@ module, `nix/modules/nixos/secrets.nix`.
   for byte what was imported.
 - The units embed the store file's path. Any change to `secrets/fnox.toml`,
   even to an admin-only record, restarts every secret unit on prostagma and,
-  through `Requires=`, the services that use them.
+  through `Requires=`, the services that use them. Once prostagma upgrades
+  itself, that happens overnight (see [Server auto-upgrade](auto-upgrade.md)).
 
 ## What the public repository reveals
 
