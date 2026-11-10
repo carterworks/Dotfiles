@@ -122,7 +122,10 @@ jobs:
             echo "::notice title=Cache push skipped::The binary-cache Environment has no secrets yet (docs/binary-cache.md), so release does not advance."
           fi
       # The action marks its nodes ephemeral and preauthorised itself; it has
-      # no input to change that.
+      # no input to change that. Its cache is off because a hit installs the
+      # cached tailscale and tailscaled as root unverified, under a key any job
+      # for main can write first, including ones running unreviewed upstream
+      # code; false skips both the restore and the save.
       - uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
         id: tailnet
         if: steps.secrets.outputs.present
@@ -132,6 +135,7 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
           ping: prostagma.dropbear-tortoise.ts.net
+          use-cache: "false"
       # An unreachable cache leaves the build valid, so the job stays green and
       # only release waits; a push that starts and fails turns the job red.
       - name: Push to the binary cache
