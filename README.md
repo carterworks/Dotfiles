@@ -13,16 +13,16 @@ git clone <repo> ~/.config/dotfiles
 cd ~/.config/dotfiles
 ```
 
-If `nix` is not installed, `./check` and `./install` exit early and point to:
+If `nix` is not installed, `./install` exits early and points to:
 
 `https://github.com/DeterminateSystems/nix-installer`
 
 ## Check
 
-`./check` builds the current machine's Nix config without switching generations.
+To build a host's configuration without switching to it:
 
 ```bash
-./check
+nix build --no-link .#nixosConfigurations.<host>.config.system.build.toplevel
 ```
 
 On every push, [CI](.github/workflows/fleet.yml) builds each host and runs the flake checks on GitHub-hosted runners.
@@ -39,7 +39,7 @@ Those names must match the flake host names. Multiple names may point to the sam
 `./update` reports the package and container image updates available and
 changes nothing. `./update --apply` updates every flake input, regenerates
 `agents/skills/generated/`, and bumps the packages in `nix/packages/` and the
-`name:tag@sha256:…` images under `nix/hosts/`. Run `./check` afterwards.
+`name:tag@sha256:…` images under `nix/hosts/`. Build the hosts afterwards.
 
 ```bash
 ./update --apply
