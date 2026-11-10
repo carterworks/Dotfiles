@@ -82,47 +82,6 @@ let
     "172.66.32.0/19"
   ];
 
-  # --- KittenTTS (local TTS engine for hermes) ---
-  # Hermes's Nix python env is read-only, so `hermes setup tts`
-  # can't pip-install into it. Instead ship a small site-packages
-  # overlay (put on PYTHONPATH) with just the dists hermes's env
-  # lacks — it already has numpy, onnxruntime and huggingface_hub.
-  #
-  # The upstream kittentts 0.8.1 wheel imports misaki.en, which
-  # drags in torch/spacy/transformers, but never uses it on the
-  # ONNX synthesis path (it phonemizes with espeak via `phonemizer`
-  # instead), so the import is patched out. espeak-ng locations
-  # for phonemizer are baked into the module so it works anywhere.
-  kittenttsWheel = pkgs.fetchurl {
-    url = "https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl";
-    sha256 = "sha256-SCpDbE8fMZIVNxA3bkWf82iVF+vNp8KwUeL9QYe0GFE=";
-  };
-
-  kittenEnv = pkgs.python312.withPackages (
-    ps: with ps; [
-      phonemizer
-      soundfile
-    ]
-  );
-
-  kittenttsSite =
-    pkgs.runCommand "kittentts-site"
-      {
-        nativeBuildInputs = [ pkgs.unzip ];
-        # dists hermes's env already ships — never shadow them via
-        # PYTHONPATH (hermes pins its own versions)
-        skip = "numpy cffi pycparser attrs typing_extensions";
-      }
-      ''
-        mkdir -p $out
-        cp -rL ${kittenEnv}/lib/python3.12/site-packages/. $out/
-        chmod -R u+w $out
-        rm -rf $out/numpy* $out/cffi* $out/pycparser* $out/attrs* $out/typing_extensions*
-        unzip -q ${kittenttsWheel} -d $out
-        # drop the unused misaki import (would pull torch/spacy/transformers)
-        sed -i '/^from misaki import/d' $out/kittentts/onnx_model.py
-        sed -i "1i import os\nos.environ.setdefault('PHONEMIZER_ESPEAK_LIBRARY', '${pkgs.espeak-ng}/lib/libespeak-ng.so')\nos.environ.setdefault('PHONEMIZER_ESPEAK_DATA_DIR', '${pkgs.espeak-ng}/share/espeak-ng-data')" $out/kittentts/onnx_model.py
-      '';
   # resolve the egress allowlist domains into an ipset (see
   # egressAllowedDomains in the let block for why)
   egressAllowlistRefresh = pkgs.writeShellScript "egress-allowlist-refresh" ''
@@ -334,15 +293,12 @@ in
     pnpm
     helix
     vim
-    ffmpeg # audio conversion for hermes TTS delivery (wav -> mp3/opus)
+    ffmpeg # hermes shells out to it to transcode voice audio
     (python3.withPackages (ps: [ ps.pip ]))
     uv
     fnox # secret manager: resolves /root/.hermes/fnox.toml via age
     pkgs.age # age-keygen; fnox reads the key from ~/.config/fnox/age.txt
   ];
-
-  # make the kittentts overlay visible to interactive hermes runs too
-  environment.sessionVariables.PYTHONPATH = "${kittenttsSite}";
 
   nix.gc = {
     automatic = true;
@@ -409,7 +365,6 @@ in
       HERMES_HOME = "/var/lib/hermes/.hermes";
       MESSAGING_CWD = "/var/lib/hermes/workspace";
       PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
-      PYTHONPATH = "${kittenttsSite}";
       # no approval prompts: the agent is fenced from the LAN by
       # the host-side proxmox firewall and from the internet by
       # the egress ipset, so "ask carter" is a dead end that only
@@ -456,7 +411,6 @@ in
       HOME = "/var/lib/hermes";
       HERMES_HOME = "/var/lib/hermes/.hermes";
       PATH = lib.mkForce "/run/wrappers/bin:/run/current-system/sw/bin";
-      PYTHONPATH = "${kittenttsSite}";
     };
     serviceConfig = {
       User = "hermes";

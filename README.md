@@ -49,7 +49,7 @@ container over SSH:
 ./install-eltoro
 ```
 
-See [El Toro](docs/eltoro.md) for onboarding, settings, TTS, and the host-side
+See [El Toro](docs/eltoro.md) for onboarding, settings, and the host-side
 firewall setup.
 
 ## Rex

@@ -13,7 +13,6 @@ host in this flake: `nix/machines/eltoro.nix` holds the configuration and
   `/var/lib/hermes/.hermes/config.yaml` existing — nothing starts until the
   agent is onboarded
 - key-only SSH for root (deploy target)
-- KittenTTS: local TTS for hermes (see below)
 - Node.js, pnpm, Git, ripgrep, and fd for application development
 
 ## Application workspace
@@ -98,8 +97,8 @@ bash tests/hermes-settings-writable
 ## Secrets and environment
 
 The systemd units declare their non-secret environment directly in
-`nix/machines/eltoro.nix`: `HOME`, `HERMES_HOME`, `MESSAGING_CWD`, `PATH`,
-`PYTHONPATH`, and `HERMES_YOLO_MODE`.
+`nix/machines/eltoro.nix`: `HOME`, `HERMES_HOME`, `MESSAGING_CWD`, `PATH`, and
+`HERMES_YOLO_MODE`.
 
 Secrets come from `fnox`, not from Nix or Git. Both units run through
 `fnox -c /var/lib/hermes/.hermes/fnox.toml exec --`, which decrypts the
@@ -115,21 +114,6 @@ re-import it and restart the services:
 su hermes -c 'cd /var/lib/hermes/.hermes && fnox import -i .env --provider age --force'
 systemctl restart hermes-gateway hermes-dashboard
 ```
-
-## Local TTS (KittenTTS)
-
-Hermes's Nix python env is read-only, so `hermes setup tts` can't pip-install
-into it. Instead the host builds a small `kittentts-site` overlay (pinned
-0.8.1 wheel + `phonemizer`/`soundfile`, espeak-ng paths baked in, dead
-`misaki` import patched out so torch/spacy never get pulled in) and puts it on
-`PYTHONPATH` for the gateway, dashboard, and login shells. The overlay skips
-dists hermes's env already ships (numpy, cffi, attrs, …) so it never shadows
-hermes's pinned versions.
-
-The provider is already selected in `/root/.hermes/config.yaml`
-(`tts.provider: kittentts`, model `KittenML/kitten-tts-nano-0.8-int8`, voice
-`Jasper`). The ~25MB model downloads from Hugging Face on first use. Voices:
-Jasper, Bella, Luna, Bruno, Rosie, Hugo, Kiki, Leo.
 
 ## Host-side notes
 
