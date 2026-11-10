@@ -57,6 +57,17 @@ class KdeTheme(unittest.TestCase):
         config.read(self.live)
         self.assertFalse(config.has_section("QtQuickRendererSettings"))
 
+    def test_replaces_escaped_header_group_with_nested_group(self):
+        self.live.unlink()
+        self.live.write_text(self.original + "[Colors:Header\\]\\[Inactive]\nBackgroundNormal=239,240,241\n")
+        with self.scheme.open("a") as scheme:
+            scheme.write("[Colors:Header][Inactive]\nBackgroundNormal=239,235,212\n")
+        self.assertEqual(self.run_script().returncode, 0)
+        config = configparser.ConfigParser()
+        config.read(self.live)
+        self.assertFalse(config.has_section("Colors:Header\\]\\[Inactive"))
+        self.assertEqual(config["Colors:Header][Inactive"]["BackgroundNormal"], "239,235,212")
+
     def test_invalid_config_is_not_overwritten(self):
         self.live.unlink()
         self.live.write_text("not an INI file")
