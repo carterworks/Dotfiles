@@ -26,6 +26,7 @@ in
   ];
 
   nix.settings = {
+    # Setting substituters replaces NixOS's default, and nixConfig lists only the extras.
     substituters = [ "https://cache.nixos.org" ] ++ extra-substituters;
     trusted-public-keys = extra-trusted-public-keys;
   };

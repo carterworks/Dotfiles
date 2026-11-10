@@ -17,10 +17,14 @@ in
     opencode2-desktop
     openspec
     ;
+  hermes-agent = inputs.hermes-agent.packages.${system}.default;
+  zen-browser = inputs.zen-browser.packages.${system}.beta;
   # nixpkgs' fnox fails to build, so it is never cached. See TODO.md.
   fnox = localPackage ./fnox.nix;
   hex = final.callPackage ./hex.nix { hexSource = inputs.hex; };
   nub = localPackage ./nub.nix;
+  # Upstream publishes self-contained nightly builds, so these wrap them instead
+  # of using llm-agents' source builds.
   t3code-cli = localPackage ./t3code-cli.nix;
   t3code-nightly = localPackage ./t3code-nightly.nix;
 }

@@ -41,7 +41,6 @@ in
     systemd-lsp
     telegram-desktop
     trayscale
-    # Use the host package set for compatibility with its GPU drivers and libc.
     vicinae
     wallust
     wl-clipboard

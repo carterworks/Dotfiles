@@ -1,12 +1,5 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 
-let
-  zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
-in
 {
   environment.interactiveShellInit = ''
     if [ -n "$REX_BIN_DIR" ]; then
@@ -51,8 +44,6 @@ in
     spotify
     sshpass
     superhtml
-    # Nightly desktop app and CLI. Upstream publishes self-contained builds, so
-    # these are fetch-and-wrap instead of llm-agents source builds.
     t3code-cli
     t3code-nightly
     taplo
