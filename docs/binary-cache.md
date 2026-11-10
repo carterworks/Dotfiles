@@ -76,11 +76,13 @@ shell history:
 attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo atticd-atticadm make-token --sub admin --validity 1h --create-cache fleet --pull fleet)"
 ```
 
-Create the cache. Name every upstream cache that every Linux host also
-substitutes from (see `nix/modules/nix.nix`), so that pushes skip their paths:
+Create the cache. Name the key of every upstream cache the Linux hosts
+substitute from, so that pushes skip their paths. The names come from the
+flake's own `trusted-public-keys` (`nix/modules/nix.nix`), so they cannot drift
+from it:
 
 ```sh
-attic cache create prostagma:fleet --public --upstream-cache-key-name cache.nixos.org-1 --upstream-cache-key-name niks3.numtide.com-1 --upstream-cache-key-name vicinae.cachix.org-1 --upstream-cache-key-name nix-community.cachix.org-1
+attic cache create prostagma:fleet --public $(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)' | jq -r 'unique[] | "--upstream-cache-key-name", .')
 attic cache info prostagma:fleet
 ```
 
@@ -314,6 +316,15 @@ Every `attic cache configure` without `--retention-period` also resets the
 cache's retention to the default, so any configure token needs
 `--configure-cache-retention` as well as `--configure-cache`.
 
+The cache keeps the upstream key names it was created with. Whenever
+`nix/modules/nix.nix` adds or drops a cache, update them with the same login,
+from a checkout that has the change:
+
+```sh
+attic cache configure prostagma:fleet $(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)' | jq -r 'unique[] | "--upstream-cache-key-name", .')
+attic cache info prostagma:fleet
+```
+
 To collect now rather than waiting for the next run:
 
 ```sh
@@ -324,7 +335,7 @@ To estimate how much a host adds per generation, sum the paths in its closure
 that no upstream cache signed. On a machine that has built the host's system:
 
 ```sh
-nix path-info -r --json "$(nix build --no-link --print-out-paths .#nixosConfigurations.scylla.config.system.build.toplevel)" | jq '[.[] | select(all(.signatures[]?; test("^(cache.nixos.org-1|niks3.numtide.com-1|vicinae.cachix.org-1|nix-community.cachix.org-1):") | not)) | .narSize] | add / 1073741824'
+nix path-info -r --json --json-format 1 "$(nix build --no-link --print-out-paths .#nixosConfigurations.scylla.config.system.build.toplevel)" | jq --argjson upstream "$(nix eval --json .#nixosConfigurations.prostagma.config.nix.settings.trusted-public-keys --apply 'keys: builtins.filter (name: name != "fleet") (map (key: builtins.head (builtins.split ":" key)) keys)')" '[.[] | select(all(.signatures[]?; split(":")[0] as $name | any($upstream[]; . == $name) | not)) | .narSize] | add // 0 | . / 1073741824'
 ```
 
 That is uncompressed NAR size in GiB. zstd and chunk deduplication across
