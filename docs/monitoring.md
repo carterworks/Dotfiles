@@ -55,9 +55,10 @@ or a deploy; nothing in the repository does them.
    and make sure the tailnet policy lets you, scylla and eltoro reach it on
    443. Grant it to them by name, not to `*`: tagged nodes match `*`, so such
    a grant would also reach CI's `tag:ci` runners ("Tailscale policy" in
-   [Binary cache](binary-cache.md#tailscale-policy-you)). Serve's line for it
-   is last in `tailscale-services`, so until then that unit fails without
-   stranding the other routes; restart it after the approval:
+   [Binary cache](binary-cache.md#tailscale-policy-you)). Until then
+   `tailscale-services` still succeeds and `tailscale serve status` lists the
+   route; Serve only prints that the Service awaits an admin's approval. If
+   the dashboard does not answer after the approval, restart the unit:
    `ssh prostagma sudo systemctl restart tailscale-services`.
 3. Open `https://beszel.dropbear-tortoise.ts.net`: Authelia's login, then an
    empty Beszel dashboard. Beszel's own login form means the header did not

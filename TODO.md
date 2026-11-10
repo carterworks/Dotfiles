@@ -27,7 +27,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Re-enable idle-compaction in `opencode/opencode.jsonc`: restore the chosen timers (54 minutes for configured GPT-5.6+ models, 3 for Claude, a 200k-token default with per-model overrides), set `options.logLevel` to `debug` while validating, and confirm a real Copilot session emits `session.compaction.ended` after admission and its summary request reports cache reads; then remove the log override.
 - [ ] Authenticate the `cloudflare` MCP server in Claude Code on scylla with `/mcp`; `claude mcp list` says it needs authentication.
 - [ ] `nix/modules/home/workstation.nix`: remove the `~/.lmstudio/bin` PATH entry left over from LM Studio, which scylla no longer installs.
-
+- [ ] `nix/hosts/prostagma/default.nix`: correct the `tailscale-services` comment that says the unit fails until `svc:beszel` is approved; it succeeds. The comment is inside the unit's script, so the edit restarts the unit; make it with the next change to that file.
 ## Awaiting a decision
 
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
