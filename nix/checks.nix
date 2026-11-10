@@ -45,7 +45,7 @@ let
         touch "$out"
       '';
       shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-        shellcheck --severity=warning ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
+        shellcheck --severity=warning ${source}/drift ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
         touch "$out"
       '';
       install =
@@ -58,6 +58,19 @@ let
           }
           ''
             python3 ${source}/test-install.py
+            touch "$out"
+          '';
+      drift =
+        pkgs.runCommandLocal "drift-check"
+          {
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.jq
+              pkgs.python3
+            ];
+          }
+          ''
+            python3 ${source}/test-drift.py
             touch "$out"
           '';
       update =
