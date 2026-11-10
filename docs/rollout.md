@@ -66,6 +66,9 @@ Nothing here deploys anything.
    `hermes` ([El Toro, changing settings](eltoro.md#changing-settings)). Its
    `tts.provider` still names KittenTTS, which the running generation no
    longer has.
+7. Protect `release` with two rulesets, and make the workflow token read-only
+   by default ([CI, items 3 and 4](ci.md#what-you-set-up-once)). `release` does
+   not exist yet; the rulesets apply from the moment it is created.
 
 ## 2. Merge
 
