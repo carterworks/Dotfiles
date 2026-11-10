@@ -1,11 +1,12 @@
 {
+  fleet,
   lib,
   pkgs,
   ...
 }:
 
 let
-  inherit (import ../../lib/fleet.nix) tailnetDomain;
+  inherit (fleet) tailnetDomain;
   dataDir = "/srv/apps/podmaker/data";
 
   # The GHCR package is private. Docker on this host is not logged in to the

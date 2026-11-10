@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  fleet,
+  inputs,
+  pkgs,
+  ...
+}:
 
 let
   inherit ((import ../../flake.nix).nixConfig) extra-substituters extra-trusted-public-keys;
@@ -29,6 +34,6 @@ in
     useGlobalPkgs = true;
     useUserPackages = false;
     backupFileExtension = "hm-backup";
-    extraSpecialArgs = { inherit inputs; };
+    extraSpecialArgs = { inherit fleet inputs; };
   };
 }

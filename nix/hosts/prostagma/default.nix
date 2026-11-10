@@ -1,4 +1,5 @@
 {
+  fleet,
   inputs,
   lib,
   pkgs,
@@ -8,7 +9,7 @@
 let
   copypartyPort = 3210;
 
-  inherit (import ../../lib/fleet.nix) adminSshKey tailnetDomain;
+  inherit (fleet) adminSshKey tailnetDomain;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
   truenas = "192.168.5.252";
 

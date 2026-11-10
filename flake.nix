@@ -59,7 +59,10 @@
     inputs@{ self, nixpkgs, ... }:
     let
       systems = import inputs.systems;
-      specialArgs = { inherit inputs self; };
+      specialArgs = {
+        inherit inputs self;
+        fleet = import ./nix/lib/fleet.nix;
+      };
       nixosSystem =
         host:
         nixpkgs.lib.nixosSystem {

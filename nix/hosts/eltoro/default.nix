@@ -1,5 +1,6 @@
 {
   config,
+  fleet,
   inputs,
   lib,
   pkgs,
@@ -127,7 +128,7 @@ in
     settings.PermitRootLogin = "prohibit-password";
   };
   users.users.root.openssh.authorizedKeys.keys = [
-    (import ../../lib/fleet.nix).adminSshKey
+    fleet.adminSshKey
   ];
 
   # hermes runs as a dedicated unprivileged user — no sudo
