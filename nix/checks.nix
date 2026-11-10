@@ -97,16 +97,12 @@ in
       let
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
         home = scylla.config.home-manager.users.carter;
-        theme = import (./modules/home/desktop-theme/themes + "/${home.dotfiles.desktopTheme.name}.nix");
+        inherit (home.dotfiles.desktopTheme) theme;
         obsidian = home.xdg.configFile."desktop-theme/obsidian".source;
         manifest = pkgs.writeText "desktop-theme-check.json" (
           builtins.toJSON {
             inherit (theme) appearance apps colors;
-            palettes = map (file: (import (./modules/home/desktop-theme/themes + "/${file}")).colors) (
-              builtins.filter (lib.hasSuffix ".nix") (
-                builtins.attrNames (builtins.readDir ./modules/home/desktop-theme/themes)
-              )
-            );
+            palettes = lib.mapAttrsToList (_: theme: theme.colors) home.dotfiles.desktopTheme.themes;
             fzfOptions = home.home.sessionVariables.FZF_DEFAULT_OPTS;
             files = {
               opencode = home.xdg.configFile."opencode/cli.json".source;
