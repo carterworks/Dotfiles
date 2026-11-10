@@ -12,7 +12,9 @@ APPLY=false
 GITHUB_TOKEN_VALUE=""
 SKILLS=(agent-browser-skill:agent-browser herdr-skill:herdr hunk-skill:hunk-review)
 CHANGES=()
+NOTES=()
 FAILURES=()
+SKOPEO=""
 
 # Progress goes to stderr so stdout carries only the summary.
 log() {
@@ -21,6 +23,11 @@ log() {
 
 changed() {
   CHANGES+=("$1")
+}
+
+note() {
+  NOTES+=("$1")
+  log "$1"
 }
 
 failed() {
@@ -453,6 +460,132 @@ update_packages() {
   done
 }
 
+skopeo() {
+  "${SKOPEO}" "$@"
+}
+
+# The digest a registry reports for a reference is the sha256 of its raw
+# manifest (the multi-platform index when there is one).
+image_digest() {
+  printf 'sha256:%s\n' "$(skopeo inspect --raw "docker://$1" | sha256sum | cut -d' ' -f1)"
+}
+
+tag_shape() {
+  sed -E 's/[.]/\\./g; s/[0-9]+/[0-9]+/g' <<<"$1"
+}
+
+# Print the newest tag shaped like the given one, compared as versions, or
+# print why there is no unambiguous newest tag and fail.
+newest_tag() {
+  local repository="$1"
+  local tag="$2"
+  local release="${tag%%-*}"
+  local shape newest second current_major newest_major
+  local -a candidates
+
+  shape="$(tag_shape "${tag}")"
+  # A pre-release may move on to its release; any other suffix, such as
+  # -alpine, names a variant the image must keep.
+  if [[ "${tag}" == *-* && "${tag#*-}" =~ ^(alpha|beta|rc|pre|preview|dev|nightly) ]]; then
+    shape="$(tag_shape "${release}")(-$(tag_shape "${tag#*-}"))?"
+  fi
+  # A suffix sorts after its release under sort -V; as ~ it sorts before it.
+  mapfile -t candidates < <(
+    skopeo list-tags "docker://${repository}" \
+      | jq -r '.Tags[]' \
+      | grep -E "^${shape}$" \
+      | sed 's/-/~/' | sort -V | sed 's/~/-/'
+  )
+  if (( ${#candidates[@]} == 0 )); then
+    echo "no tags shaped like ${tag}"
+    return 1
+  fi
+  newest="${candidates[-1]}"
+  second=""
+  if (( ${#candidates[@]} > 1 )); then
+    second="${candidates[-2]}"
+  fi
+  if [[ -n "${second}" && "$(sed -E 's/(^|[^0-9])0+([0-9])/\1\2/g' <<<"${newest}")" == "$(sed -E 's/(^|[^0-9])0+([0-9])/\1\2/g' <<<"${second}")" ]]; then
+    echo "${newest} and ${second} are the same version"
+    return 1
+  fi
+  current_major="$(grep -oE '[0-9]+' <<<"${tag}" | head -n1)"
+  newest_major="$(grep -oE '[0-9]+' <<<"${newest}" | head -n1)"
+  # A different number of digits usually means another numbering scheme, such
+  # as dates, sharing the shape.
+  if (( ${#current_major} != ${#newest_major} )); then
+    echo "newest tag ${newest} may follow another numbering scheme"
+    return 1
+  fi
+  if [[ "$(printf '%s\n' "${tag}" "${newest}" | sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')" != "${newest}" ]]; then
+    echo "newest tag ${newest} is older than ${tag}"
+    return 1
+  fi
+  printf '%s\n' "${newest}"
+}
+
+# Move an image to the newest tag of the same shape (or, for tags that are not
+# versions, such as latest, to the tag's current digest) and rewrite its one
+# occurrence under nix/hosts.
+update_image() {
+  local reference="$1"
+  local name="${reference%@*}"
+  local digest="${reference#*@}"
+  local repository="${name%:*}"
+  local tag="${name##*:}"
+  local new_tag="${tag}"
+  local new_digest new_reference file content reason
+
+  if [[ "$(grep -rhoF --include='*.nix' "\"${reference}\"" nix/hosts | wc -l)" != 1 ]]; then
+    failed "${repository}" "${reference} appears more than once under nix/hosts"
+    return 0
+  fi
+  if [[ "${tag}" =~ ^v?[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
+    if reason="$(newest_tag "${repository}" "${tag}")"; then
+      new_tag="${reason}"
+      if [[ "${new_tag%%.*}" != "${tag%%.*}" ]]; then
+        note "${repository}: ${tag} -> ${new_tag} is a new major version"
+      fi
+    else
+      note "${repository}: ${reason}; refreshed the digest of ${tag} only"
+    fi
+  fi
+  if ! new_digest="$(image_digest "${repository}:${new_tag}")" \
+    || ! skopeo inspect --raw "docker://${repository}@${new_digest}" >/dev/null; then
+    failed "${repository}" "could not resolve ${new_tag}"
+    return 0
+  fi
+  new_reference="${repository}:${new_tag}@${new_digest}"
+  if [[ "${new_reference}" == "${reference}" ]]; then
+    log "${repository}: up to date (${tag})"
+    return 0
+  fi
+
+  if [[ "${APPLY}" == true ]]; then
+    file="$(grep -rlF --include='*.nix' "\"${reference}\"" nix/hosts)"
+    content="$(<"${file}")"
+    printf '%s\n' "${content//\"${reference}\"/\"${new_reference}\"}" >"${file}"
+  fi
+  changed "${repository} ${tag}@${digest:0:19} -> ${new_tag}@${new_digest:0:19}"
+}
+
+update_images() {
+  local reference
+  local -a references
+
+  mapfile -t references < <(grep -rhoE --include='*.nix' '"[^" ]+:[^" @]+@sha256:[0-9a-f]{64}"' nix/hosts 2>/dev/null | tr -d '"' | sort -u)
+  (( ${#references[@]} > 0 )) || return 0
+  # Reached through the flake's nixpkgs so the updater needs no container tools.
+  if ! SKOPEO="$(quiet nix build --no-link --print-out-paths --inputs-from . 'nixpkgs#skopeo^out')/bin/skopeo"; then
+    failed "images" "could not build skopeo"
+    return 0
+  fi
+  for reference in "${references[@]}"; do
+    program_status working "Checking ${reference%%:*}"
+    update_image "${reference}"
+  done
+}
+
 usage() {
   cat <<EOF
 Update flake inputs, generated skill files and manually packaged binaries.
@@ -528,10 +661,15 @@ main() {
     update_inputs
   fi
   update_packages
+  update_images
 
   if (( ${#CHANGES[@]} > 0 )); then
     printf '%s\n' "${CHANGES[@]}"
-  else
+  fi
+  if (( ${#NOTES[@]} > 0 )); then
+    printf 'note: %s\n' "${NOTES[@]}"
+  fi
+  if (( ${#CHANGES[@]} == 0 )); then
     log "Everything is up to date"
   fi
   if [[ "${APPLY}" != true && ${#CHANGES[@]} -gt 0 ]]; then
