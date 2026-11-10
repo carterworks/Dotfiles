@@ -304,10 +304,10 @@ in
     };
   };
 
+  # Authenticated by hand (`tailscale up`); by choice no auth key is stored.
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "both";
-    authKeyFile = "/run/secrets/tailscale_key";
     extraSetFlags = [ "--operator=carter" ];
   };
 
