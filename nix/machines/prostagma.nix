@@ -168,7 +168,7 @@ in
     ./prostagma/app-storage.nix
     ./prostagma/podmaker.nix
 
-    ./prostagma/migrated-apps.nix
+    ./prostagma/media-apps.nix
     ./prostagma/sso.nix
   ];
 
