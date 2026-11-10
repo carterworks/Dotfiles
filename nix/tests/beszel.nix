@@ -282,8 +282,18 @@ in
         names = {s["name"] for s in json.loads(body)["items"]}
         assert names == {"prostagma", "scylla", "eltoro"}, names
 
-    with subtest("without a session the gate refuses, forged header or not"):
-        for args in ["", forged, as_carter]:
+    # Beszel's frontend sends the hub's token as a bare Authorization header.
+    with subtest("the hub's own token passes the gate alongside the session"):
+        status, body = through_gate("/api/collections/users/auth-refresh", f"{session} -X POST")
+        assert status == 200, (status, body)
+        hub_token = json.loads(body)["token"]
+        with_hub_token = f"-H 'Authorization: {hub_token}'"
+        status, body = through_gate("/api/collections/systems/records", f"{session} {with_hub_token} -H 'Accept: application/json'")
+        assert status == 200, (status, body)
+        assert {s["name"] for s in json.loads(body)["items"]} == {"prostagma", "scylla", "eltoro"}, body
+
+    with subtest("without a session the gate refuses, forged header or hub token or not"):
+        for args in ["", forged, as_carter, with_hub_token]:
             status, body = through_gate("/api/collections/systems/records", args)
             assert status in (302, 401), (args, status, body)
             assert "prostagma" not in body, body
@@ -298,6 +308,11 @@ in
         gated = echoed("/api/collections/systems/records", f"{session} {forged}")
         assert gated.get("remote-email") == "carter@carter.works", gated
         assert gated.get("remote-user") == "carter", gated
+        assert echoed("/api/collections/systems/records?with-session", f"{session} {with_hub_token}").get("authorization") == hub_token
+        prostagma.wait_until_succeeds("journalctl -u header-echo | grep -q with-session")
+        status, body = through_gate("/api/collections/systems/records?no-session", with_hub_token)
+        assert status in (302, 401), (status, body)
+        prostagma.fail("journalctl -u header-echo | grep -q no-session")
         bypass = echoed("/api/beszel/agent-connect", forged)
         assert not any(k.startswith("remote-") for k in bypass), bypass
         prostagma.succeed("systemctl start beszel-hub.service")
