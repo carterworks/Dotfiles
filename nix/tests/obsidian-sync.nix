@@ -5,11 +5,11 @@ let
     system:
     lib.evalModules {
       specialArgs = {
-        pkgs.stdenv.hostPlatform = {
-          inherit system;
-          isLinux = system == "x86_64-linux";
-        };
-        self.packages.${system} = lib.optionalAttrs (system == "x86_64-linux") {
+        pkgs = {
+          stdenv.hostPlatform = {
+            inherit system;
+            isLinux = system == "x86_64-linux";
+          };
           obsidian-headless = "/test/obsidian-headless";
         };
       };

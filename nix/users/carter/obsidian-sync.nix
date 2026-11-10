@@ -2,12 +2,11 @@
   config,
   lib,
   pkgs,
-  self,
   ...
 }:
 
 let
-  obsidian-headless = self.packages.${pkgs.stdenv.hostPlatform.system}.obsidian-headless;
+  inherit (pkgs) obsidian-headless;
   vaultPath = "${config.home.homeDirectory}/Documents/Notes";
 in
 {

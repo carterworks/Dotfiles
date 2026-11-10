@@ -53,6 +53,5 @@ in
   delta = inputs.delta.packages.${system}.delta;
   bambu-studio = localPackage ./bambu-studio.nix;
   cua-driver = localPackage ./cua-driver.nix;
-  obsidian-headless = localPackage ./obsidian-headless.nix;
   ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
 }
