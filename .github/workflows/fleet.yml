@@ -1,0 +1,55 @@
+name: Fleet
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: scylla
+            runner: ubuntu-latest
+            target: .#nixosConfigurations.scylla.config.system.build.toplevel
+          - name: prostagma
+            runner: ubuntu-latest
+            target: .#nixosConfigurations.prostagma.config.system.build.toplevel
+          - name: eltoro
+            runner: ubuntu-latest
+            target: .#nixosConfigurations.eltoro.config.system.build.toplevel
+          - name: mac
+            runner: macos-latest
+            target: --impure -f .github/ci.nix mac
+          - name: checks-linux
+            runner: ubuntu-latest
+            target: --impure -f .github/ci.nix checks
+          - name: checks-mac
+            runner: macos-latest
+            target: --impure -f .github/ci.nix checks
+    steps:
+      - run: df -h
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        with:
+          github_access_token: ${{ github.token }}
+      - name: Use the flake's binary caches
+        run: |
+          mkdir -p ~/.config/nix
+          nix eval --raw --impure -f .github/ci.nix nixConf >> ~/.config/nix/nix.conf
+      - run: nix build -L ${{ matrix.target }}
+      - run: df -h
+        if: always()
