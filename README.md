@@ -1,57 +1,65 @@
 # Dotfiles
 
-Personal NixOS and nix-darwin machine config.
+One Nix flake for four machines.
 
-## Bootstrap
+| Host | What | Configuration | Updated by |
+|---|---|---|---|
+| `scylla` | NixOS desktop | `nix/hosts/scylla/` | `./install` on it |
+| `carters-macbook-pro` | nix-darwin laptop (employer-owned) | `nix/hosts/carters-macbook-pro/` | `./install` on it |
+| `prostagma` | NixOS LXC on Proxmox: media, photos, SSO, binary cache | `nix/hosts/prostagma/` | itself, nightly |
+| `eltoro` | NixOS LXC on Proxmox: a fenced Hermes agent | `nix/hosts/eltoro/` | itself, nightly |
 
-Install Nix first, then clone the repo to `~/.config/dotfiles`. Home Manager
-links config files from there into your home directory, and activation stops
-if the checkout is anywhere else.
+Shared modules are in `nix/modules/`: `nixos/common.nix` for every NixOS
+host, `nixos/server.nix` for the two servers.
+
+## How a change reaches the hosts
+
+1. Push. [CI](.github/workflows/fleet.yml) builds every host and runs the flake
+   checks.
+2. CI pushes what it built to the private [binary cache](docs/binary-cache.md)
+   on prostagma. *Not yet: the push workflow is still to be written.*
+3. A nightly job updates the flake inputs and, once everything is green and
+   cached, moves the `release` branch to that commit. *Being written.*
+4. prostagma and eltoro switch to `release` every night
+   ([Server auto-upgrade](docs/auto-upgrade.md)). This stays off until the
+   cache key is set.
+5. On scylla and the Mac, run `./install`.
+
+`./drift [ref]`, run from scylla, shows whether each NixOS host runs what
+`release` (or `ref`) says it should, and when it last switched.
+
+## Deploy by hand
 
 ```bash
-git clone <repo> ~/.config/dotfiles
-cd ~/.config/dotfiles
+./install                     # this machine: scylla or the Mac
+./install prostagma           # build here, activate there as carter with sudo
+./install eltoro              # build here, activate there as root
+./install eltoro dry-activate # any nixos-rebuild action; the default is switch
 ```
 
-If `nix` is not installed, `./install` exits early and points to:
+A remote deploy has the target fetch from its own caches and receives only the
+rest over SSH. `PROSTAGMA_HOST` and `ELTORO_HOST` override the SSH targets.
 
-`https://github.com/DeterminateSystems/nix-installer`
-
-## Check
-
-To build a host's configuration without switching to it:
+To build a host without switching to it:
 
 ```bash
 nix build --no-link .#nixosConfigurations.<host>.config.system.build.toplevel
 ```
-
-On every push, [CI](.github/workflows/fleet.yml) builds each host and runs the flake checks on GitHub-hosted runners.
-
-Machine selection is automatic:
-
-- on macOS, via `scutil --get LocalHostName`
-- on NixOS, via the static hostname from `hostnamectl` or `/etc/hostname`
-
-Those names must match the flake host names. Multiple names may point to the same configuration when a machine has an alias.
 
 ## Update
 
 `./update` reports the package and container image updates available and
 changes nothing. `./update --apply` updates every flake input, regenerates
 `agents/skills/generated/`, and bumps the packages in `nix/packages/` and the
-`name:tag@sha256:…` images under `nix/hosts/`. Build the hosts afterwards.
-
-```bash
-./update --apply
-```
+`name:tag@sha256:…` images under `nix/hosts/`.
 
 It never prompts and needs no terminal. Each change prints as one
-`name old -> new` line on stdout, followed by `note:` lines worth a look (an
-image held back from a new major version, or one whose newest tag is
-ambiguous). It exits 1 if
-anything failed and keeps the updates that worked. The GitHub token comes from
+`name old -> new` line, followed by `note:` lines worth a look (an image held
+back from a new major version, or one whose newest tag is ambiguous). It exits
+1 if anything failed and keeps the updates that worked. The GitHub token comes
+from
 `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`; `nix`, `git`, `curl` and `jq`
-must be on `PATH`, and `skopeo` comes from the pinned nixpkgs.
+must be on `PATH`.
 
 An image moves only within its major version, because a new major usually
 migrates the application's data one way; below 1.0 the second number counts
@@ -61,36 +69,50 @@ and review that commit by hand.
 Inputs whose URL names a revision do not move: `hermes-agent` is held on
 purpose (see TODO.md), and `hex` moves only with its package.
 
-## Install
+## Bootstrap
 
-`./install` switches the current machine to a new generation with the appropriate rebuild command for the live system.
+Every machine needs this repository at `~/.config/dotfiles`: Home Manager links
+config files from there, and activation stops if the checkout is anywhere
+else. `./install` picks the configuration by the machine's name
+(`scutil --get LocalHostName` on macOS, the static hostname on NixOS), which
+must match a flake host.
 
-```bash
-./install
-```
+- **Mac**: install Nix with the
+  [Determinate installer](https://github.com/DeterminateSystems/nix-installer),
+  clone, and run `./install`. Without nix-darwin, it builds the configuration
+  and activates it with its own pinned `darwin-rebuild`.
+- **scylla**: install NixOS, clone, and, on new hardware, replace
+  `nix/hosts/scylla/hardware.nix` with `nixos-generate-config --show-hardware-config`.
+  Then `./install`.
+- **A server**: create the container from the NixOS LXC template on Proxmox
+  (`docs/eltoro.md` has the `pct create` line and the `/dev/net/tun`
+  passthrough Tailscale needs) and authorize the admin key for root on it.
+  A rebuilt server first gets its old SSH host keys back, so it can read its
+  secrets ("Rebuilding a host with its old identity" in
+  [Secrets](docs/secrets.md)). Then, from scylla:
+  `PROSTAGMA_HOST=root@<address> ./install prostagma`, or
+  `ELTORO_HOST=root@<address> ./install eltoro`. Finally run `tailscale up` on
+  the server; no auth key is stored.
 
-On a Mac without nix-darwin, the installer builds the selected configuration from this flake and uses its pinned `darwin-rebuild` to perform the first activation. Only Nix itself must already be installed.
+## By hand, by the owner
 
-## El Toro
+- Create the binary cache and set its key, the CI token, the GitHub
+  Environment and the tailnet policy ([Binary cache](docs/binary-cache.md)).
+  Setting the key also turns on server auto-upgrades.
+- Before that, deploy eltoro's chain-based fence by hand ("Deploying fence
+  changes" in [El Toro](docs/eltoro.md)).
+- Run `./install` on scylla and the Mac.
+- Check `systemctl --failed` on the servers, or run `./drift`: a failed
+  auto-upgrade notifies nobody.
+- Add, rotate and enrol secrets ([Secrets](docs/secrets.md)).
 
-`eltoro` is a remote NixOS LXC. Build it locally and activate it on the
-container over SSH:
+## Runbooks
 
-```bash
-./install eltoro
-```
-
-See [El Toro](docs/eltoro.md) for onboarding, settings, and the host-side
-firewall setup.
-
-## Secrets
-
-Secrets are encrypted with fnox in `secrets/fnox.toml` and decrypted on each
-host at boot. See [Secrets](docs/secrets.md).
-
-## Rex
-
-For the Rex macOS client setup, see [Rex](docs/rex.md).
+- [Binary cache](docs/binary-cache.md)
+- [Server auto-upgrade](docs/auto-upgrade.md)
+- [Secrets](docs/secrets.md): encrypted with fnox in `secrets/fnox.toml`
+- [El Toro](docs/eltoro.md): onboarding, settings, the egress fence
+- [Rex](docs/rex.md): the macOS client
 
 ## Config files
 
