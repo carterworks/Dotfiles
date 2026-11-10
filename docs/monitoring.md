@@ -238,6 +238,12 @@ If the dashboard shows Beszel's own login form, the `Remote-Email` header is
 missing: check that the request went through Caddy (`tailscale serve status`)
 and that Authelia's user has the address the hub's account was made with.
 
+If the browser asks for a username and password in its own dialog while the
+dashboard spins, Authelia saw the `Authorization` header Beszel sends with its
+own token and answered with a Basic challenge: check that the Beszel site in
+the generated Caddyfile still has `header_up -Authorization` in its
+`forward_auth` block (`hideAuthorizationFromGate` in `sso.nix`).
+
 ## Data and backups
 
 Everything is in `/srv/apps/beszel-hub/beszel_data` on prostagma, and lands in
