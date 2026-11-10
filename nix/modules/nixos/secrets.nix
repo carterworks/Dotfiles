@@ -8,6 +8,14 @@
 let
   cfg = config.dotfiles.fnox;
   unitName = name: "fnox-secret-${name}";
+  root = "/run/secrets";
+  # /run/secrets and every directory between it and the file, outermost first.
+  directories =
+    path:
+    let
+      parts = lib.init (lib.splitString "/" (lib.removePrefix "${root}/" path));
+    in
+    map (n: lib.concatStringsSep "/" ([ root ] ++ lib.take n parts)) (lib.range 0 (lib.length parts));
 in
 {
   options.dotfiles.fnox = {
@@ -22,7 +30,8 @@ in
       type = lib.types.attrsOf (
         lib.types.submodule {
           options = {
-            path = lib.mkOption { type = lib.types.str; };
+            # No dot-leading components, so no "..", and nothing outside /run/secrets.
+            path = lib.mkOption { type = lib.types.strMatching "/run/secrets(/[^/.][^/]*)+"; };
             owner = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -64,7 +73,8 @@ in
       # partial or wrongly owned file.
       script = ''
         set -o pipefail
-        mkdir -p ${lib.escapeShellArg (dirOf secret.path)}
+        # Unlike mkdir -p, install -d also resets a directory that already exists.
+        install -d -m 0700 -o root -g root ${lib.escapeShellArgs (directories secret.path)}
         tmp=$(mktemp ${lib.escapeShellArg "${secret.path}.XXXXXX"})
         trap 'rm -f "$tmp"' EXIT
         fnox --no-daemon --non-interactive --if-missing error -c ${cfg.file} get ${lib.escapeShellArg name} \

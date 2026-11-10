@@ -1,7 +1,5 @@
 let
-  # Generated inside the VM at run time, so it can only reach the Nix store if
-  # the module put a decrypted value there; nix/checks.nix searches the node's
-  # closure for it.
+  # A recognisable dummy value, generated inside the VM at run time.
   marker = "fnox-test-marker-5b0e3c";
 
   # Each consumer records what it saw at the moment it started.
@@ -145,6 +143,10 @@ in
       done
       base64 -w0 trailing | fnox --no-daemon -c /root/fnox.toml set FOREIGN -p other
     """)
+
+    # Left behind world-readable, as by an earlier generation or by hand: the
+    # module must tighten them, not just create what is missing.
+    machine.succeed("install -d -m 0777 /run/secrets /run/secrets/nested")
 
     with subtest("each value reaches its file with its owner and mode before its consumer starts"):
         machine.succeed("systemctl start consumer-trailing consumer-pem consumer-binary")
