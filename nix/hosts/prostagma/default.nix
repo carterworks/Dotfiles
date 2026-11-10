@@ -529,10 +529,10 @@ in
         "::1/128"
       ];
     };
-    accounts = {
-      alex.passwordFile = "/var/lib/secrets/copyparty/alex_password";
-      haley.passwordFile = "/var/lib/secrets/copyparty/haley_password";
-      carter.passwordFile = "/var/lib/secrets/copyparty/carter_password";
+    accounts = with config.dotfiles.fnox.secrets; {
+      alex.passwordFile = COPYPARTY_ALEX_PASSWORD.path;
+      haley.passwordFile = COPYPARTY_HALEY_PASSWORD.path;
+      carter.passwordFile = COPYPARTY_CARTER_PASSWORD.path;
     };
     groups = {
       family = [
@@ -566,6 +566,25 @@ in
     "/mnt/truenas/media"
     "/mnt/truenas/syncthing-root/users/carter"
   ];
+  # The service reads these as apps from its own empty root, which is why
+  # the owners and modes still matter although /run/secrets is root-only.
+  dotfiles.fnox.secrets.COPYPARTY_ALEX_PASSWORD = {
+    path = "/run/secrets/copyparty/alex_password";
+    mode = "0644";
+    requiredBy = [ "copyparty.service" ];
+  };
+  dotfiles.fnox.secrets.COPYPARTY_CARTER_PASSWORD = {
+    path = "/run/secrets/copyparty/carter_password";
+    group = "apps";
+    mode = "0640";
+    requiredBy = [ "copyparty.service" ];
+  };
+  dotfiles.fnox.secrets.COPYPARTY_HALEY_PASSWORD = {
+    path = "/run/secrets/copyparty/haley_password";
+    group = "apps";
+    mode = "0640";
+    requiredBy = [ "copyparty.service" ];
+  };
 
   users.groups.video.gid = lib.mkForce 44;
   users.groups.render.gid = lib.mkForce 993;
