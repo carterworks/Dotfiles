@@ -439,20 +439,6 @@ fetch_private_package() {
   cache_private_release "${update_info}" "${version}" "${hash}" >/dev/null
 }
 
-refresh_private_rex_flake() {
-  local destination="${1:-${XDG_DATA_HOME:-${HOME}/.local/share}/dotfiles-private/rex-flake}"
-  local url source
-
-  if [[ -e "${destination}" && ! -L "${destination}" ]]; then
-    log_message error "Private Rex flake destination is not a symlink; refusing to replace it"
-    return 1
-  fi
-  url="$(private_source rex.serverFlakeUrl)" || return 1
-  source="$(nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake archive --refresh --no-write-lock-file --json "${url}" | jq -er '.path')" || return 1
-  mkdir -p "$(dirname "${destination}")"
-  nix-store --realise "${source}" --add-root "${destination}" --indirect >/dev/null
-}
-
 nixpkgs_tool() {
   local tool="$1"
   local flake_ref expression
@@ -640,23 +626,12 @@ section "Dotfiles update"
 warn_if_git_dirty
 
 if [[ -n "${FETCH_PACKAGE}" ]]; then
-  if [[ "${FETCH_PACKAGE}" == rex-server ]]; then
-    run_quiet_step "Caching private Rex flake" refresh_private_rex_flake
-  else
-    run_quiet_step "Caching ${FETCH_PACKAGE}" fetch_private_package "${FETCH_PACKAGE}"
-  fi
+  run_quiet_step "Caching ${FETCH_PACKAGE}" fetch_private_package "${FETCH_PACKAGE}"
   exit 0
 fi
 
 if [[ "${APPLY}" == true ]]; then
   section "Update flake inputs"
-  if jq -e '.nodes.root.inputs.rex' flake.lock >/dev/null; then
-    rex_path="$(jq -er '.nodes[.nodes.root.inputs.rex].original | select(.type == "path") | .path | select(startswith("/"))' flake.lock)" || {
-      log_message error "Rex must use an external absolute path input; see docs/rex.md"
-      exit 1
-    }
-    run_quiet_step "Refreshing private Rex flake" refresh_private_rex_flake "${rex_path}"
-  fi
   run_quiet_step "Updating flake inputs" nix "${NIX_ACCESS_TOKEN_ARGS[@]}" flake update
 
   section "Update generated files"
