@@ -9,6 +9,7 @@ BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATUS_TTY="${DOTFILES_STATUS_TTY:-/dev/tty}"
 
 APPLY=false
+MAJORS=false
 GITHUB_TOKEN_VALUE=""
 SKILLS=(agent-browser-skill:agent-browser herdr-skill:herdr hunk-skill:hunk-review)
 CHANGES=()
@@ -474,11 +475,24 @@ tag_shape() {
   sed -E 's/[.]/\\./g; s/[0-9]+/[0-9]+/g' <<<"$1"
 }
 
+# Below 1.0 a release that changes the second number is the one that may
+# break, so 0.5 and 0.6 are different majors while 1.5 and 1.6 are not.
+tag_major() {
+  [[ "$1" =~ ^v?([0-9]+)(\.([0-9]+))? ]] || return 1
+  if (( 10#${BASH_REMATCH[1]} == 0 )); then
+    printf '0.%s\n' "$(( 10#${BASH_REMATCH[3]:-0} ))"
+  else
+    printf '%s\n' "$(( 10#${BASH_REMATCH[1]} ))"
+  fi
+}
+
 # Print the newest tag shaped like the given one, compared as versions, or
-# print why there is no unambiguous newest tag and fail.
+# print why there is no unambiguous newest tag and fail. With a third argument,
+# consider only tags of that major.
 newest_tag() {
   local repository="$1"
   local tag="$2"
+  local major="${3:-}"
   local release="${tag%%-*}"
   local shape newest second current_major newest_major
   local -a candidates
@@ -494,7 +508,12 @@ newest_tag() {
     skopeo list-tags "docker://${repository}" \
       | jq -r '.Tags[]' \
       | grep -E "^${shape}$" \
-      | sed 's/-/~/' | sort -V | sed 's/~/-/'
+      | sed 's/-/~/' | sort -V | sed 's/~/-/' \
+      | while read -r candidate; do
+          if [[ -z "${major}" || "$(tag_major "${candidate}")" == "${major}" ]]; then
+            printf '%s\n' "${candidate}"
+          fi
+        done
   )
   if (( ${#candidates[@]} == 0 )); then
     echo "no tags shaped like ${tag}"
@@ -543,8 +562,15 @@ update_image() {
   if [[ "${tag}" =~ ^v?[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$ ]]; then
     if reason="$(newest_tag "${repository}" "${tag}")"; then
       new_tag="${reason}"
-      if [[ "${new_tag%%.*}" != "${tag%%.*}" ]]; then
-        note "${repository}: ${tag} -> ${new_tag} is a new major version"
+      # A major usually migrates the application's data one way, so an
+      # unattended run stays within the current one.
+      if [[ "$(tag_major "${new_tag}")" != "$(tag_major "${tag}")" ]]; then
+        if [[ "${MAJORS}" == true ]]; then
+          note "${repository}: ${tag} -> ${new_tag} is a new major version"
+        else
+          note "${repository}: ${tag} -> ${new_tag} is a new major version, held; take it with ./update --apply --majors"
+          new_tag="$(newest_tag "${repository}" "${tag}" "$(tag_major "${tag}")")" || new_tag="${tag}"
+        fi
       fi
     else
       note "${repository}: ${reason}; refreshed the digest of ${tag} only"
@@ -591,7 +617,7 @@ usage() {
 Update flake inputs, generated skill files, manually packaged binaries and
 pinned container images.
 
-Usage: ./update [--apply | --fetch PACKAGE]
+Usage: ./update [--apply [--majors] | --fetch PACKAGE]
 
   (none)    Report the package and image updates available; change nothing.
   --apply   Update every flake input, regenerate the skill files and bump
@@ -599,6 +625,9 @@ Usage: ./update [--apply | --fetch PACKAGE]
             line per change on stdout (name old -> new), then "note:" lines,
             and exits 1 if anything failed; the updates that succeeded stay
             in the tree.
+  --majors  Also move images to a new major version. Without it, an image
+            stays within its major (below 1.0, the second number) and a
+            "note:" line names the newer major.
   --fetch PACKAGE
             Cache a pinned private download without updating any files or inputs.
   -h, --help
@@ -614,6 +643,10 @@ main() {
     case "$1" in
       --apply)
         APPLY=true
+        shift
+        ;;
+      --majors)
+        MAJORS=true
         shift
         ;;
       --fetch)

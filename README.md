@@ -46,11 +46,17 @@ changes nothing. `./update --apply` updates every flake input, regenerates
 ```
 
 It never prompts and needs no terminal. Each change prints as one
-`name old -> new` line on stdout, followed by `note:` lines worth a look (a
-major version, or an image whose newest tag is ambiguous). It exits 1 if
+`name old -> new` line on stdout, followed by `note:` lines worth a look (an
+image held back from a new major version, or one whose newest tag is
+ambiguous). It exits 1 if
 anything failed and keeps the updates that worked. The GitHub token comes from
 `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`; `nix`, `git`, `curl` and `jq`
 must be on `PATH`, and `skopeo` comes from the pinned nixpkgs.
+
+An image moves only within its major version, because a new major usually
+migrates the application's data one way; below 1.0 the second number counts
+as the major. Take a new major deliberately with `./update --apply --majors`
+and review that commit by hand.
 
 Inputs whose URL names a revision do not move: `hermes-agent` is held on
 purpose (see TODO.md), and `hex` moves only with its package.

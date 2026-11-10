@@ -153,6 +153,16 @@ main "$@"
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("alpha 1.0 -> 2.0", result.stdout)
 
+    def test_majors_flag_reaches_the_image_updater(self):
+        result = bash(FAKE_NIX + '''
+BASEDIR="$PWD"
+STATUS_TTY=/dev/null
+update_packages() { :; }
+update_images() { echo "MAJORS=${MAJORS}"; }
+main "$@"
+''', "--majors", cwd=self.root)
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, "MAJORS=true"), result.stderr)
+
     def test_dry_run_reports_without_changing_anything(self):
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -393,6 +403,8 @@ skopeo() {
     "list-tags docker://ghcr.io/o/dated") echo '{"Tags":["1.0","2026.11"]}' ;;
     "list-tags docker://ghcr.io/o/untagged") return 1 ;;
     "list-tags docker://ghcr.io/o/major") echo '{"Tags":["1.0","2.0"]}' ;;
+    "list-tags docker://ghcr.io/o/both") echo '{"Tags":["1.0","1.5","2.0"]}' ;;
+    "list-tags docker://ghcr.io/o/zero") echo '{"Tags":["0.5.0","0.5.3","0.6.0"]}' ;;
     "inspect --raw")
       case "$3" in
         *@sha256:*) [[ -n "${MANIFEST[${3##*@}]:-}" ]] ;;
@@ -403,18 +415,19 @@ skopeo() {
 }
 digest() { printf 'sha256:%s' "$(printf '{"tag":"%s"}\n' "$1" | sha256sum | cut -d' ' -f1)"; }
 declare -A MANIFEST
-for tag in 1.0 1.2 1.10 2.0 latest 2026.11; do MANIFEST[$(digest "${tag}")]=1; done
+for tag in 1.0 1.2 1.5 1.10 2.0 0.5.0 0.5.3 0.6.0 latest 2026.11; do MANIFEST[$(digest "${tag}")]=1; done
 '''
 
 
 class ImageTests(unittest.TestCase):
-    def update(self, hosts, apply=True):
+    def update(self, hosts, apply=True, majors=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "nix/hosts/server").mkdir(parents=True)
             (root / "nix/hosts/server/apps.nix").write_text(hosts)
             result = bash(FAKE_SKOPEO + f'''
 APPLY={"true" if apply else "false"}
+{"MAJORS=true" if majors else ""}
 OLD="sha256:$(printf '%064d' 0)"
 update_images
 printf '%s\\n' "${{CHANGES[@]}}" "${{NOTES[@]/#/note: }}"
@@ -447,9 +460,27 @@ printf '%s\\n' "${{CHANGES[@]}}" "${{NOTES[@]/#/note: }}"
         self.assertIn("note: ghcr.io/o/dated: newest tag 2026.11 may follow another "
                       "numbering scheme; refreshed the digest of 1.0 only", result.stdout)
 
-    def test_a_major_version_move_is_noted(self):
-        result, _ = self.update(f'image = "ghcr.io/o/major:1.0@sha256:{"0" * 64}";\n')
-        self.assertIn("note: ghcr.io/o/major: 1.0 -> 2.0 is a new major version", result.stdout)
+    def test_a_new_major_is_held_and_noted(self):
+        result, hosts = self.update(f'image = "ghcr.io/o/major:1.0@sha256:{"0" * 64}";\n')
+        self.assertEqual(hosts, f'image = "ghcr.io/o/major:1.0@{self.digest("1.0")}";\n')
+        self.assertIn("note: ghcr.io/o/major: 1.0 -> 2.0 is a new major version, held; "
+                      "take it with ./update --apply --majors", result.stdout)
+
+    def test_moves_within_its_major_when_a_newer_major_exists(self):
+        result, hosts = self.update(f'image = "ghcr.io/o/both:1.0@sha256:{"0" * 64}";\n')
+        self.assertEqual(hosts, f'image = "ghcr.io/o/both:1.5@{self.digest("1.5")}";\n')
+        self.assertIn("note: ghcr.io/o/both: 1.0 -> 2.0 is a new major version, held", result.stdout)
+
+    def test_majors_takes_the_new_major(self):
+        result, hosts = self.update(
+            f'image = "ghcr.io/o/both:1.0@sha256:{"0" * 64}";\n', majors=True)
+        self.assertEqual(hosts, f'image = "ghcr.io/o/both:2.0@{self.digest("2.0")}";\n')
+        self.assertIn("note: ghcr.io/o/both: 1.0 -> 2.0 is a new major version\n", result.stdout)
+
+    def test_below_1_the_second_number_is_the_major(self):
+        result, hosts = self.update(f'image = "ghcr.io/o/zero:0.5.0@sha256:{"0" * 64}";\n')
+        self.assertEqual(hosts, f'image = "ghcr.io/o/zero:0.5.3@{self.digest("0.5.3")}";\n')
+        self.assertIn("note: ghcr.io/o/zero: 0.5.0 -> 0.6.0 is a new major version, held", result.stdout)
 
     def test_an_image_written_twice_is_left_alone(self):
         old = "sha256:" + "0" * 64
