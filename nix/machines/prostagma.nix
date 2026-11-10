@@ -1,5 +1,4 @@
 {
-  config,
   inputs,
   lib,
   modulesPath,
@@ -209,8 +208,6 @@ in
     privileged = true;
   };
 
-  prostagma.podmaker.enable = true;
-
   virtualisation.docker = {
     autoPrune = {
       enable = true;
@@ -391,9 +388,8 @@ in
       # PodMaker's UI is gated by Caddy/Authelia; its feed, media, and artwork
       # paths bypass the gate so podcast apps can subscribe. Kept last for the
       # same Service-approval reason as Backrest.
-      ${lib.optionalString config.prostagma.podmaker.enable ''
-        "$tailscale" serve --service=svc:podmaker --https=443 http://127.0.0.1:80
-      ''}
+      "$tailscale" serve --service=svc:podmaker --https=443 http://127.0.0.1:80
+
     '';
   };
 
