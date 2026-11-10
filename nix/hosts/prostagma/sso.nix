@@ -144,10 +144,14 @@ let
     # Beszel logs in whoever the Remote-Email header names (see beszel.nix).
     # Its agents cannot complete an Authelia login, so their WebSocket path
     # bypasses the gate; the hub authenticates them by token and signature.
+    # Its frontend sends the hub's own token as a bare Authorization header,
+    # which Authelia would try to parse before the session cookie and answer
+    # with a Basic challenge, so the gate decides on the cookie alone.
     {
       name = "beszel";
       port = 8091;
       bypassPaths = [ "/api/beszel/agent-connect" ];
+      hideAuthorizationFromGate = true;
     }
   ];
 in
@@ -288,6 +292,8 @@ in
       let
         bypassPaths = app.bypassPaths or [ ];
         hasBypass = bypassPaths != [ ];
+        dropAuthorization = lib.optionalString (app.hideAuthorizationFromGate or false
+        ) "\nheader_up -Authorization";
       in
       {
         name = "http://${app.name}.${tailnetDomain}";
@@ -317,7 +323,7 @@ in
               # external scheme explicitly or every request fails with "has an
               # insecure scheme 'http'".
               header_up X-Original-URL "https://{host}{uri}"
-              header_up X-Forwarded-Proto https
+              header_up X-Forwarded-Proto https${dropAuthorization}
             }
 
             reverse_proxy 127.0.0.1:${toString app.port}
