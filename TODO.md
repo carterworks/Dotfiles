@@ -109,3 +109,9 @@ the app. The app downloads its model during setup instead.
 Servers follow the `release` branch with `system.autoUpgrade` once the binary cache key is set; see `docs/auto-upgrade.md`.
 
 - [ ] After setting the cache key and deploying both servers, confirm the first night's run on each: `systemctl list-timers nixos-upgrade.timer` shows the next run and `journalctl -u nixos-upgrade.service` shows a switch to `release`, with nothing built locally.
+
+## CI
+
+Fleet pushes the NixOS builds to the private cache from `main` and advances `release`; Nightly updates and merges when green (`docs/ci.md`).
+
+- [ ] After `docs/binary-cache.md` steps 1–4, run Fleet on `main` and confirm all three hosts push and `release` is created. Set the `binary-cache` Environment's branch rule to `main` before adding any secret; the first Fleet run on `main` creates the Environment empty. Until then the cache push, Fleet's `release` job and Nightly's release step have run only in trials without secrets.

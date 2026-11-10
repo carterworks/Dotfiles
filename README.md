@@ -16,10 +16,12 @@ host, `nixos/server.nix` for the two servers.
 
 1. Push. [CI](.github/workflows/fleet.yml) builds every host and runs the flake
    checks.
-2. CI pushes what it built to the private [binary cache](docs/binary-cache.md)
-   on prostagma. *Not yet: the push workflow is still to be written.*
-3. A nightly job updates the flake inputs and, once everything is green and
-   cached, moves the `release` branch to that commit. *Being written.*
+2. On `main`, CI pushes what it built to the private
+   [binary cache](docs/binary-cache.md) on prostagma, then moves the `release`
+   branch to that commit. Until the cache's secrets are set, it skips both.
+3. A nightly job runs `./update --apply`, merges the result into `main` once
+   everything is green, and moves `release` to it once it is cached
+   ([CI](docs/ci.md)).
 4. prostagma and eltoro switch to `release` every night
    ([Server auto-upgrade](docs/auto-upgrade.md)). This stays off until the
    cache key is set.
