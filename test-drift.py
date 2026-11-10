@@ -1,11 +1,13 @@
 from pathlib import Path
-import shutil
-import subprocess
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "tests"))
+from hermetic import hermetic_env, run  # noqa: E402
+
 REVISION = "0123456789abcdef0123456789abcdef01234567"
 SSH = '''#!/bin/sh
 printf '%s\\n' "$*" >> "$STATE/ssh.log"
@@ -38,27 +40,6 @@ case "$*" in
 esac
 '''
 
-# Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
-# curl or git, nor the caller's environment or home, so no test can read a real
-# credential or reach the network. Bash sources the system bashrc for `bash -c`
-# when stdin is a socket, and NixOS's then puts the real tools back on PATH;
-# NOSYSBASHRC stops it.
-TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
-         "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
-
-
-def hermetic_env(home, bin_dir):
-    tools = Path(home) / "tools"
-    tools.mkdir()
-    for name in TOOLS:
-        if path := shutil.which(name):
-            (tools / name).symlink_to(path)
-    gh = Path(bin_dir) / "gh"
-    if not gh.exists():
-        gh.write_text("#!/bin/sh\nexit 1\n")
-        gh.chmod(0o755)
-    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "NOSYSBASHRC": "1"}
-
 
 class DriftTests(unittest.TestCase):
     def run_drift(self, args=(), running=None, expected=None, env=None):
@@ -80,10 +61,7 @@ class DriftTests(unittest.TestCase):
                 "TZ": "UTC",
                 **(env or {}),
             }
-            result = subprocess.run(
-                ["bash", str(ROOT / "drift"), *args],
-                env=script_env, text=True, capture_output=True, timeout=10,
-            )
+            result = run(["bash", str(ROOT / "drift"), *args], script_env, bin_dir)
             result.nix = (state / "nix.log").read_text().splitlines()
             ssh_log = state / "ssh.log"
             result.ssh = ssh_log.read_text().splitlines() if ssh_log.exists() else []

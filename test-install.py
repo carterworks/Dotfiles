@@ -1,15 +1,18 @@
 import os
-import shutil
 import signal
 import socket
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
 
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "tests"))
+from hermetic import hermetic_env, kill_session, run, start  # noqa: E402
+
 FUNCTIONS = (ROOT / "install").read_text().split('\ncd "${BASEDIR}"\n')[0]
 FUNCTIONS = 'set -euo pipefail\nBASEDIR="$HOME"\nNIX_ACCESS_TOKEN_ARGS=()\n' + FUNCTIONS.split(
     "NIX_ACCESS_TOKEN_ARGS=()", 1
@@ -25,41 +28,59 @@ NIX_ENV = '''#!/bin/sh
 printf 'nix-env %s\\n' "$*"
 '''
 
-# Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
-# curl or git, nor the caller's environment or home, so no test can read a real
-# credential or reach the network. Bash sources the system bashrc for `bash -c`
-# when stdin is a socket, and NixOS's then puts the real tools back on PATH;
-# NOSYSBASHRC stops it.
-TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
-         "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
-
-
-def hermetic_env(home, bin_dir):
-    tools = Path(home) / "tools"
-    tools.mkdir()
-    for name in TOOLS:
-        if path := shutil.which(name):
-            (tools / name).symlink_to(path)
-    gh = Path(bin_dir) / "gh"
-    if not gh.exists():
-        gh.write_text("#!/bin/sh\nexit 1\n")
-        gh.chmod(0o755)
-    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "NOSYSBASHRC": "1"}
-
 
 class HermeticTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.home = Path(temp.name)
+        self.bin_dir = self.home / "bin"
+        self.bin_dir.mkdir()
+        self.env = hermetic_env(self.home, self.bin_dir)
+        self.marker = self.home / "script-ran"
+
     def test_stubs_stay_first_on_path_when_stdin_is_a_socket(self):
-        with tempfile.TemporaryDirectory() as home:
-            bin_dir = Path(home) / "bin"
-            bin_dir.mkdir()
-            (bin_dir / "nixos-rebuild").write_text("#!/bin/sh\n")
-            (bin_dir / "nixos-rebuild").chmod(0o755)
-            stdin, _ = socket.socketpair()
-            result = subprocess.run(
-                ["bash", "-c", "command -v nixos-rebuild"], env=hermetic_env(home, bin_dir),
-                stdin=stdin, text=True, capture_output=True, timeout=10,
-            )
-            self.assertEqual(result.stdout.strip(), str(bin_dir / "nixos-rebuild"))
+        stdin, _ = socket.socketpair()
+        result = run(["bash", "-c", "command -v nixos-rebuild"], self.env, self.bin_dir, stdin=stdin)
+        self.assertEqual(result.stdout.strip(), str(self.bin_dir / "nixos-rebuild"))
+
+    def test_script_does_not_run_when_a_guarded_tool_is_not_a_stub(self):
+        decoy = self.home / "decoy"
+        decoy.mkdir()
+        (decoy / "ssh").write_text("#!/bin/sh\n")
+        (decoy / "ssh").chmod(0o755)
+        script = self.home / "script"
+        script.write_text(f'touch "{self.marker}"\n')
+        env = {**self.env, "PATH": f"{decoy}:{self.env['PATH']}"}
+        for args in (["bash", str(script)], ["bash", "-c", f'touch "{self.marker}"']):
+            with self.subTest(args=args[:2]):
+                with self.assertRaisesRegex(AssertionError, "ssh resolves to"):
+                    run(args, env, self.bin_dir)
+                self.assertFalse(self.marker.exists())
+
+    @unittest.skipUnless(Path("/etc/set-environment").exists(), "needs NixOS's system bashrc")
+    def test_script_does_not_run_when_the_system_bashrc_restores_path(self):
+        env = {**self.env}
+        del env["NOSYSBASHRC"]
+        stdin, _ = socket.socketpair()
+        with self.assertRaisesRegex(AssertionError, "resolves to"):
+            run(["bash", "-c", f'touch "{self.marker}"'], env, self.bin_dir, stdin=stdin)
+        self.assertFalse(self.marker.exists())
+
+    def test_nothing_the_script_started_outlives_a_timeout(self):
+        group, session = self.home / "group", self.home / "session"
+        with self.assertRaises(subprocess.TimeoutExpired):
+            run(["bash", "-c", f'(sleep 1; touch "{group}") & set -m; (sleep 1; touch "{session}") & sleep 30'],
+                self.env, self.bin_dir, timeout=0.3)
+        time.sleep(1.5)
+        self.assertFalse(group.exists())
+        if Path("/proc/self/stat").exists():
+            self.assertFalse(session.exists())
+
+    def test_nothing_the_script_started_outlives_it(self):
+        run(["bash", "-c", f'(sleep 1; touch "{self.marker}") >/dev/null 2>&1 & exit 0'], self.env, self.bin_dir)
+        time.sleep(1.5)
+        self.assertFalse(self.marker.exists())
 
 
 class DarwinRebuildTests(unittest.TestCase):
@@ -75,11 +96,8 @@ class DarwinRebuildTests(unittest.TestCase):
         args = ["bash", "-c", "nix() { :; }\n" + FUNCTIONS + script]
         env = hermetic_env(home, bin_dir)
         if not wait:
-            return subprocess.Popen(
-                args, env=env, start_new_session=True,
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-        return subprocess.run(args, env=env, text=True, capture_output=True, timeout=10)
+            return start(args, env, bin_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return run(args, env, bin_dir)
 
     def test_darwin_builds_as_user_then_activates(self):
         with tempfile.TemporaryDirectory() as home:
@@ -157,7 +175,7 @@ run_darwin_activation "$HOME/system with spaces"
             MOCK_SUDO + 'run_darwin_activation "$HOME/system with spaces"\n',
             home, activate=activate, wait=False,
         )
-        self.addCleanup(installer.kill)
+        self.addCleanup(kill_session, installer.pid)
         log_dir = Path(home) / "Library/Logs/dotfiles-install"
         self.wait_until(lambda: any("started" in log.read_text() for log in log_dir.glob("*/activate.log")))
         return installer, next(log_dir.glob("*"))
@@ -212,10 +230,7 @@ class DeployTests(unittest.TestCase):
                 (bin_dir / name).write_text(f"#!/bin/sh\n{body}\n")
                 (bin_dir / name).chmod(0o755)
             script_env = {**hermetic_env(temp, bin_dir), **(env or {})}
-            result = subprocess.run(
-                ["bash", str(ROOT / "install"), *args],
-                env=script_env, text=True, capture_output=True, timeout=10,
-            )
+            result = run(["bash", str(ROOT / "install"), *args], script_env, bin_dir)
             result.rebuild = None
             if calls.exists():
                 rebuild = calls.read_text().splitlines()
