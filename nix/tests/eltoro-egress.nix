@@ -41,9 +41,13 @@ in
         source = pkgs.writeShellScript "fence-probe" ''
           /run/current-system/sw/bin/''${0##*/} "$@"
           rc=$?
+          echo >>/tmp/probe-runs
           for ipt in iptables ip6tables; do
-            /run/current-system/sw/bin/$ipt -w -S OUTPUT | grep -Eq -- '-j hermes-egress(-closed)?$' ||
-              echo "$ipt unfenced after ''${0##*/} $*" >>/tmp/unfenced
+            fenced=
+            for target in $(/run/current-system/sw/bin/$ipt -w -S OUTPUT | sed -n 's/^-A OUTPUT -j \(hermes-egress\(-closed\)\?\)$/\1/p'); do
+              /run/current-system/sw/bin/$ipt -w -S "$target" | grep -q -- '-j REJECT' && fenced=1
+            done
+            [ -n "$fenced" ] || echo "$ipt unfenced after ''${0##*/} $*" >>/tmp/unfenced
           done
           exit $rc
         '';
@@ -73,10 +77,8 @@ in
         };
       };
 
-      networking.firewall = {
-        allowedTCPPorts = [ 9119 ];
-        trustedInterfaces = [ "tailscale0" ];
-      };
+      # As on eltoro, the dashboard port is open over the tailnet only.
+      networking.firewall.trustedInterfaces = [ "tailscale0" ];
       networking.defaultGateway = {
         address = internetIp4;
         interface = "eth1";
@@ -85,8 +87,9 @@ in
       # same refresh path a real answer would.
       networking.hosts.${allowedDns} = [ "discord.com" ];
 
-      # Puts itself in front of iptables and ip6tables on PATH and records any
-      # call after which neither the chain nor the catch-all is hooked.
+      # Puts itself in front of iptables and ip6tables on PATH, counts its
+      # calls so the test knows it ran, and records any call after which no
+      # chain hooked into OUTPUT, the main one or the catch-all, rejects.
       environment.etc."fence-probe/iptables" = fenceProbe;
       environment.etc."fence-probe/ip6tables" = fenceProbe;
 
@@ -156,14 +159,19 @@ in
         assert status != 0, f"{user} should not reach {target}: {output!r}"
 
 
+    def pings(user, target):
+        return eltoro.execute(f"runuser -u {user} -- ping -c1 -W2 {target}")[0] == 0
+
+
     def assert_inbound_replies():
         for reply in (
             eltoro.succeed("echo hi | ip netns exec peer socat -t2 -T3 - TCP4:100.64.0.1:9119"),
             eltoro.succeed("echo hi | ip netns exec peer socat -t2 -T3 - 'TCP6:[fd7a:115c:a1e0::1]:9119'"),
-            internet.succeed("echo hi | socat -t2 -T3 - TCP4:${eltoroIp4}:9119"),
-            internet.succeed("echo hi | socat -t2 -T3 - 'TCP6:[${eltoroIp6}]:9119'"),
         ):
             assert "ok" in reply
+
+
+    uplink_dashboard = ("TCP4:${eltoroIp4}:9119", "'TCP6:[${eltoroIp6}]:9119'")
 
 
     # nixbld1 stands in for a Nix build, which runs as a build user in group nixbld.
@@ -182,9 +190,15 @@ in
             allowed(user, "TCP4", "${magicDns}:53")
             allowed(user, "UDP4", "${magicDns}:53")
             blocked(user, "TCP4", "${magicDns}:5300")
+            blocked(user, "UDP4", "${unlisted}:80")
+            allowed(user, "UDP4", "${allowedCidr}:80")
+            assert not pings(user, "${unlisted}"), f"{user} pinged ${unlisted}"
+            assert pings(user, "${allowedCidr}"), f"{user} could not ping ${allowedCidr}"
 
         # Users other than the restricted ones are as unrestricted as root.
         for user in ("root", "nobody"):
+            allowed(user, "UDP4", "${unlisted}:80")
+            assert pings(user, "${unlisted}"), f"{user} could not ping ${unlisted}"
             allowed(user, "TCP4", "${unlisted}:80")
             allowed(user, "TCP6", "[${internetIp6}]:80")
             allowed(user, "TCP4", "${peerIp4}:80")
@@ -202,6 +216,8 @@ in
             allowed("root", proto, target)
 
         assert_inbound_replies()
+        for target in uplink_dashboard:
+            internet.fail(f"echo hi | timeout 5 socat -t2 -T3 - {target}")
 
 
     def output_rules(save):
@@ -226,6 +242,10 @@ in
         allowed("root", "TCP6", "[${internetIp6}]:80")
         allowed("root", "TCP4", "${peerIp4}:80")
         assert_inbound_replies()
+        # INPUT is open while the firewall is down, so the uplink can reach the
+        # dashboard, and its replies pass the catch-all.
+        for target in uplink_dashboard:
+            assert "ok" in internet.succeed(f"echo hi | socat -t2 -T3 - {target}")
         for save in ("iptables-save", "ip6tables-save"):
             hooks = [rule for rule in output_rules(save) if rule.startswith("-A OUTPUT ")]
             assert hooks == ["-A OUTPUT -j hermes-egress-closed"], f"{save}: {hooks}"
@@ -252,6 +272,9 @@ in
         "ip addr add ${unlisted}/32 dev lo",
         "ip addr add ${allowedCidr}/32 dev lo",
         "ip addr add ${allowedDns}/32 dev lo",
+        # Bound to its address so the reply comes from where the probe sent it.
+        "systemd-run --unit=udp-unlisted -E PATH socat UDP4-RECVFROM:80,bind=${unlisted},fork 'SYSTEM:echo ok'",
+        "systemd-run --unit=udp-allowed -E PATH socat UDP4-RECVFROM:80,bind=${allowedCidr},fork 'SYSTEM:echo ok'",
     )
 
     # A veth into a namespace stands in for Tailscale: unlike a dummy interface,
@@ -295,6 +318,7 @@ in
     eltoro.wait_for_open_port(9119)
     internet.wait_for_open_port(80)
     internet.wait_for_open_port(8080)
+    internet.wait_until_succeeds("test $(ss -Hlnu sport = :80 | wc -l) = 2")
 
     eltoro.succeed("systemctl start egress-allowlist")
 
@@ -425,6 +449,9 @@ in
     with subtest("no moment without a fence"):
         for prop in ("ExecStart", "ExecReload", "ExecStop", "ExecStart"):
             unit_script(prop, probe=True)
+        runs = int(eltoro.succeed("wc -l </tmp/probe-runs"))
+        print(f"fence probe ran {runs} times")
+        assert runs > 0, "the probe never ran"
         eltoro.fail("cat /tmp/unfenced")
         assert_rules_once()
         assert_fence()
