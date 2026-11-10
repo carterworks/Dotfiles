@@ -52,7 +52,7 @@ On prostagma, in the dotfiles checkout, on a branch that contains this change:
 Check the result on prostagma:
 
 ```sh
-systemctl status atticd.service atticd-secret.service --no-pager
+systemctl status atticd.service atticd-secret.service atticd-size-guard.timer --no-pager
 sudo stat -c '%a %U %G' /var/lib/secrets/attic/environment   # 600 root root
 curl -sS http://prostagma.dropbear-tortoise.ts.net:8199/       # any HTTP reply
 ```
