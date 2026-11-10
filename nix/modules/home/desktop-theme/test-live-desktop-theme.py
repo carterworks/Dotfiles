@@ -36,6 +36,15 @@ class LiveTheme(unittest.TestCase):
             obsidian.write_text('{"cssTheme": "Everforest"}')
             self.assertEqual(module.audit(settings), [])
 
+    def test_compares_numbers_by_value(self):
+        # Nix's toINI writes 0.55 as 0.550000, while toJSON passes it on as 0.55.
+        with tempfile.TemporaryDirectory() as directory:
+            kde = Path(directory) / "kdeglobals"
+            kde.write_text("[ColorEffects:Disabled]\nContrastAmount=0.550000\n")
+            settings = {"files": {}, "kde": str(kde), "vaults": [], "appearance": {},
+                        "palette": {"ColorEffects:Disabled": {"ContrastAmount": 0.55}}}
+            self.assertEqual(module.audit(settings), [])
+
 
 if __name__ == "__main__":
     unittest.main()
