@@ -19,6 +19,16 @@ let
   ];
   systemsEnabled = config.dotfiles.beszel.hubKey != null;
 
+  # Caddy's logs record request headers and redact only Cookie and
+  # Authorization, while each agent sends its token in X-Token: on every
+  # connection to the access log, and on every upstream error to the journal.
+  withoutToken = ''
+    format filter {
+      wrap json
+      request>headers>X-Token delete
+    }
+  '';
+
   # The first migration creates the account that the proxy's header logs in
   # to, and a superuser of the same address. Password logins are off, so the
   # random password is never stored anywhere.
@@ -63,6 +73,18 @@ in
   users.groups.beszel-hub = { };
 
   systemd.tmpfiles.rules = [ "d ${dataDir} 0750 beszel-hub beszel-hub -" ];
+
+  # Both replace the module's defaults, which they restate.
+  services.caddy = {
+    logFormat = ''
+      level ERROR
+      ${withoutToken}
+    '';
+    virtualHosts."http://beszel.${tailnetDomain}".logFormat = ''
+      output file ${config.services.caddy.logDir}/access-http:__beszel.${tailnetDomain}.log
+      ${withoutToken}
+    '';
+  };
 
   systemd.services.beszel-hub = {
     after = [ "prostagma-app-storage.service" ];

@@ -289,5 +289,23 @@ in
 
     with subtest("a connected agent listens on nothing"):
         listens_on_nothing()
+
+    with subtest("no agent token reaches Caddy's logs or the journal"):
+        # An upstream error makes Caddy log the request, headers and all.
+        prostagma.succeed("systemctl stop beszel-hub.service", "journalctl --rotate")
+        scylla.succeed("systemctl restart beszel-agent.service")
+        prostagma.wait_until_succeeds("journalctl -u caddy | grep -q 'dial tcp 127.0.0.1:8091'", timeout=60)
+        prostagma.succeed("systemctl start beszel-hub.service")
+        prostagma.wait_until_succeeds(
+            f"curl -sSf {as_carter} {api}/collections/systems/records"
+            " | jq -e '[.items[] | select(.name == \"scylla\")][0].status == \"up\"'",
+            timeout=120,
+        )
+        prostagma.succeed("grep -q agent-connect /var/log/caddy/access-*beszel*")
+        for host in ["prostagma", "scylla", "eltoro"]:
+            token = prostagma.succeed(f"cat /run/secrets/beszel/{host}-token").strip()
+            prostagma.fail(f"grep -rqF {token} /var/log/caddy")
+            for machine in [prostagma, scylla]:
+                machine.fail(f"journalctl -o cat | grep -qF {token}")
   '';
 }
