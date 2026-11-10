@@ -6,7 +6,10 @@
 }:
 let
   cfg = config.dotfiles.desktopTheme;
-  theme = import (./themes + "/${cfg.name}.nix");
+  themes = lib.genAttrs (map (lib.removeSuffix ".nix") (
+    builtins.attrNames (builtins.readDir ./themes)
+  )) (name: import ./themes/${name}.nix);
+  theme = themes.${cfg.name};
   inherit (theme) colors;
   hex = color: lib.removePrefix "#" color;
   toolkit = import ./toolkit.nix {
@@ -134,13 +137,23 @@ in
 {
   options.dotfiles.desktopTheme = {
     name = lib.mkOption {
-      type = lib.types.enum (
-        map (file: lib.removeSuffix ".nix" file) (
-          lib.filter (lib.hasSuffix ".nix") (builtins.attrNames (builtins.readDir ./themes))
-        )
-      );
+      type = lib.types.enum (lib.attrNames themes);
       default = "everforest-light-medium";
       description = "Theme shared by the desktop shell, terminal, browser, and editors.";
+    };
+    theme = lib.mkOption {
+      type = lib.types.attrs;
+      readOnly = true;
+      default = theme;
+      defaultText = lib.literalMD "the theme selected by `name`";
+      description = "The selected theme's palette and per-program settings.";
+    };
+    themes = lib.mkOption {
+      type = lib.types.attrsOf lib.types.attrs;
+      readOnly = true;
+      default = themes;
+      defaultText = lib.literalMD "every theme in `themes/`";
+      description = "Every available theme, by name.";
     };
     zenProfile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
