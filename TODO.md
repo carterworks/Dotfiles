@@ -77,4 +77,4 @@ the app. The app downloads its model during setup instead.
 
 ## Monitoring
 
-- [ ] Add a Beszel hub and dashboard on prostagma, behind Authelia like the other dashboards, and Beszel agents on prostagma, Scylla and eltoro. Nothing on the Mac. On eltoro the agent may run as root; confirm the egress fence still restricts only Hermes and what acts for it.
+- [ ] Add a Beszel hub and dashboard on prostagma, behind Authelia like the other dashboards, and Beszel agents on prostagma, Scylla and eltoro. Nothing on the Mac. On eltoro the agent may run as root; confirm the egress fence still restricts only Hermes and what acts for it. The prostagma agent should also record its Docker containers, systemd services, and whatever else Beszel can collect there, such as processes.
