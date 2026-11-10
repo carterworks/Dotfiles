@@ -114,6 +114,8 @@ in
   nixpkgs.hostPlatform = "x86_64-linux";
 
   nix.settings.auto-optimise-store = true;
+  # The 32 GB disk filled with paths the shared 7-day window kept.
+  nix.gc.options = lib.mkForce "--delete-older-than 3d";
 
   networking.hostName = "eltoro";
   i18n.defaultLocale = "en_US.UTF-8";
