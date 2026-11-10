@@ -43,12 +43,6 @@ in
 // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
   rex-client = localPackage ./rex-client.nix;
 }
-// lib.optionalAttrs (lib.hasSuffix "-linux" system && inputs ? rex) {
-  rex-server = import ./rex-server.nix {
-    inherit (inputs) rex;
-    inherit system;
-  };
-}
 // lib.optionalAttrs (system == "x86_64-linux") {
   delta = inputs.delta.packages.${system}.delta;
   bambu-studio = localPackage ./bambu-studio.nix;
