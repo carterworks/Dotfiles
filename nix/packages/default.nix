@@ -6,16 +6,16 @@
 system:
 
 let
-  lib = nixpkgs.lib;
+  overlay = import ./overlay.nix { inherit inputs; };
   pkgs = import nixpkgs {
     inherit system;
     config.allowUnfree = true;
+    overlays = [ overlay ];
   };
-  localPackage = path: pkgs.callPackage path { };
-  inherit (inputs.numtide-llm-agents.packages.${system}) agent-browser herdr hunk;
+  inherit (pkgs) agent-browser herdr hunk;
 in
-{
-  inherit agent-browser herdr hunk;
+nixpkgs.lib.getAttrs (builtins.attrNames (overlay pkgs pkgs)) pkgs
+// {
   agent-browser-skill = pkgs.runCommand "agent-browser-skill-${agent-browser.version}.md" { } ''
     cp "$(${agent-browser}/bin/agent-browser skills path agent-browser)/SKILL.md" "$out"
   '';
@@ -25,22 +25,4 @@ in
   hunk-skill = pkgs.runCommand "hunk-review-skill-${hunk.version}.md" { } ''
     cp "$(${hunk}/bin/hunk skill path)" "$out"
   '';
-  fnox = localPackage ./fnox.nix;
-  nub = localPackage ./nub.nix;
-}
-// lib.optionalAttrs (system == "aarch64-darwin" || system == "x86_64-linux") {
-  hex = pkgs.callPackage ./hex.nix { hexSource = inputs.hex; };
-  t3code-cli = localPackage ./t3code-cli.nix;
-  t3code-nightly = localPackage ./t3code-nightly.nix;
-}
-// lib.optionalAttrs (system == "aarch64-darwin") {
-  vorssaint = localPackage ./vorssaint.nix;
-}
-// lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
-  rex-client = localPackage ./rex-client.nix;
-}
-// lib.optionalAttrs (system == "x86_64-linux") {
-  bambu-studio = localPackage ./bambu-studio.nix;
-  cua-driver = localPackage ./cua-driver.nix;
-  ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
 }
