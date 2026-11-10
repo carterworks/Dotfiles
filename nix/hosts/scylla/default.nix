@@ -146,8 +146,6 @@ in
     ./hyprland-home.nix
   ];
 
-  time.timeZone = "America/Denver";
-
   services.pipewire = {
     enable = true;
     pulse.enable = true;
