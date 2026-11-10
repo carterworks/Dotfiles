@@ -4,6 +4,7 @@ let
   port = 8199;
   host = "prostagma.dropbear-tortoise.ts.net:${toString port}";
   storage = "/srv/apps/attic";
+  sizeCapGiB = 30;
   secretFile = "/var/lib/secrets/attic/environment";
 in
 {
@@ -77,6 +78,31 @@ in
       "prostagma-app-storage.service"
     ];
     unitConfig.RequiresMountsFor = [ storage ];
+  };
+
+  # Attic has no size limit, and the disk under /srv/apps also holds Postgres
+  # and Docker, so a full cache must cost only the cache. Its own Proxmox mount
+  # point would be a hard cap, but that is a change outside this repo.
+  systemd.services.atticd-size-guard = {
+    description = "Stop Attic before ${storage} passes ${toString sizeCapGiB} GiB";
+    environment.CAP_BYTES = toString (sizeCapGiB * 1024 * 1024 * 1024);
+    serviceConfig.Type = "oneshot";
+    script = ''
+      set -o pipefail
+      used="$(du -sB1 ${storage} | cut -f1)"
+      if [ "$used" -gt "$CAP_BYTES" ]; then
+        systemctl stop atticd.service
+        echo "Stopped atticd: ${storage} uses $((used >> 30)) GiB, over the $((CAP_BYTES >> 30)) GiB cap. See \"Size cap\" in docs/binary-cache.md." >&2
+        exit 1
+      fi
+    '';
+  };
+  systemd.timers.atticd-size-guard = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "5min";
+      OnUnitActiveSec = "5min";
+    };
   };
 
   # atticd has no way to bind to an address that only exists once tailscaled is

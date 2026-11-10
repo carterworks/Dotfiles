@@ -220,6 +220,32 @@ nix path-info -r --json "$(nix build --no-link --print-out-paths .#nixosConfigur
 That is uncompressed NAR size in GiB. zstd and chunk deduplication across
 versions shrink what is stored.
 
+### Size cap
+
+Attic has no size limit, and `/srv/apps` also holds Postgres (Immich) and
+Docker. Every 5 minutes `atticd-size-guard.timer` measures `/srv/apps/attic`;
+over the cap (`sizeCapGiB` in `nix/machines/prostagma/binary-cache.nix`,
+30 GiB) it stops atticd and fails. You see it in `systemctl --failed` on
+prostagma, and the reason in its journal:
+
+```sh
+journalctl -u atticd-size-guard.service -n 5 --no-pager
+```
+
+While atticd is stopped, hosts fall back to other caches (see "Behaviour when
+the cache is down") and CI pushes fail. To recover (**You**), on prostagma,
+pick one:
+
+- **Collect with the current retention.** Garbage collection runs when atticd
+  starts, so `sudo systemctl start atticd.service`. If the cache is still over
+  the cap, the guard stops it again within 5 minutes.
+- **Shorten the retention**, as above, deploy prostagma, then
+  `sudo systemctl start atticd.service`.
+- **Raise the cap.** Check `df -h /srv/apps` first, change `sizeCapGiB`, deploy
+  prostagma, then `sudo systemctl start atticd.service`.
+
+Then clear the failed state: `sudo systemctl start atticd-size-guard.service`.
+
 ## 6. Wipe and rebuild
 
 Use this if the cache is ever corrupted. It deletes everything and gives the

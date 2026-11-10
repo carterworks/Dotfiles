@@ -165,6 +165,30 @@ pkgs.testers.runNixOSTest {
         client.succeed(f"test -s {private}")
         assert "fleet:" in client.succeed(f"nix path-info --sigs {private}")
 
+    with subtest("the size guard stops the cache once its storage passes the cap"):
+        server.succeed("systemctl is-active atticd-size-guard.timer")
+        server.succeed("systemctl start atticd-size-guard.service")
+        server.succeed("systemctl is-active atticd.service")
+        dropin = "/run/systemd/system/atticd-size-guard.service.d"
+        server.succeed(
+            f"mkdir -p {dropin}",
+            f"printf '[Service]\\nEnvironment=CAP_BYTES=1024\\n' > {dropin}/cap.conf",
+            "systemctl daemon-reload",
+        )
+        server.fail("systemctl start atticd-size-guard.service")
+        server.fail("systemctl is-active atticd.service")
+        server.succeed("systemctl is-failed atticd-size-guard.service")
+        server.succeed("journalctl -u atticd-size-guard.service | grep -q 'Stopped atticd: /srv/apps/attic uses'")
+        client.fail(narinfo(private))
+        server.succeed(
+            f"rm -r {dropin}",
+            "systemctl daemon-reload",
+            "systemctl start atticd.service",
+            "systemctl start atticd-size-guard.service",
+        )
+        server.wait_for_unit("atticd.service")
+        client.wait_until_succeeds(narinfo(private))
+
     with subtest("garbage collection removes an expired path"):
         client.succeed("attic cache configure test:fleet --retention-period 1s")
         time.sleep(3)
