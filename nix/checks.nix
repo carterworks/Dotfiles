@@ -6,25 +6,40 @@ let
   nixFiles = lib.filter (lib.hasSuffix ".nix") (lib.filesystem.listFilesRecursive source);
   scylla = self.nixosConfigurations.scylla;
   eltoro = self.nixosConfigurations.eltoro;
-  skillDirectories = {
-    agent-browser-skill = "agent-browser";
-    herdr-skill = "herdr";
-    hunk-skill = "hunk-review";
-  };
   repositoryChecks =
     system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
-      packages = self.packages.${system};
+      inherit (self.packages.${system}) agent-browser herdr hunk;
+      # ./update copies `generated` into the tree; the check keeps them equal.
+      skill =
+        directory: generated:
+        pkgs.runCommandLocal "${directory}-skill-check"
+          {
+            nativeBuildInputs = [ pkgs.diffutils ];
+            passthru = { inherit generated; };
+          }
+          ''
+            diff -u ${source}/agents/skills/generated/${directory}/SKILL.md ${generated}
+            touch "$out"
+          '';
     in
-    lib.mapAttrs (
-      package: directory:
-      pkgs.runCommandLocal "${package}-check" { nativeBuildInputs = [ pkgs.diffutils ]; } ''
-        diff -u ${source}/agents/skills/generated/${directory}/SKILL.md ${packages.${package}}
-        touch "$out"
-      ''
-    ) skillDirectories
-    // {
+    {
+      agent-browser-skill = skill "agent-browser" (
+        pkgs.runCommand "agent-browser-skill-${agent-browser.version}.md" { } ''
+          cp "$(${agent-browser}/bin/agent-browser skills path agent-browser)/SKILL.md" "$out"
+        ''
+      );
+      herdr-skill = skill "herdr" (
+        pkgs.runCommand "herdr-skill-${herdr.version}.md" { } ''
+          ${herdr}/bin/herdr --skill > "$out"
+        ''
+      );
+      hunk-skill = skill "hunk-review" (
+        pkgs.runCommand "hunk-review-skill-${hunk.version}.md" { } ''
+          cp "$(${hunk}/bin/hunk skill path)" "$out"
+        ''
+      );
       nixfmt = pkgs.runCommandLocal "nixfmt-check" { nativeBuildInputs = [ pkgs.nixfmt ]; } ''
         nixfmt --check ${lib.escapeShellArgs nixFiles}
         touch "$out"
