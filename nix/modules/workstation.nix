@@ -15,24 +15,18 @@ in
   '';
 
   environment.systemPackages = with pkgs; [
-    age
     agent-browser
     aria2
     astro-language-server
     ast-grep
     bash-language-server
-    btop
     bun
     codex
-    curl
     docker-language-server
     dust
     fastfetch
-    fd
-    fff-mcp
     ffmpeg
     fish-lsp
-    fnox
     git-crypt
     gnupg
     go
@@ -41,7 +35,6 @@ in
     home-assistant-cli
     hunk
     hyperfine
-    jq
     markdown-oxide
     nodejs_24
     neovim
@@ -53,7 +46,6 @@ in
     ouch
     pnpm
     rclone
-    ripgrep
     rsync
     ruff
     spotify
@@ -69,8 +61,6 @@ in
     vscode-css-languageserver
     vscode-json-languageserver
     uv
-    wakeonlan
-    wget
     yaml-language-server
     zen-browser
   ];

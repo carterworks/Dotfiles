@@ -1,10 +1,23 @@
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
 
 let
   inherit ((import ../../flake.nix).nixConfig) extra-substituters extra-trusted-public-keys;
 in
 {
   nixpkgs.overlays = [ (import ../packages/overlay.nix { inherit inputs; }) ];
+
+  environment.systemPackages = with pkgs; [
+    age
+    btop
+    curl
+    fd
+    fff-mcp
+    fnox
+    jq
+    ripgrep
+    wakeonlan
+    wget
+  ];
 
   nix.settings = {
     substituters = [ "https://cache.nixos.org" ] ++ extra-substituters;
