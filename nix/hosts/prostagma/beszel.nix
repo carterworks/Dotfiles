@@ -68,6 +68,9 @@ in
       # only, so the header is honoured from nothing but this host.
       TRUSTED_AUTH_HEADER = "Remote-Email";
       DISABLE_PASSWORD_AUTH = "true";
+      # Containers are recorded, not read: this drops the API that fetches a
+      # container's logs and details from the agent.
+      CONTAINER_DETAILS = "false";
     };
   };
 

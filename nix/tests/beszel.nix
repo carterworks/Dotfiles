@@ -331,7 +331,7 @@ in
             timeout=180,
         )
 
-    with subtest("prostagma's agent reports its services but cannot read the journal"):
+    with subtest("prostagma's agent reports its services, and no logs reach the hub"):
         prostagma.wait_until_succeeds(
             f"curl -sSf {as_carter} {api}/collections/systems/records"
             " | jq -e '[.items[] | select(.name == \"prostagma\")][0].info.sv != null'",
@@ -343,6 +343,9 @@ in
         assert "systemd-journal" not in groups, groups
         system = next(s for s in json.loads(prostagma.succeed(f"curl -sSf {as_carter} {api}/collections/systems/records"))["items"] if s["name"] == "prostagma")
         assert not system["info"].get("jl"), system["info"]
+        for path in ["containers/logs", "containers/info"]:
+            status = prostagma.succeed(f"curl -s -o /dev/null -w '%{{http_code}}' {as_carter} '{api}/beszel/{path}?system={system['id']}&container=0123456789ab'")
+            assert status == "404", (path, status)
 
     with subtest("the owner's account is read-only, cannot read tokens and still sets alerts"):
         me = json.loads(prostagma.succeed(f"curl -sSf -X POST {as_carter} {api}/collections/users/auth-refresh"))["record"]
