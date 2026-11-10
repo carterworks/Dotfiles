@@ -11,8 +11,6 @@ let
 
   tailnetDomain = "dropbear-tortoise.ts.net";
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
-  tunnelCredsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
-  filesHostname = "files.cartermcbri.de";
   truenas = "192.168.5.252";
 
   prostagmaDirectory = pkgs.writeTextDir "index.html" ''
@@ -166,7 +164,6 @@ in
     ./hardware/prostagma.nix
     ./prostagma/app-storage.nix
     ./prostagma/podmaker.nix
-
     ./prostagma/media-apps.nix
     ./prostagma/sso.nix
   ];
@@ -466,7 +463,6 @@ in
     # on it churns out a new backup file on each restart. The settings also
     # re-apply on fresh installs because the module seeds encoding.xml from
     # these options; after that the dashboard owns the file.
-    # forceEncodingConfig = true;
     transcoding = {
       hardwareDecodingCodecs = {
         h264 = true;
@@ -483,7 +479,11 @@ in
       enableIntelLowPowerEncoding = true;
     };
   };
-  systemd.services.jellyfin.unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/jellyfin" ];
+  systemd.services.jellyfin = {
+    after = [ "jellyfin-dirs.service" ];
+    requires = [ "jellyfin-dirs.service" ];
+    unitConfig.RequiresMountsFor = [ "/mnt/truenas/vm-data/jellyfin" ];
+  };
   # The module's tmpfiles rules run before the NFS mounts are up at boot, and
   # the service's WorkingDirectory must exist before preStart runs, so create
   # the data directories in a dedicated oneshot (same reason plex does).
@@ -505,18 +505,12 @@ in
         /mnt/truenas/vm-data/jellyfin/cache
     '';
   };
-  systemd.services.jellyfin = {
-    after = [ "jellyfin-dirs.service" ];
-    requires = [ "jellyfin-dirs.service" ];
-  };
 
   services.cloudflared = {
     enable = true;
     tunnels.${tunnelId} = {
-      credentialsFile = tunnelCredsFile;
-      ingress = {
-        ${filesHostname} = "http://127.0.0.1:${toString copypartyPort}";
-      };
+      credentialsFile = "/var/lib/secrets/cloudflared/${tunnelId}.json";
+      ingress."files.cartermcbri.de" = "http://127.0.0.1:${toString copypartyPort}";
       default = "http_status:404";
     };
   };
