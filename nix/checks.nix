@@ -71,13 +71,11 @@ let
             touch "$out"
           '';
       secrets-encrypted =
-        assert import ./tests/secrets-encrypted.nix {
-          inherit lib;
-          store = ../secrets/fnox.toml;
-        };
-        pkgs.runCommandLocal "secrets-encrypted-check" { } ''
-          touch "$out"
-        '';
+        pkgs.runCommandLocal "secrets-encrypted-check" { nativeBuildInputs = [ pkgs.python3 ]; }
+          ''
+            python3 -I ${./tests/secrets-encrypted.py} ${source}
+            touch "$out"
+          '';
       obsidian-sync-module =
         assert import ./tests/obsidian-sync.nix { inherit lib; };
         pkgs.runCommandLocal "obsidian-sync-module-check" { } ''
