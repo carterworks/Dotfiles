@@ -74,6 +74,8 @@ module, `nix/modules/nixos/secrets.nix`.
   even to an admin-only record, restarts every secret unit on prostagma and,
   through `Requires=`, the services that use them. Once prostagma upgrades
   itself, that happens overnight (see [Server auto-upgrade](auto-upgrade.md)).
+  `dry-activate` does not list those services: on 2026-11-10 Authelia,
+  cloudflared, copyparty and qBittorrent restarted without being listed.
 
 ## What the public repository reveals
 
