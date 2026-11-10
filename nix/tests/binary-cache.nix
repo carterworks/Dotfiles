@@ -216,6 +216,28 @@ pkgs.testers.runNixOSTest {
         server.wait_for_unit("atticd.service")
         client.wait_until_succeeds(narinfo(private))
 
+    with subtest("a new key pair keeps the paths, which hosts trust once they have its key"):
+        old_signature = client.succeed(f"{narinfo(private)} | grep '^Sig: '")
+        login("rekey", "--configure-cache fleet --configure-cache-retention fleet --pull fleet")
+        client.succeed("attic cache configure rekey:fleet --regenerate-keypair")
+        new_key = cache_key("rekey")
+        assert new_key != public_key
+        assert client.succeed(f"{narinfo(private)} | grep '^Sig: '") != old_signature
+        client.succeed(f"nix-store --delete {private}")
+        client.succeed(
+            f"sed -i 's|{public_key}|{new_key}|' /etc/nix/nix.conf",
+            "systemctl restart nix-daemon.service",
+        )
+        # The daemon's narinfo cache still holds the old signature.
+        status, output = client.execute(f"{substitute} {private} 2>&1")
+        assert status != 0 and "not signed by" in output
+        client.succeed(
+            "rm /root/.cache/nix/binary-cache-v*.sqlite*",
+            "systemctl restart nix-daemon.service",
+        )
+        client.succeed(f"{substitute} {private}")
+        public_key = new_key
+
     with subtest("garbage collection removes an expired path"):
         login("retention", "--configure-cache fleet --configure-cache-retention fleet")
         client.succeed("attic cache configure retention:fleet --retention-period 1s")
