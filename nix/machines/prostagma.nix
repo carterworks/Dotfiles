@@ -216,24 +216,6 @@ in
 
   prostagma.podmaker.enable = true;
 
-  prostagma.migratedApps = {
-    enable = true;
-    appRoot = "/srv/apps";
-    mediaRoot = "/mnt/truenas/media-direct";
-    torrentDataRoot = "/mnt/truenas/vm-data/qbittorrent-downloads";
-    torrentDataMountSource = config.fileSystems."/mnt/truenas/vm-data".device;
-    sharedDataRoot = "/mnt/truenas/syncthing-root";
-    apps."qbittorrent-vpn".enable = true;
-    apps.prowlarr.enable = true;
-    apps.sonarr.enable = true;
-    apps.radarr.enable = true;
-    apps.bazarr.enable = true;
-    apps.audiobookshelf.enable = true;
-
-    apps.backrest.enable = true;
-
-  };
-
   virtualisation.docker = {
     autoPrune = {
       enable = true;
