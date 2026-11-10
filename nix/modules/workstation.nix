@@ -1,14 +1,10 @@
 {
   inputs,
   pkgs,
-  self,
   ...
 }:
 
 let
-  # Kept out of the overlay: there it would also replace the nixpkgs delta
-  # that programs.delta in Home Manager runs as Git's pager.
-  delta = self.packages.${pkgs.stdenv.hostPlatform.system}.delta;
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
 in
 {
@@ -23,7 +19,6 @@ in
     bun
     codex
     curl
-    delta
     docker-language-server
     dust
     fastfetch

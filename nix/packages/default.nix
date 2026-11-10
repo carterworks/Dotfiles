@@ -34,14 +34,12 @@ in
   t3code-nightly = localPackage ./t3code-nightly.nix;
 }
 // lib.optionalAttrs (system == "aarch64-darwin") {
-  delta = localPackage ./delta.nix;
   vorssaint = localPackage ./vorssaint.nix;
 }
 // lib.optionalAttrs (lib.hasSuffix "-darwin" system) {
   rex-client = localPackage ./rex-client.nix;
 }
 // lib.optionalAttrs (system == "x86_64-linux") {
-  delta = inputs.delta.packages.${system}.delta;
   bambu-studio = localPackage ./bambu-studio.nix;
   cua-driver = localPackage ./cua-driver.nix;
   ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
