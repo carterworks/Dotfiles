@@ -141,6 +141,11 @@ in
 
   config = {
     networking.firewall = {
+      # The fence is an allowlist: once a packet is known to be hermes',
+      # anything not accepted below is rejected, on every interface and in
+      # both families, so a new NIC, a subnet route or an exit node on
+      # tailscale0 opens nothing. Root and every other uid are unrestricted.
+      #
       # el toro may not initiate connections INTO the tailnet
       # (lateral movement: herodotus/proxmox api, truenas, other
       # agents). replies to inbound sessions (ssh, dashboard)
@@ -148,30 +153,29 @@ in
       # stays reachable so *.ts.net names keep resolving.
       # tailscale itself is unaffected: its control plane and
       # DERP relays run over eth0, not tailscale0.
+      #
+      # internet egress: hermes may only reach ips in the
+      # egress-allowed ipset (refreshed by egress-allowlist.timer).
+      # the agent's ipv6 egress is rejected outright — allowlisted
+      # hosts all resolve over v4.
       extraCommands = ''
         ${closeFence}
         ${removeRules}
+        ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
         iptables  -w -N ${chain}
         ip6tables -w -N ${chain}
-        iptables  -w -A ${chain} -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        iptables  -w -A ${chain} -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT
-        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT
-        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT
-        iptables  -w -A ${chain} -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited
         ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         ip6tables -w -A ${chain} -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited
-        # internet egress: hermes-uid traffic may only reach ips in
-        # the egress-allowed ipset (refreshed by egress-allowlist
-        # .timer); root and every other uid are unrestricted. the
-        # agent's ipv6 egress is rejected outright — allowlisted
-        # hosts all resolve over v4.
-        ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
-        iptables  -w -A ${chain} -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
-        iptables  -w -A ${chain} -o ${uplink} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        for ipt in iptables ip6tables; do
+          $ipt -w -A ${chain} -m owner ! --uid-owner hermes -j ACCEPT
+          $ipt -w -A ${chain} -o lo -j ACCEPT
+          $ipt -w -A ${chain} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        done
+        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT
+        iptables  -w -A ${chain} -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT
         iptables  -w -A ${chain} -o ${uplink} -m set --match-set egress-allowed dst -j ACCEPT
-        iptables  -w -A ${chain} -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited
-        ip6tables -w -A ${chain} -o ${uplink} -m owner ! --uid-owner hermes -j ACCEPT
-        ip6tables -w -A ${chain} -o ${uplink} -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited
+        iptables  -w -A ${chain} -j REJECT --reject-with icmp-admin-prohibited
+        ip6tables -w -A ${chain} -j REJECT --reject-with icmp6-adm-prohibited
         # hook last so a half-filled chain is never live
         iptables  -w -A OUTPUT -j ${chain}
         ip6tables -w -A OUTPUT -j ${chain}
