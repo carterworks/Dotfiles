@@ -17,6 +17,8 @@ let
   # On a second NIC.
   lanIp4 = "10.99.0.2";
   lanIp6 = "fd00:99::2";
+  # Of the file the internet node serves over HTTP.
+  okHash = "sha256-3FG4yWwtdF3zvVWQ2ZAjCkgv0kcSNZlUjgYy/b+X/CI=";
 
   listen = pkgs: spec: {
     wantedBy = [ "multi-user.target" ];
@@ -87,6 +89,16 @@ in
           outputHash = "0000000000000000000000000000000000000000000000000000";
         }
       '';
+      # Nix runs builtin:fetchurl itself rather than exec'ing a builder, so it
+      # needs its own proof that the fetch happens as a build user.
+      environment.etc."builtin-fetch.nix".text = ''
+        { host }:
+        import <nix/fetchurl.nix> {
+          name = "builtin-fetch-''${builtins.replaceStrings [ "." ] [ "-" ] host}";
+          url = "http://''${host}:8080/ok";
+          hash = "${okHash}";
+        }
+      '';
       system.extraDependencies = [ pkgs.busybox ];
       nix.settings.substituters = lib.mkForce [ ];
 
@@ -102,6 +114,10 @@ in
     {
       networking.firewall.enable = false;
       systemd.services.listener = listen pkgs "TCP6-LISTEN:80";
+      systemd.services.http = {
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig.ExecStart = "${pkgs.python3}/bin/python3 -m http.server 8080 -d ${pkgs.writeTextDir "ok" "ok\n"}";
+      };
       environment.systemPackages = [ pkgs.socat ];
     };
 
@@ -264,6 +280,7 @@ in
     eltoro.wait_until_succeeds("test $(ip netns exec lan ss -Hlnt | wc -l) = 1")
     eltoro.wait_for_open_port(9119)
     internet.wait_for_open_port(80)
+    internet.wait_for_open_port(8080)
 
     eltoro.succeed("systemctl start egress-allowlist")
 
@@ -274,6 +291,18 @@ in
         )
         assert status != 0 and "allowed:ok" in build_log, build_log
         assert "unlisted:ok" not in build_log, build_log
+
+    with subtest("nix's built-in fetcher is fenced like a build"):
+        status, build_log = eltoro.execute(
+            "runuser -u hermes -- nix-build /etc/builtin-fetch.nix --argstr host ${unlisted} --no-out-link 2>&1",
+            timeout=300,
+        )
+        assert status != 0 and "Could not connect" in build_log, build_log
+        out = eltoro.succeed(
+            "runuser -u hermes -- nix-build /etc/builtin-fetch.nix --argstr host ${allowedCidr} --no-out-link",
+            timeout=300,
+        ).strip()
+        assert eltoro.succeed(f"cat {out}") == "ok\n"
 
     with subtest("fence holds after boot"):
         assert_rules_once()
