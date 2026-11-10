@@ -20,6 +20,23 @@ let
         "--why=Coding agent is running"
         "--mode=block"
       ];
+
+  # The README clones the repo here on every machine. Links point into this
+  # checkout rather than the store, so edits apply without a rebuild and
+  # programs that rewrite their own config (KDE does) can still write.
+  checkout = "${config.home.homeDirectory}/.config/dotfiles";
+  # force: Home Manager rejects the symlinks Dotbot made at these paths as
+  # collisions; Dotbot also replaced whatever it found.
+  link = path: {
+    source = config.lib.file.mkOutOfStoreSymlink "${checkout}/${path}";
+    force = true;
+  };
+  # One link per entry leaves other files in the target directory alone.
+  linkEach =
+    target: dir:
+    lib.mapAttrs' (name: _: lib.nameValuePair "${target}/${name}" (link "${dir}/${name}")) (
+      builtins.readDir ../../../${dir}
+    );
 in
 {
   imports = [
@@ -36,6 +53,27 @@ in
     pkgs.inter
     pkgs.iosevka-bin
   ];
+
+  home.file =
+    linkEach ".agents/skills" "agents/skills/personal"
+    // linkEach ".agents/skills" "agents/skills/generated"
+    // linkEach ".local/bin" "bin"
+    // {
+      ".npmrc" = link "npm/npmrc";
+      ".config/opencode/opencode.jsonc" = link "opencode/opencode.jsonc";
+      ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
+      ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
+      ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
+    };
+
+  # A missing checkout would leave every link above dangling. Evaluation
+  # cannot see the home directory, so stop before any link is touched.
+  home.activation.dotfilesCheckout = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    if [[ ! -e ${lib.escapeShellArg checkout}/flake.nix ]]; then
+      errorEcho ${lib.escapeShellArg "No dotfiles checkout at ${checkout}; clone the repo there (see README.md)."}
+      exit 1
+    fi
+  '';
 
   home.stateVersion = "26.11";
   home.shell.enableShellIntegration = true;
