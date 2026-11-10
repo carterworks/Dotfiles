@@ -161,31 +161,38 @@ sudo rm /var/lib/secrets/attic/environment
 sudo systemctl restart atticd.service
 ```
 
-This also invalidates `ATTIC_TOKEN`, so CI pushes fail until you mint a new one
-with the pipe at the start of this step.
+This also invalidates `ATTIC_TOKEN`, so CI pushes fail, and `release` stops,
+until you mint a new one with the pipe at the start of this step.
 
 ## 4. CI workflow requirements
 
-The push workflow is not written yet. A leaked push token or tailnet
-credential is the main risk this cache adds (step 3), so whoever writes it must
-meet all of these:
+The push is in `.github/workflows/fleet.yml` and is described in
+[ci.md](ci.md). A leaked push token or tailnet credential is the main risk this
+cache adds (step 3), so any change to it must keep all of these:
 
 - **Secrets in a GitHub Environment limited to `main`.** `ATTIC_TOKEN`,
   `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` live in an Environment named
-  `binary-cache`, not in repository secrets, and the push job declares
-  `environment: binary-cache`. A workflow edited on another branch then cannot
-  read them.
-- **Only trusted triggers.** Push to the cache only on `push` to `main` or on
-  `schedule`. Never use `pull_request_target`, and never `workflow_run` on a
-  run that built pull-request code.
+  `binary-cache`, not in repository secrets, and only the NixOS hosts' build
+  jobs in a run for `main` name it. A workflow edited on another branch then
+  cannot read them.
+- **Only trusted triggers.** Push to the cache only in a run for `main`: a push
+  to `main`, a dispatch of Fleet on `main`, or Nightly (scheduled or
+  dispatched, always on `main`), which calls Fleet. Never use
+  `pull_request_target`, and never `workflow_run` on a run that built
+  pull-request code.
 - **Pinned and minimal.** Every action is pinned by full commit SHA. Attic is
   the flake-pinned client (`nix run --inputs-from . nixpkgs#attic-client --`).
   The workflow sets `permissions: contents: read`, and only a job that needs
-  more gets more. The Nix sandbox stays on.
+  more gets more. The Nix sandbox stays on. The secrets reach only the
+  Tailscale and push steps, which run after the build.
 - **Tailnet access limited to `tag:ci`.** The Tailscale OAuth client may only
-  create keys for `tag:ci`, and those keys are ephemeral and preauthorised (the
-  action's defaults; do not override them), so each runner leaves the tailnet
-  when its job ends.
+  create keys for `tag:ci`, and those keys are ephemeral and preauthorised, so
+  each runner leaves the tailnet when its job ends. The action (v4.4.0) adds
+  `ephemeral=true&preauthorized=true` to every OAuth key itself and has no
+  input to change it.
+- **`release` follows the cache.** `release` advances only when all three
+  hosts' pushes succeeded. Missing secrets or an unreachable cache leave the
+  build green and `release` where it was; a push that fails turns the job red.
 
 ### GitHub Environment (**You**)
 
@@ -193,33 +200,13 @@ In the repository's **Settings → Environments**, create `binary-cache`. Under
 **Deployment branches and tags**, choose **Selected branches and tags** and add
 `main` only. Step 3 and the Tailscale policy below store the secrets there.
 
-### Workflow steps
+If the Environment already exists, the first Fleet run on `main` created it,
+empty and without rules, because a job names it. Set the branch rule before
+adding any secret.
 
-For whoever writes the workflow; replace each `<SHA>` with the commit of the
-release you reviewed:
-
-```yaml
-permissions:
-  contents: read
-jobs:
-  push-cache:
-    if: github.ref == 'refs/heads/main'
-    environment: binary-cache
-    runs-on: ubuntu-latest
-    steps:
-      # checkout and Nix install steps, also pinned by SHA
-      - uses: tailscale/github-action@<SHA> # v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-          ping: prostagma.dropbear-tortoise.ts.net
-      - run: |
-          nix run --inputs-from . nixpkgs#attic-client -- login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$ATTIC_TOKEN"
-          nix run --inputs-from . nixpkgs#attic-client -- push prostagma:fleet ./result
-        env:
-          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
-```
+Once all three secrets are set, the next Fleet run on `main` pushes and creates
+`release`; nothing in the workflow changes. To start one at once:
+`gh workflow run fleet.yml --repo carterworks/dotfiles --ref main`.
 
 `attic push` pushes the whole closure of `./result` minus anything signed by an
 upstream key. Paths CI downloaded keep the upstream signature, so only unfree
@@ -356,8 +343,8 @@ journalctl -u atticd-size-guard.service -n 5 --no-pager
 ```
 
 While atticd is stopped, hosts fall back to other caches (see "Behaviour when
-the cache is down") and CI pushes fail. To recover (**You**), on prostagma,
-pick one:
+the cache is down") and CI reports the cache unreachable, so `release` waits.
+To recover (**You**), on prostagma, pick one:
 
 - **Collect with the current retention.** Garbage collection runs when atticd
   starts, so `sudo systemctl start atticd.service`. If the cache is still over
