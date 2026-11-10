@@ -121,7 +121,7 @@ let
     python3
     rex-client
     stableDiffusionCppMetal
-    vault
+    vault-bin
   ];
 
   nixosPackages = with pkgs; [
