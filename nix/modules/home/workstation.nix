@@ -173,14 +173,6 @@ in
       function __oc_copy_osc52 --description 'Copy text through OSC 52'
           set -l text "$argv[1]"
 
-          # Native clipboard fallback, disabled while validating OSC 52:
-          # set -l clipboard_command
-          # if command -qs pbcopy
-          #     set clipboard_command pbcopy
-          # else if command -qs wl-copy
-          #     set clipboard_command wl-copy
-          # end
-
           set -l osc52_copied false
           if test -w /dev/tty
               if command -qs base64; and command -qs awk
@@ -191,17 +183,6 @@ in
               end
           end
 
-          # Native clipboard copy, disabled while validating OSC 52:
-          # if test (count $clipboard_command) -eq 1
-          #     printf '%s' "$text" | command $clipboard_command
-          #     if test $status -ne 0
-          #         echo "oc: $clipboard_command failed to copy the password" >&2
-          #         return 1
-          #     end
-          # else if test "$osc52_copied" != true
-          #     echo 'oc: neither pbcopy nor wl-copy is available; password was not copied' >&2
-          #     return 1
-          # end
           if test "$osc52_copied" != true
               echo 'oc: OSC 52 clipboard copy is unavailable; password was not copied' >&2
               return 1
