@@ -23,7 +23,6 @@
     git-crypt
     gnupg
     go
-    gum
     herdr
     home-assistant-cli
     hunk

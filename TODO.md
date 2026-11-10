@@ -109,4 +109,3 @@ the app. The app downloads its model during setup instead.
 Servers follow the `release` branch with `system.autoUpgrade` once the binary cache key is set; see `docs/auto-upgrade.md`.
 
 - [ ] After setting the cache key and deploying both servers, confirm the first night's run on each: `systemctl list-timers nixos-upgrade.timer` shows the next run and `journalctl -u nixos-upgrade.service` shows a switch to `release`, with nothing built locally.
-- [ ] Drop `gum` from `nix/modules/workstation.nix` unless you use it by hand: no script in this repository calls it any more. Removing it changes scylla's and the Mac's system derivations, so it was left out of the change that removed the scripts' gum output.
