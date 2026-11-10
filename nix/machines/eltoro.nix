@@ -16,90 +16,6 @@ let
   # WorkingDirectory=/var/lib/hermes, and fnox.toml lives one level down.
   fnoxCmd = "${fnox}/bin/fnox -c /var/lib/hermes/.hermes/fnox.toml exec --";
 
-  # --- outbound egress allowlist (hermes user only; root unrestricted) ---
-  # domains the agent may reach on the internet. a root-run oneshot
-  # resolves them into the `egress-allowed` ipset (refreshed every 5
-  # min, entries self-expire after 2h so dead cdn ips fall away), and
-  # the OUTPUT rules only let hermes-uid packets into that set. cdn
-  # caveat: shared cdn ips (cloudflare/fastly) mean hermes can also
-  # reach other tenants on those ips — accepted residual.
-  egressAllowedDomains = [
-    # discord (gateway, rest api, cdn, media)
-    "discord.com"
-    "discord.gg"
-    "discordapp.com"
-    "discordapp.net"
-    "discord.media"
-    "gateway.discord.gg"
-    "cdn.discordapp.com"
-    # github (flake inputs, agent tooling)
-    "github.com"
-    "api.github.com"
-    "codeload.github.com"
-    "raw.githubusercontent.com"
-    "objects.githubusercontent.com"
-    # node package registry (application development)
-    "registry.npmjs.org"
-    # nix caches / channels
-    "cache.nixos.org"
-    "channels.nixos.org"
-    "tarballs.nixos.org"
-    # exa (agent web search)
-    "exa.ai"
-    "api.exa.ai"
-    # deduce (daily puzzle the agent plays; every endpoint — including
-    # the POSTs for register/play/guess — lives on the deduce.fun apex,
-    # and it sits on vercel anycast, so pin the dns answer as usual)
-    "deduce.fun"
-    # hermes's llm gateway (config.yaml: provider opencode-go, base_url
-    # https://opencode.ai/zen/go/v1) — without this the agent can't infer
-    "opencode.ai"
-    "api.opencode.ai"
-    # openrouter (config.yaml: provider openrouter, model
-    # deepseek/deepseek-v4.1-flash) — hermes resolves this provider's key
-    # from OPENROUTER_API_KEY only, and 402s on an unfunded opencode-go
-    # account are not a fallback trigger, so openrouter has to be the
-    # primary while the go plan is out of credit
-    "openrouter.ai"
-  ];
-  # static cidr backbone alongside the dns refresh: cdn round-robins
-  # hand out different ips per query, so dns-pinned /32s alone flap
-  # (observed: github serving 140.82.113.5 between refreshes). ranges:
-  # github (api/git/raw/objects), discord on cloudflare's dedicated
-  # 162.159.128.0/17, fastly for nix caches + objects.githubusercontent,
-  # cloudflare blocks where exa and opencode.ai live. shared-cdn caveat
-  # applies to the cloudflare blocks.
-  egressAllowedCidrs = [
-    "140.82.112.0/20"
-    "143.55.64.0/20"
-    "185.199.108.0/22"
-    "192.30.252.0/22"
-    "162.159.128.0/17"
-    "151.101.0.0/16"
-    "146.75.0.0/16"
-    "199.232.0.0/16"
-    "172.65.0.0/16"
-    "172.66.32.0/19"
-  ];
-
-  # resolve the egress allowlist domains into an ipset (see
-  # egressAllowedDomains in the let block for why)
-  egressAllowlistRefresh = pkgs.writeShellScript "egress-allowlist-refresh" ''
-    set -euo pipefail
-    ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
-    for d in ${lib.concatStringsSep " " egressAllowedDomains}; do
-      # domain may be unresolvable — a miss must not abort the
-      # refresh (pipefail would otherwise kill the whole script)
-      ( ${pkgs.getent}/bin/getent ahostsv4 "$d" 2>/dev/null || true ) |
-        ${pkgs.gawk}/bin/awk '{print $1}' | ${pkgs.coreutils}/bin/sort -u |
-        while read -r ip; do
-          ${pkgs.ipset}/bin/ipset add egress-allowed "$ip" -exist
-        done
-    done
-    for c in ${lib.concatStringsSep " " egressAllowedCidrs}; do
-      ${pkgs.ipset}/bin/ipset add egress-allowed "$c" -exist
-    done
-  '';
   # A root-run hermes with HERMES_HOME pointed at the service home
   # (`hermes model`, an interactive TUI) rewrites mutable settings as
   # 0600 root:hermes. The unprivileged
@@ -118,7 +34,10 @@ let
   '';
 in
 {
-  imports = [ (modulesPath + "/virtualisation/proxmox-lxc.nix") ];
+  imports = [
+    (modulesPath + "/virtualisation/proxmox-lxc.nix")
+    ./eltoro/egress.nix
+  ];
 
   # the proxmox-lxc module forces networking.hostName to "" by default
   proxmoxLXC.manageHostName = true;
@@ -231,50 +150,6 @@ in
     enable = true;
     trustedInterfaces = [ "tailscale0" ];
     allowedTCPPorts = [ 9119 ];
-
-    # el toro may not initiate connections INTO the tailnet
-    # (lateral movement: herodotus/proxmox api, truenas, other
-    # agents). replies to inbound sessions (ssh, dashboard)
-    # still work via conntrack, and MagicDNS (100.100.100.100)
-    # stays reachable so *.ts.net names keep resolving.
-    # tailscale itself is unaffected: its control plane and
-    # DERP relays run over eth0, not tailscale0.
-    extraCommands = ''
-      iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-      iptables  -w -A OUTPUT -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT
-      iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT
-      iptables  -w -A OUTPUT -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT
-      iptables  -w -A OUTPUT -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited
-      ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-      ip6tables -w -A OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited
-      # internet egress: hermes-uid traffic may only reach ips in
-      # the egress-allowed ipset (refreshed by egress-allowlist
-      # .timer); root and every other uid are unrestricted. the
-      # agent's ipv6 egress is rejected outright — allowlisted
-      # hosts all resolve over v4.
-      ${pkgs.ipset}/bin/ipset create egress-allowed hash:net family inet timeout 7200 -exist 2>/dev/null || true
-      iptables  -w -A OUTPUT -o eth0 -m owner ! --uid-owner hermes -j ACCEPT
-      iptables  -w -A OUTPUT -o eth0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-      iptables  -w -A OUTPUT -o eth0 -m set --match-set egress-allowed dst -j ACCEPT
-      iptables  -w -A OUTPUT -o eth0 -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited
-      ip6tables -w -A OUTPUT -o eth0 -m owner ! --uid-owner hermes -j ACCEPT
-      ip6tables -w -A OUTPUT -o eth0 -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited
-    '';
-    extraStopCommands = ''
-      iptables  -w -D OUTPUT -o tailscale0 -d 100.64.0.0/10 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o tailscale0 -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o tailscale0 -d 100.100.100.100 -p udp -m udp --dport 53 -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o tailscale0 -d 100.100.100.100 -p tcp -m tcp --dport 53 -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o tailscale0 -d 100.64.0.0/10 -j REJECT --reject-with icmp-admin-prohibited 2>/dev/null || true
-      ip6tables -w -D OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-      ip6tables -w -D OUTPUT -o tailscale0 -d fd7a:115c:a1e0::/48 -j REJECT --reject-with icmp6-adm-prohibited 2>/dev/null || true
-      iptables  -w -D OUTPUT -o eth0 -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o eth0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o eth0 -m set --match-set egress-allowed dst -j ACCEPT 2>/dev/null || true
-      iptables  -w -D OUTPUT -o eth0 -m owner --uid-owner hermes -j REJECT --reject-with icmp-admin-prohibited 2>/dev/null || true
-      ip6tables -w -D OUTPUT -o eth0 -m owner ! --uid-owner hermes -j ACCEPT 2>/dev/null || true
-      ip6tables -w -D OUTPUT -o eth0 -m owner --uid-owner hermes -j REJECT --reject-with icmp6-adm-prohibited 2>/dev/null || true
-    '';
   };
 
   environment.systemPackages = with pkgs; [
@@ -296,27 +171,6 @@ in
   nix.gc = {
     automatic = true;
     options = "--delete-older-than 7d";
-  };
-
-  # resolve the egress allowlist domains into the ipset the
-  # OUTPUT rules reference; entries expire so stale cdn ips
-  # fall away if a domain stops resolving
-  systemd.services.egress-allowlist = {
-    description = "Refresh hermes egress ip allowlist";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = egressAllowlistRefresh;
-    };
-  };
-  systemd.timers.egress-allowlist = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnBootSec = "30s";
-      OnUnitActiveSec = "5min";
-    };
   };
 
   # hard resource ceiling for the whole hermes family (both units
