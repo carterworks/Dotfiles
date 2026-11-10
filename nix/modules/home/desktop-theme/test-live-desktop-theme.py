@@ -20,16 +20,20 @@ class LiveTheme(unittest.TestCase):
             broken.symlink_to(root / "absent")
             kde = root / "kdeglobals"
             kde.write_text("[Colors:Window]\nBackgroundNormal=255,255,255\n")
+            obsidian = root / "Notes/.obsidian/appearance.json"
+            obsidian.parent.mkdir(parents=True)
+            obsidian.write_text('{"cssTheme": "Minimal"}')
             settings = {"files": {str(live): str(expected), str(broken): str(expected)},
                         "kde": str(kde), "palette": {"Colors:Window": {"BackgroundNormal": "239,235,212"}},
-                        "vaults": [], "appearance": {}}
-            self.assertEqual(len(module.audit(settings)), 3)
+                        "vaults": [str(root / "Notes")], "appearance": {"cssTheme": "Everforest"}}
+            self.assertEqual(len(module.audit(settings)), 4)
             self.assertEqual(live.read_text(), "Minimal")
             self.assertTrue(broken.is_symlink())
             live.write_text("Everforest")
             broken.unlink()
             broken.symlink_to(expected)
             kde.write_text("[Colors:Window]\nBackgroundNormal=239,235,212\n")
+            obsidian.write_text('{"cssTheme": "Everforest"}')
             self.assertEqual(module.audit(settings), [])
 
 
