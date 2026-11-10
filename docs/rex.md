@@ -42,9 +42,10 @@ without changing the account's login shell. This is managed in
 `Workspace.terminalStartupCommand`, not through `init.lua`. It applies to
 new local tabs and splits; existing terminals and remote hosts are unchanged.
 
-Interactive Fish, Bash, and Zsh startup restores a nonempty `REX_BIN_DIR`
-to the front of `PATH` after Nix's shell initialization. This keeps the CLI
-matched to its server without adding empty path entries outside Rex. See the
+On the workstations (Scylla and the Mac), interactive Fish, Bash, and Zsh
+startup restores a nonempty `REX_BIN_DIR` to the front of `PATH` after Nix's
+shell initialization. This keeps the CLI matched to its server without adding
+empty path entries outside Rex. The servers run no Rex and go without it. See the
 [upstream PATH guidance](https://www.superlogical.com/rex/docs/automate/cli#path).
 
 ## Configuration

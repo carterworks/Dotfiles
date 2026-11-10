@@ -8,6 +8,12 @@ let
   zen-browser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
 in
 {
+  environment.interactiveShellInit = ''
+    if [ -n "$REX_BIN_DIR" ]; then
+      export PATH="$REX_BIN_DIR:$PATH"
+    fi
+  '';
+
   environment.systemPackages = with pkgs; [
     age
     agent-browser

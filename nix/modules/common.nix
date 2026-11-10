@@ -32,20 +32,7 @@ in
     })
   ];
 
-  environment.interactiveShellInit = ''
-    if [ -n "$REX_BIN_DIR" ]; then
-      export PATH="$REX_BIN_DIR:$PATH"
-    fi
-  '';
-
   nix.settings = {
-    experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
-    trusted-users = [
-      "@wheel"
-    ];
     substituters = [ "https://cache.nixos.org" ] ++ extra-substituters;
     trusted-public-keys = extra-trusted-public-keys;
   };
