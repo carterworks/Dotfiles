@@ -114,7 +114,6 @@ in
   nixpkgs.hostPlatform = "x86_64-linux";
 
   networking.hostName = "eltoro";
-  time.timeZone = "America/Denver";
   i18n.defaultLocale = "en_US.UTF-8";
 
   # fish for root

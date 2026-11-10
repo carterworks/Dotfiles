@@ -15,6 +15,8 @@
     trusted-users = [ "@wheel" ];
   };
 
+  time.timeZone = "America/Denver";
+
   nix.gc = {
     automatic = true;
     options = "--delete-older-than 7d";
