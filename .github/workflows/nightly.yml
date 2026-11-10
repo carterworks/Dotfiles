@@ -59,6 +59,9 @@ jobs:
         run: |
           base=$(git rev-parse HEAD)
           echo "base=$base" >>"$GITHUB_OUTPUT"
+          # A step without a shell key runs as bash -e, without pipefail, so
+          # the status below would otherwise be tee's.
+          set -o pipefail
           status=0
           ./update --apply 2>&1 >"$RUNNER_TEMP/summary" | tee "$RUNNER_TEMP/log" || status=$?
           echo "status=$status" >>"$GITHUB_OUTPUT"
