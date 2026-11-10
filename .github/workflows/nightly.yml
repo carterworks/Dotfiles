@@ -64,7 +64,9 @@ jobs:
           echo "status=$status" >>"$GITHUB_OUTPUT"
           if (( status != 0 && status != 3 )); then exit "$status"; fi
           echo "failed=$(sed -n 's/^Failed: //p' "$RUNNER_TEMP/log")" >>"$GITHUB_OUTPUT"
-          { echo 'summary<<__SUMMARY__'; cat "$RUNNER_TEMP/summary"; echo __SUMMARY__; } >>"$GITHUB_OUTPUT"
+          # The summary is upstream text, so it must not be able to guess the end marker.
+          delimiter="summary_$(openssl rand -hex 16)"
+          { echo "summary<<$delimiter"; cat "$RUNNER_TEMP/summary"; echo "$delimiter"; } >>"$GITHUB_OUTPUT"
           git add -A -- flake.nix flake.lock nix agents
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
