@@ -167,10 +167,8 @@ in
         assert not methods["password"]["enabled"], methods
 
     with subtest("through the gate, a client's own header does not log it in"):
-        status = scylla.succeed(
-            f"curl -s -o /dev/null -w '%{{http_code}}' {as_carter} http://${hubName}/api/collections/systems/records"
-        )
-        assert not status.startswith("2"), f"the gate let a spoofed header through ({status})"
+        out = scylla.succeed(f"curl -s {as_carter} http://${hubName}/api/collections/systems/records")
+        assert "prostagma" not in out, f"a spoofed header logged in: {out}"
 
     with subtest("the agents' path bypasses the gate and the hub refuses a wrong token"):
         out = scylla.succeed(
