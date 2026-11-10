@@ -13,6 +13,7 @@ fetched for 14 days is garbage-collected.
 | URL | `http://prostagma.dropbear-tortoise.ts.net:8199/fleet` |
 | Storage | `/srv/apps/attic` (chunks), Postgres database `atticd` |
 | Token signing secret | `/var/lib/secrets/attic/environment`, generated on first start |
+| Size guard | `atticd-size-guard.timer`, stops atticd above 30 GiB (see "Size cap") |
 
 The MacBook never uses this cache: `nix/lib/mksystem.nix` adds the client
 module only to NixOS hosts.
@@ -22,6 +23,20 @@ interface, and the firewall opens that port on `tailscale0` alone. The cache is
 an Attic "public" cache, so tailnet clients pull without a token; pushing needs
 one. Nix checks every path against the cache's signing key, so plain HTTP is
 fine inside the tailnet.
+
+## What is sensitive
+
+- **Token signing secret**: `/var/lib/secrets/attic/environment` on
+  prostagma. Whoever reads it can mint any token, a push token included. Revoke
+  with step 3.
+- **Cache signing key**: in the `atticd` Postgres database under
+  `/srv/apps/postgresql`, so also in any backup or snapshot of `/srv/apps`.
+  Whoever has it can sign paths every Linux host trusts. Replace it with step 6.
+- **Push token and tailnet credentials**: the `binary-cache` GitHub Environment
+  (steps 3 and 4). The Attic client also keeps the last token it logged in with
+  in `~/.config/attic/config.toml`; the admin tokens here expire in an hour.
+- **Cache contents**: the cache is public to the tailnet, so any device the
+  tailnet policy lets reach `prostagma:8199` can read every path in it.
 
 Steps marked **You** need your accounts or a deploy, so only you can do them.
 Run the rest wherever the step says.
@@ -68,6 +83,21 @@ substitutes from (see `nix/modules/nix.nix`), so that pushes skip their paths:
 attic cache create prostagma:fleet --public --upstream-cache-key-name cache.nixos.org-1 --upstream-cache-key-name niks3.numtide.com-1 --upstream-cache-key-name vicinae.cachix.org-1 --upstream-cache-key-name nix-community.cachix.org-1
 attic cache info prostagma:fleet
 ```
+
+Before turning the client on, check that eltoro may reach the cache. Its own
+firewall lets the Nix daemon through (see "El Toro"), but the tailnet policy
+may not. From scylla:
+
+```sh
+ssh root@eltoro nix store info --connect-timeout 5 --store http://prostagma.dropbear-tortoise.ts.net:8199/fleet
+```
+
+It prints `Store URL: …` at once if eltoro can reach the cache. If it fails
+after about 30 seconds instead, eltoro cannot, and with the client on, each
+lookup there would wait out those 30 seconds before falling back to the other
+caches. Either grant eltoro `tcp:8199` on `prostagma` in the tailnet policy and
+check again, or keep eltoro's client off with
+`dotfiles.binaryCache.publicKey = null;` in `nix/machines/eltoro.nix`.
 
 `attic cache info` prints a line `Public Key: fleet:…`. In
 `nix/modules/binary-cache.nix`, replace `default = null;` with that key in
@@ -387,12 +417,25 @@ A host that looks up a path before CI has pushed it remembers the miss for an
 hour (Nix's `narinfo-cache-negative-ttl`), so it may build or download that
 path elsewhere during that hour.
 
+Nix drops a download that receives no data for 30 seconds
+(`stalled-download-timeout`), so a server that accepts connections and then
+hangs cannot stall a rebuild for Nix's default five minutes.
+
+`fallback = true` trades an error for a build: when the cache lists a path but
+serving it fails, Nix builds the path locally instead of stopping. Rebuilds keep
+working through a broken cache, but a host may start a long local build where
+it would otherwise have stopped. Remove `fallback` from
+`nix/modules/binary-cache.nix` if you would rather see the error.
+
 ## El Toro
 
-eltoro's firewall (`nix/machines/eltoro.nix`) lets the Nix daemon, which runs
-as root, reach the cache over IPv4: the `tailscale0` OUTPUT rules accept any
-packet not owned by `hermes`. The `hermes` user gets no new connections into
-`100.64.0.0/10`. Its packets reach only the DNS and established-connection
-rules, then hit the REJECT. IPv6 to the tailnet is rejected for every user,
-root included, so the daemon's lookup falls back to prostagma's IPv4 record
-straight away.
+eltoro's firewall (`nix/machines/eltoro/egress.nix`) lets the Nix daemon,
+which runs as root, reach the cache over IPv4: the `tailscale0` OUTPUT rules
+accept any packet not owned by `hermes`. The `hermes` user gets no new
+connections into `100.64.0.0/10`. Its packets reach only the DNS and
+established-connection rules, then hit the REJECT. IPv6 to the tailnet is
+rejected for every user, root included, so the daemon's lookup falls back to
+prostagma's IPv4 record straight away.
+
+The tailnet policy is a separate fence, which step 2 checks before eltoro's
+client is turned on.
