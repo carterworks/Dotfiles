@@ -70,4 +70,5 @@ assert any(t["name"] == apps["zed"]["name"] and t["appearance"] == mode for t in
 obsidian = read_json(files["obsidianSettings"])
 assert obsidian["appearance"]["cssTheme"] == read_json(files["obsidianManifest"])["name"]
 assert ".theme-light" in Path(files["obsidianCss"]).read_text()
+assert read_json(files["audit"])["vaults"] == obsidian["vaults"], "Audit resolves vaults against the working directory"
 print("Desktop theme configuration checks passed")
