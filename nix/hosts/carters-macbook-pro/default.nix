@@ -43,8 +43,6 @@ in
     };
 
   nixpkgs.hostPlatform = "aarch64-darwin";
-  nixpkgs.config.allowUnfree = true;
-
   fonts.packages = [ pkgs.nerd-fonts.noto ];
 
   environment.systemPackages = with pkgs; [

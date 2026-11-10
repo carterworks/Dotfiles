@@ -190,8 +190,6 @@ in
     SystemKeepFree = "5G";
   };
 
-  nixpkgs.config.allowUnfree = true;
-
   proxmoxLXC = {
     manageNetwork = false;
     privileged = true;
