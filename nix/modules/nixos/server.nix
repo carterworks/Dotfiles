@@ -1,9 +1,8 @@
-{
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 
 {
+  home-manager.users.root = ../home/root.nix;
+
   environment.systemPackages = with pkgs; [
     age
     btop

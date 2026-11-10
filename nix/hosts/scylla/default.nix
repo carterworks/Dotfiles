@@ -1,7 +1,8 @@
 {
+  inputs,
+  lib,
   pkgs,
   self,
-  systemUsername,
   ...
 }:
 
@@ -118,6 +119,10 @@ let
 in
 {
   imports = [
+    ../../modules/nixos/common.nix
+    ../../modules/workstation.nix
+    ./desktop.nix
+    inputs.disko.nixosModules.disko
     ./hardware.nix
     ./disk.nix
     ./hyprland.nix
@@ -139,9 +144,8 @@ in
   # Wake target for remote power-on; the onboard Intel NIC (eno1) is unused.
   # Only works while the BIOS supplies standby power to the slot (ErP disabled).
   networking.interfaces.enp7s0.wakeOnLan.enable = true;
-  home-manager.users.${systemUsername} = {
-    imports = [ ./home.nix ];
-  };
+
+  home-manager.users.carter = ../../modules/home/workstation.nix;
 
   time.timeZone = "America/Denver";
 
@@ -225,7 +229,7 @@ in
   services.tailscale = {
     enable = true;
     openFirewall = true;
-    extraSetFlags = [ "--operator=${systemUsername}" ];
+    extraSetFlags = [ "--operator=carter" ];
   };
 
   services.resolved.enable = true;

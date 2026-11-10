@@ -80,6 +80,8 @@ in
   };
 
   users.groups.games = { };
+  home-manager.users.carter.imports = [ ./home.nix ];
+
   users.users.carter = {
     isNormalUser = true;
     linger = true;

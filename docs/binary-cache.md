@@ -15,8 +15,8 @@ fetched for 14 days is garbage-collected.
 | Token signing secret | `/var/lib/secrets/attic/environment`, generated on first start |
 | Size guard | `atticd-size-guard.timer`, stops atticd above 30 GiB (see "Size cap") |
 
-The MacBook never uses this cache: `nix/lib/mksystem.nix` adds the client
-module only to NixOS hosts.
+The MacBook never uses this cache: only the NixOS hosts import the client,
+through `nix/modules/nixos/common.nix`.
 
 Only the tailnet can reach the cache. atticd listens on port 8199 on every
 interface, and the firewall opens that port on `tailscale0` alone. The cache is
@@ -78,7 +78,7 @@ attic login prostagma http://prostagma.dropbear-tortoise.ts.net:8199 "$(sudo att
 
 Create the cache. Name the key of every upstream cache the Linux hosts
 substitute from, so that pushes skip their paths. The names come from the
-flake's own `trusted-public-keys` (`nix/modules/nix.nix`), so they cannot drift
+flake's own `trusted-public-keys` (`nix/modules/common.nix`), so they cannot drift
 from it:
 
 ```sh
@@ -317,7 +317,7 @@ cache's retention to the default, so any configure token needs
 `--configure-cache-retention` as well as `--configure-cache`.
 
 The cache keeps the upstream key names it was created with. Whenever
-`nix/modules/nix.nix` adds or drops a cache, update them with the same login,
+`nix/modules/common.nix` adds or drops a cache, update them with the same login,
 from a checkout that has the change:
 
 ```sh

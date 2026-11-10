@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   modulesPath,
   pkgs,
@@ -159,6 +160,9 @@ let
 in
 {
   imports = [
+    ../../modules/nixos/common.nix
+    ../../modules/nixos/server.nix
+    inputs.copyparty.nixosModules.default
     (modulesPath + "/virtualisation/proxmox-lxc.nix")
     ./hardware.nix
     ./app-storage.nix

@@ -38,7 +38,7 @@ not the manifest.
 
 New local terminals launch Fish using the same Nix executable as Ghostty,
 without changing the account's login shell. This is managed in
-`nix/users/carter/darwin.nix` through Rex's macOS preference
+`nix/hosts/carters-macbook-pro/default.nix` through Rex's macOS preference
 `Workspace.terminalStartupCommand`, not through `init.lua`. It applies to
 new local tabs and splits; existing terminals and remote hosts are unchanged.
 

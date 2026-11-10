@@ -7,7 +7,7 @@
 
 ## Temporary pins and workarounds
 
-- [ ] Replace `nix/packages/fnox.nix` and its overlay in `nix/modules/nix.nix` with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs and `cache.nixos.org` has it. Until then nixpkgs' build fails on Hydra (`aws-lc-sys` finds no system AWS-LC), so the repo installs upstream's prebuilt release.
+- [ ] Replace `nix/packages/fnox.nix` and its overlay in `nix/modules/common.nix` with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs and `cache.nixos.org` has it. Until then nixpkgs' build fails on Hydra (`aws-lc-sys` finds no system AWS-LC), so the repo installs upstream's prebuilt release.
 
 - [ ] `t3code-cli`: revisit `dontStrip = true` once stripping can preserve the embedded Node SEA payload; verify `t3 --version` and `t3 serve` before removing it. Retested 2026-11-01 with nixpkgs patchelf 0.19.2: stripping still truncates the SEA `NOTE` segment and `t3 --version` aborts.
 - [x] Verify Vicinae opens with hardware rendering on Scylla after the `QT_QUICK_BACKEND=software` override removal; restore the override if it regresses. nixpkgs 0.29.2 carries the upstream fix (vicinaehq/vicinae#2055). The remaining software fallback came from `[QtQuickRendererSettings] SceneGraphBackend=software` in `kde/kdeglobals`, which the KDE platform theme propagates to every Qt Quick app; the group is now removed and cleaned from the live file on activation.

@@ -32,9 +32,9 @@ in
 {
   imports = [
     inputs.hex.homeManagerModules.hex
-    ../../modules/home/agent-daemons.nix
-    ../../modules/home/desktop-theme
-    ../../modules/home/obsidian-sync.nix
+    ./agent-daemons.nix
+    ./desktop-theme
+    ./obsidian-sync.nix
   ];
 
   # Upstream's Home Manager module supports x86_64-linux only; macOS installs
@@ -121,7 +121,7 @@ in
   # not persist completion; seed its mutable state once, without replacing it.
   home.activation.vicinaeOnboarding = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.python3}/bin/python3 ${./complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
+      run ${pkgs.python3}/bin/python3 ${../../users/carter/complete-vicinae-onboarding.py} ${lib.escapeShellArg config.xdg.stateHome}
     ''
   );
   xdg.configFile."autostart/steam.desktop" = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {

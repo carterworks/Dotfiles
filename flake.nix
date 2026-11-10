@@ -62,9 +62,6 @@
   outputs =
     inputs@{ self, nixpkgs, ... }:
     let
-      mkSystem = import ./nix/lib/mksystem.nix {
-        inherit inputs nixpkgs self;
-      };
       mkPackages = import ./nix/packages { inherit inputs nixpkgs; };
       systems = [
         "aarch64-darwin"
@@ -162,33 +159,25 @@
             '';
         }
       );
-      scylla = mkSystem "scylla" {
-        system = "x86_64-linux";
-        profile = "carter";
-        extraModules = [
-          inputs.disko.nixosModules.disko
+      specialArgs = { inherit inputs self; };
+      nixosSystem =
+        host:
+        nixpkgs.lib.nixosSystem {
+          inherit specialArgs;
+          modules = [ ./nix/hosts/${host} ];
+        };
+      scylla = nixosSystem "scylla";
+      prostagma = nixosSystem "prostagma";
+      eltoro = nixosSystem "eltoro";
+      carters-macbook-pro = inputs.nix-darwin.lib.darwinSystem {
+        inherit specialArgs;
+        modules = [
+          ./nix/modules/common.nix
+          inputs.home-manager.darwinModules.home-manager
+          ./nix/hosts/carters-macbook-pro
+          ./nix/modules/workstation.nix
+          inputs.determinate.darwinModules.default
         ];
-      };
-      prostagma = mkSystem "prostagma" {
-        system = "x86_64-linux";
-        profile = "root";
-        systemUsername = "root";
-        gui = false;
-        extraModules = [
-          inputs.copyparty.nixosModules.default
-        ];
-      };
-      eltoro = mkSystem "eltoro" {
-        system = "x86_64-linux";
-        profile = "root";
-        gui = false;
-      };
-      carters-macbook-pro = mkSystem "carters-macbook-pro" {
-        system = "aarch64-darwin";
-        profile = "carter";
-        systemUsername = "cmcbride";
-        darwin = true;
-        extraModules = [ inputs.determinate.darwinModules.default ];
       };
     in
     {
@@ -284,7 +273,7 @@
               ];
             }
             ''
-              python3 ${source}/nix/users/carter/test-sunshine-display.py
+              python3 ${source}/nix/hosts/scylla/test-sunshine-display.py
               touch "$out"
             '';
         inherit (packageSets.x86_64-linux)
