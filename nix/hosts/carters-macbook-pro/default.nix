@@ -35,7 +35,12 @@ in
     inputs.determinate.darwinModules.default
   ];
 
-  home-manager.users.cmcbride = ../../modules/home/workstation.nix;
+  home-manager.users.cmcbride =
+    { config, ... }:
+    {
+      imports = [ ../../modules/home/workstation.nix ];
+      home.file.".config/rex/init.lua" = config.lib.dotfiles.link "rex/init.lua";
+    };
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   nixpkgs.config.allowUnfree = true;
