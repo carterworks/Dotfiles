@@ -1,10 +1,9 @@
 {
   lib,
-  theme,
+  colors,
   name,
 }:
 let
-  inherit (theme) colors;
   rgb =
     color:
     lib.concatStringsSep "," (

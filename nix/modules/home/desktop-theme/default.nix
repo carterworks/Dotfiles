@@ -11,10 +11,10 @@ let
   )) (name: import ./themes/${name}.nix);
   theme = themes.${cfg.name};
   inherit (theme) colors;
-  hex = color: lib.removePrefix "#" color;
+  hex = lib.removePrefix "#";
   toolkit = import ./toolkit.nix {
-    inherit lib theme;
-    name = cfg.name;
+    inherit lib colors;
+    inherit (cfg) name;
   };
   kdeScheme = pkgs.writeText "${cfg.name}.colors" toolkit.kde;
   telegramPalette = pkgs.writeText "colors.tdesktop-theme" (
@@ -99,7 +99,6 @@ let
         magick -size 64x64 'xc:${colors.background}' background.png
         zip -q "$out" colors.tdesktop-theme background.png
       '';
-  cliSettings = builtins.fromJSON (builtins.readFile ../../../../opencode/cli.json);
   vicinaeSelection = (theme.apps.vicinae or { }).selection or colors.selection;
   herdrColors = theme.apps.herdrColors // {
     accent = colors.accent;
@@ -124,13 +123,14 @@ let
         ${lib.escapeShellArg replacement.from} ${lib.escapeShellArg replacement.to}
     '') (theme.apps.obsidian.cssReplacements or [ ])}
   '';
+  obsidianAppearance = {
+    cssTheme = theme.apps.obsidian.name;
+    theme = if theme.appearance == "light" then "moonstone" else "obsidian";
+  };
   obsidianSettings = pkgs.writeText "obsidian-theme-settings.json" (
     builtins.toJSON {
       vaults = map (vault: "${config.home.homeDirectory}/${vault}") cfg.obsidianVaults;
-      appearance = {
-        cssTheme = theme.apps.obsidian.name;
-        theme = if theme.appearance == "light" then "moonstone" else "obsidian";
-      };
+      appearance = obsidianAppearance;
     }
   );
 in
@@ -224,10 +224,7 @@ in
                     builtins.removeAttrs toolkit.scheme [ "General" ]
                   );
                   vaults = cfg.obsidianVaults;
-                  appearance = {
-                    cssTheme = theme.apps.obsidian.name;
-                    theme = if theme.appearance == "light" then "moonstone" else "obsidian";
-                  };
+                  appearance = obsidianAppearance;
                 }
               )
             }
@@ -314,7 +311,7 @@ in
         "opencode/cli.json" = {
           force = true;
           text = builtins.toJSON (
-            cliSettings
+            builtins.fromJSON (builtins.readFile ../../../../opencode/cli.json)
             // {
               theme = {
                 name = theme.apps.opencode;
