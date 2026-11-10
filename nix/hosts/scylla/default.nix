@@ -211,7 +211,18 @@ in
 
   hardware.uinput.enable = true;
 
+  users.groups.games = { };
   users.groups.plugdev = { };
+  users.users.carter = {
+    isNormalUser = true;
+    linger = true;
+    extraGroups = [
+      "plugdev"
+      "wheel"
+      "games"
+      "uinput"
+    ];
+  };
 
   services.udev.extraRules = ''
     KERNEL=="hidraw*", ATTRS{idVendor}=="16c0", MODE="0664", GROUP="plugdev"
@@ -226,6 +237,33 @@ in
   };
 
   programs.gamescope.enable = true;
+
+  programs.fish.enable = true;
+
+  programs.gnupg.agent = {
+    enable = true;
+    pinentryPackage = pkgs.pinentry-qt;
+  };
+
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      zlib
+      zstd
+      stdenv.cc.cc
+      curl
+      openssl
+      attr
+      libssh
+      bzip2
+      libxml2
+      acl
+      libsodium
+      util-linux
+      xz
+      systemd
+    ];
+  };
 
   services.tailscale = {
     enable = true;
@@ -281,49 +319,6 @@ in
     overrideFolders = false;
   };
 
-  services.desktopManager.plasma6 = {
-    enable = true;
-  };
-  environment.plasma6.excludePackages = with pkgs.kdePackages; [
-    konsole
-    elisa
-    kate
-  ];
-
-  xdg.portal = {
-    enable = true;
-    xdgOpenUsePortal = true;
-    config = {
-      common.default = [ "gtk" ];
-      kde.default = [
-        "kde"
-        "gtk"
-      ];
-    };
-    extraPortals = with pkgs; [
-      kdePackages.xdg-desktop-portal-kde
-      xdg-desktop-portal-gtk
-    ];
-  };
-
-  services.displayManager = {
-    defaultSession = "hyprland-uwsm";
-    autoLogin.enable = true;
-    autoLogin.user = "carter";
-    plasma-login-manager.enable = true;
-  };
-
-  programs.dconf.profiles.user.databases = [
-    {
-      settings = {
-        "org/gnome/desktop/interface" = {
-          "color-scheme" = "prefer-light";
-          "icon-theme" = "Papirus";
-        };
-      };
-    }
-  ];
-
   environment.localBinInPath = true;
 
   zramSwap = {
@@ -336,7 +331,6 @@ in
   systemd.oomd.enable = true;
 
   environment.systemPackages = with pkgs; [
-    kdePackages.karousel
     cifs-utils
     samba
     vim
@@ -346,10 +340,6 @@ in
 
   services.gvfs.enable = true;
   services.openssh.enable = true;
-  users.users.carter = {
-    extraGroups = [ "plugdev" ];
-    linger = true;
-  };
 
   systemd.tmpfiles.rules = [
     "d /games 2775 root games -"
