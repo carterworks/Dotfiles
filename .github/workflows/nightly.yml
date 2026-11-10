@@ -49,8 +49,9 @@ jobs:
         run: |
           mkdir -p ~/.config/nix
           nix eval --raw --impure -f .github/ci.nix nixConf >> ~/.config/nix/nix.conf
-      # Exit 1 means some items failed and the rest are in the tree: build and
-      # merge those, and let the report turn the run red.
+      # Exit 3 means some items failed and the rest are in the tree: build and
+      # merge those, and let the report turn the run red. Any other failure
+      # means the updater broke, so nothing is built or merged.
       - name: Update
         id: update
         env:
@@ -61,7 +62,7 @@ jobs:
           status=0
           ./update --apply 2>&1 >"$RUNNER_TEMP/summary" | tee "$RUNNER_TEMP/log" || status=$?
           echo "status=$status" >>"$GITHUB_OUTPUT"
-          if (( status > 1 )); then exit "$status"; fi
+          if (( status != 0 && status != 3 )); then exit "$status"; fi
           echo "failed=$(sed -n 's/^Failed: //p' "$RUNNER_TEMP/log")" >>"$GITHUB_OUTPUT"
           { echo 'summary<<__SUMMARY__'; cat "$RUNNER_TEMP/summary"; echo __SUMMARY__; } >>"$GITHUB_OUTPUT"
           git add -A -- flake.nix flake.lock nix agents
@@ -171,7 +172,7 @@ jobs:
           if [[ " $UPDATE $BUILD $PROMOTE " == *" failure "* ]] && (( ${#failures[@]} == 0 )); then
             problems+=("a job failed; see the run")
           fi
-          [[ $STATUS != 1 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
+          [[ $STATUS != 3 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
           if [[ $PROMOTE == success && $CACHE == *unreachable* ]]; then
             problems+=("main moved but release did not: the binary cache was unreachable")
           fi
