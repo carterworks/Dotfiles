@@ -56,6 +56,11 @@ container over SSH:
 See [El Toro](docs/eltoro.md) for onboarding, settings, and the host-side
 firewall setup.
 
+## Secrets
+
+Secrets are encrypted with fnox in `secrets/fnox.toml` and decrypted on each
+host at boot. See [Secrets](docs/secrets.md).
+
 ## Rex
 
 For the Rex macOS client setup, see [Rex](docs/rex.md).

@@ -21,6 +21,18 @@ Home Manager now makes the links Dotbot made, into `~/.config/dotfiles`.
 - [x] Verify Vicinae opens with hardware rendering on Scylla after the `QT_QUICK_BACKEND=software` override removal; restore the override if it regresses. nixpkgs 0.29.2 carries the upstream fix (vicinaehq/vicinae#2055). The remaining software fallback came from `[QtQuickRendererSettings] SceneGraphBackend=software` in `kde/kdeglobals`, which the KDE platform theme propagates to every Qt Quick app; the group is now removed and cleaned from the live file on activation.
 - [ ] kubelogin: reassess the 0.1.9 pin when newer releases persist the Ethos device-code token instead of re-prompting on every invocation. Upstream still treats legacy `spn:` logins as unsupported and recommends pinning 0.1.9.
 
+## Secrets
+
+Prostagma's services read their secrets from fnox (`secrets/fnox.toml`, decrypted by `nix/modules/nixos/secrets.nix`); see `docs/secrets.md`.
+
+- [ ] Deploy prostagma and follow "First deployment" in `docs/secrets.md`: confirm every `fnox-secret-*` unit, rename the ten old files and restart, then run the clean-up on prostagma and eltoro from the private list.
+- [ ] Classify the unresolved files in the private clean-up list without opening them in a shared session; treat any old system backup in it as possibly holding an earlier SSH host key.
+- [ ] Revoke at their source the credentials of services that are not in the Nix configuration, whether or not a hand-started container still uses them.
+- [ ] Change the short account passwords to generated values if a person chose them (see "What the public repository reveals" in `docs/secrets.md`).
+- [ ] After the clean-up, drop the `d /var/lib/secrets/bazarr` tmpfiles rule on prostagma; its files are now admin-only records in fnox.
+- [ ] Move scylla's `truenas-smb` credential into fnox and back up scylla's SSH host keys admin-only (both need `sudo` on scylla).
+- [ ] Each change to `secrets/fnox.toml`, even to an admin-only record, restarts every prostagma secret unit and the services that require them. If that becomes a nuisance, give each unit only its own entry of the store.
+
 ## Obsidian Sync
 
 `nix/modules/home/obsidian-sync.nix` runs `ob sync --continuous` for `Documents/Notes` on Scylla (bidirectional) and Prostagma (pull-only). Scylla's `~/.config/obsidian-headless` was seeded from Prostagma's `auth_token`; if sync starts failing with an expired session, run `ob login` there.
