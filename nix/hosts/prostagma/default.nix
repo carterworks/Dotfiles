@@ -78,6 +78,7 @@ let
               <li><a href="https://audiobookshelf.${tailnetDomain}/audiobookshelf/">Audiobookshelf</a></li>
               <li><a href="https://backrest.${tailnetDomain}/">Backrest</a></li>
               <li><a href="https://bazarr.${tailnetDomain}/">Bazarr</a></li>
+              <li><a href="https://beszel.${tailnetDomain}/">Beszel</a></li>
               <li><a href="http://prostagma.${tailnetDomain}:${toString copypartyPort}/">Copyparty</a></li>
               <li><a href="https://immich.${tailnetDomain}/">Immich</a></li>
 
@@ -167,6 +168,7 @@ in
     inputs.copyparty.nixosModules.default
     ./hardware.nix
     ./app-storage.nix
+    ./beszel.nix
     ./binary-cache.nix
     ./podmaker.nix
     ./media-apps.nix
@@ -376,6 +378,11 @@ in
       # paths bypass the gate so podcast apps can subscribe. Kept last for the
       # same Service-approval reason as Backrest.
       "$tailscale" serve --service=svc:podmaker --https=443 http://127.0.0.1:80
+
+      # Beszel's dashboard, gated like the others; its agents' WebSocket path
+      # bypasses the gate (see sso.nix). Last for the same Service-approval
+      # reason as Backrest.
+      "$tailscale" serve --service=svc:beszel --https=443 http://127.0.0.1:80
 
     '';
   };
