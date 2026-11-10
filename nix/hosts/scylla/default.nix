@@ -1,5 +1,6 @@
 {
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -141,7 +142,11 @@ in
   # Only works while the BIOS supplies standby power to the slot (ErP disabled).
   networking.interfaces.enp7s0.wakeOnLan.enable = true;
 
-  home-manager.users.carter = ../../modules/home/workstation.nix;
+  home-manager.users.carter = lib.mkMerge [
+    ../../modules/home/workstation.nix
+    ./home.nix
+    ./hyprland-home.nix
+  ];
 
   time.timeZone = "America/Denver";
 
