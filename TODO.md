@@ -7,7 +7,7 @@
 
 ## Temporary pins and workarounds
 
-- [ ] Remove the `fnox` dependency overlay in `nix/modules/nix.nix` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs. Its Cargo dependencies require both system libraries under nixpkgs' Cargo setup hook; OpenSSL alone does not satisfy them.
+- [ ] Replace `nix/packages/fnox.nix` and its overlay in `nix/modules/nix.nix` with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` in its build inputs and `cache.nixos.org` has it. Until then nixpkgs' build fails on Hydra (`aws-lc-sys` finds no system AWS-LC), so the repo installs upstream's prebuilt release.
 
 - [ ] `atuin`: `carters-macbook-pro.nix` disables its nixpkgs check phase because `e2e_ai_sessions` fails on hosts with a live Pi session (`a_diverged_copy_resumes_only_as_chosen`, `a_session_gone_on_with_elsewhere_catches_up_where_it_came_from`). Remove the overlay once upstream fixes those tests or they stop depending on local sessions.
 

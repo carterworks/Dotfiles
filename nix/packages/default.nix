@@ -29,6 +29,7 @@ in
     cp "$(${hunk}/bin/hunk skill path)" "$out"
   '';
   fff-mcp = localPackage ./fff-mcp.nix;
+  fnox = localPackage ./fnox.nix;
   nub = localPackage ./nub.nix;
 }
 // lib.optionalAttrs (system == "aarch64-darwin" || system == "x86_64-linux") {
