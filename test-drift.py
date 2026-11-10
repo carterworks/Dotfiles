@@ -40,7 +40,9 @@ esac
 
 # Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
 # curl or git, nor the caller's environment or home, so no test can read a real
-# credential or reach the network.
+# credential or reach the network. Bash sources the system bashrc for `bash -c`
+# when stdin is a socket, and NixOS's then puts the real tools back on PATH;
+# NOSYSBASHRC stops it.
 TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
          "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
 
@@ -55,7 +57,7 @@ def hermetic_env(home, bin_dir):
     if not gh.exists():
         gh.write_text("#!/bin/sh\nexit 1\n")
         gh.chmod(0o755)
-    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home)}
+    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "NOSYSBASHRC": "1"}
 
 
 class DriftTests(unittest.TestCase):

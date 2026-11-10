@@ -1,6 +1,7 @@
 import os
 import shutil
 import signal
+import socket
 from pathlib import Path
 import subprocess
 import tempfile
@@ -26,7 +27,9 @@ printf 'nix-env %s\\n' "$*"
 
 # Tests see only their stubs and these tools: never the real gh, ssh, nix, sudo,
 # curl or git, nor the caller's environment or home, so no test can read a real
-# credential or reach the network.
+# credential or reach the network. Bash sources the system bashrc for `bash -c`
+# when stdin is a socket, and NixOS's then puts the real tools back on PATH;
+# NOSYSBASHRC stops it.
 TOOLS = ("base64", "bash", "cat", "date", "dirname", "grep", "jq", "kill", "mkdir",
          "mkfifo", "mktemp", "mv", "rm", "sleep", "touch", "tr")
 
@@ -41,7 +44,22 @@ def hermetic_env(home, bin_dir):
     if not gh.exists():
         gh.write_text("#!/bin/sh\nexit 1\n")
         gh.chmod(0o755)
-    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home)}
+    return {"HOME": str(home), "PATH": f"{bin_dir}:{tools}", "TMPDIR": str(home), "NOSYSBASHRC": "1"}
+
+
+class HermeticTests(unittest.TestCase):
+    def test_stubs_stay_first_on_path_when_stdin_is_a_socket(self):
+        with tempfile.TemporaryDirectory() as home:
+            bin_dir = Path(home) / "bin"
+            bin_dir.mkdir()
+            (bin_dir / "nixos-rebuild").write_text("#!/bin/sh\n")
+            (bin_dir / "nixos-rebuild").chmod(0o755)
+            stdin, _ = socket.socketpair()
+            result = subprocess.run(
+                ["bash", "-c", "command -v nixos-rebuild"], env=hermetic_env(home, bin_dir),
+                stdin=stdin, text=True, capture_output=True, timeout=10,
+            )
+            self.assertEqual(result.stdout.strip(), str(bin_dir / "nixos-rebuild"))
 
 
 class DarwinRebuildTests(unittest.TestCase):
