@@ -11,13 +11,6 @@ let
   # rex-client is a requireFile of a gated download that CI cannot fetch.
   buildable = name: _: name != "rex-client" && !builtins.elem name hosts;
   mac = flake.darwinConfigurations."Carters-MacBook-Pro-2";
-  withoutRex = flake // {
-    packages = flake.packages // {
-      ${system} = flake.packages.${system} // {
-        rex-client = pkgs.emptyDirectory;
-      };
-    };
-  };
   nixConfig = (import ../flake.nix).nixConfig;
 in
 {
@@ -27,5 +20,8 @@ in
     extra-trusted-public-keys = ${toString nixConfig.extra-trusted-public-keys}
   '';
   checks = pkgs.linkFarm "checks" (lib.filterAttrs buildable flake.checks.${system});
-  mac = (mac.extendModules { specialArgs.self = withoutRex; }).config.system.build.toplevel;
+  mac =
+    (mac.extendModules {
+      modules = [ { nixpkgs.overlays = [ (final: prev: { rex-client = final.emptyDirectory; }) ]; } ];
+    }).config.system.build.toplevel;
 }
