@@ -22,10 +22,6 @@ sudo() {
 NIX_ENV = '''#!/bin/sh
 printf 'nix-env %s\\n' "$*"
 '''
-# run_darwin_activation detaches through /usr/bin/perl, which only macOS has.
-needs_system_perl = unittest.skipUnless(
-    Path("/usr/bin/perl").exists(), "needs the system perl"
-)
 
 
 class DarwinRebuildTests(unittest.TestCase):
@@ -63,7 +59,6 @@ run_rebuild
             self.assertIn('darwinConfigurations."Test-Mac".system', result.stderr)
             self.assertEqual(result.stdout, "activate:/nix/store/system\n")
 
-    @needs_system_perl
     def test_activation_sets_profile_activates_and_returns_status(self):
         with tempfile.TemporaryDirectory() as home:
             result = self.run_script(MOCK_SUDO + '''
@@ -78,7 +73,6 @@ run_darwin_activation "$HOME/system with spaces"
             self.assertEqual((log.parent / "status").read_text(), "7\n")
             self.assertIn("activated", result.stdout)
 
-    @needs_system_perl
     def test_output_arrives_before_activation_completes(self):
         with tempfile.TemporaryDirectory() as home:
             result = self.run_script(MOCK_SUDO + '''
@@ -120,26 +114,48 @@ run_darwin_activation "$HOME/system with spaces"
 ''', home)
             self.assertEqual(result.returncode, 9, result.stderr)
 
-    @needs_system_perl
+    def start_activation(self, home, activate):
+        installer = self.run_script(
+            MOCK_SUDO + 'run_darwin_activation "$HOME/system with spaces"\n',
+            home, activate=activate, wait=False,
+        )
+        self.addCleanup(installer.kill)
+        log_dir = Path(home) / "Library/Logs/dotfiles-install"
+        self.wait_until(lambda: any("started" in log.read_text() for log in log_dir.glob("*/activate.log")))
+        return installer, next(log_dir.glob("*"))
+
+    def wait_until(self, condition):
+        deadline = time.monotonic() + 5
+        while not condition():
+            self.assertLess(time.monotonic(), deadline)
+            time.sleep(0.05)
+
+    def assert_activation_completes(self, state_dir):
+        status = state_dir / "status"
+        self.wait_until(status.exists)
+        self.assertEqual(status.read_text(), "0\n")
+        self.assertIn("finished", (state_dir / "activate.log").read_text())
+
     def test_activation_survives_installer_process_group_termination(self):
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            with self.subTest(signal=sig.name), tempfile.TemporaryDirectory() as home:
+                installer, state_dir = self.start_activation(home, "echo started; sleep 1; echo finished")
+                os.killpg(installer.pid, sig)
+                installer.wait(timeout=5)
+                self.assert_activation_completes(state_dir)
+
+    def test_activation_ignores_hangup_interrupt_and_termination(self):
         with tempfile.TemporaryDirectory() as home:
-            installer = self.run_script(
-                MOCK_SUDO + 'run_darwin_activation "$HOME/system with spaces"\n',
-                home, activate="echo started; sleep 1; echo finished", wait=False,
+            pid_file = Path(home) / "activation.pid"
+            installer, state_dir = self.start_activation(
+                home, f'echo $$ > "{pid_file}"; echo started; sleep 1; echo finished'
             )
-            log_dir = Path(home) / "Library/Logs/dotfiles-install"
-            deadline = time.monotonic() + 5
-            while not any("started" in log.read_text() for log in log_dir.glob("*/activate.log")):
-                self.assertLess(time.monotonic(), deadline)
-                time.sleep(0.05)
-            os.killpg(installer.pid, signal.SIGTERM)
-            installer.wait(timeout=5)
-            status = next(log_dir.glob("*")) / "status"
-            while not status.exists():
-                self.assertLess(time.monotonic(), deadline)
-                time.sleep(0.05)
-            self.assertEqual(status.read_text(), "0\n")
-            self.assertIn("finished", (status.parent / "activate.log").read_text())
+            activation_group = os.getpgid(int(pid_file.read_text()))
+            self.assertNotEqual(activation_group, installer.pid)
+            for sig in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
+                os.killpg(activation_group, sig)
+            self.assert_activation_completes(state_dir)
+            self.assertEqual(installer.wait(timeout=5), 0)
 
 
 if __name__ == "__main__":

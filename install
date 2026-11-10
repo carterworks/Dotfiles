@@ -244,10 +244,17 @@ follow_rebuild_log() {
 }
 
 # Home Manager restarts T3 and OpenCode during activation, and they signal the
-# installer they host before it can load them again. Detach activation into its
-# own session so it always finishes; the installer only follows its log. It must
-# stay in this login session: nix-darwin needs the GUI session and the
-# terminal's App Management permission to update /Applications.
+# installer they host before it can load them again. Detach activation so it
+# always finishes; the installer only follows its log. It must stay in this
+# login session: nix-darwin needs the GUI session and the terminal's App
+# Management permission to update /Applications, so launchd will not do.
+# macOS has no setsid(1), so job control (set -m) gives activation its own
+# process group and the root shell exits to orphan it. Signals to the installer
+# or its group, the SIGHUP a closing terminal sends its foreground group, and
+# killers that walk the installer's process tree all miss it; HUP, INT and TERM
+# are ignored besides. Only killing the whole session would still reach it.
+# Bash, not sh: busybox sh refuses set -m without a terminal, and dash takes
+# the terminal's foreground group away from the installer.
 run_darwin_activation() {
   local system_path="$1"
   local state_dir
@@ -258,17 +265,15 @@ run_darwin_activation() {
   log_message info "Activation log: ${state_dir}/activate.log"
   touch "${state_dir}/activate.log"
 
-  sudo -H /usr/bin/perl -MPOSIX -e '
-    defined(my $pid = fork) or die "fork: $!\n";
-    exit 0 if $pid;
-    POSIX::setsid();
-    $SIG{$_} = "IGNORE" for qw(HUP INT TERM);
-    exec @ARGV or die "exec: $!\n";
-  ' /bin/sh -c '
+  sudo -H "${BASH}" -c '
     exec </dev/null >>"$1/activate.log" 2>&1
-    NIX_REMOTE=daemon "$3" -p /nix/var/nix/profiles/system --set "$2" && "$2/sw/bin/darwin-rebuild" activate
-    printf "%s\n" "$?" > "$1/status.new"
-    /bin/mv "$1/status.new" "$1/status"
+    trap "" HUP INT TERM
+    set -m
+    (
+      NIX_REMOTE=daemon "$3" -p /nix/var/nix/profiles/system --set "$2" && "$2/sw/bin/darwin-rebuild" activate
+      printf "%s\n" "$?" > "$1/status.new"
+      mv "$1/status.new" "$1/status"
+    ) &
   ' dotfiles-activate "${state_dir}" "${system_path}" "$(command -v nix-env)" || return $?
 
   follow_rebuild_log "${state_dir}/activate.log" "${state_dir}/status"
