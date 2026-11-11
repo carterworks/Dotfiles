@@ -308,53 +308,86 @@ repacks and local builds go up.
 
 ### Tailscale policy (**You**)
 
-In the admin console, under **Access controls**, add the following to the
-tailnet policy file. Get each address with `tailscale ip -4 <host>` from any
-machine on the tailnet, and the routes prostagma advertises with
-`tailscale debug prefs | jq .AdvertiseRoutes` on prostagma.
+In the admin console, under **Access controls**, edit the tailnet policy file.
+**Edit it; never replace it.** The console saves whatever you paste as the
+whole policy, and every device and connection it no longer names is cut off.
+On 2026-11-11 pasting only the lines for CI dropped the rule that let
+everything reach everything, along with the `tag:nas` and `tag:prostagma`
+owners: TrueNAS and prostagma vanished from every other device, and SSH,
+deploys and the TrueNAS mounts on scylla failed until the old rules were back.
+The console's **Logs → Configuration** page keeps each saved policy, so an
+earlier version can be copied back from there.
+
+A bare `*` in `src` matches tagged nodes too, so any rule allowing `*` would
+also apply to CI. Replace such a rule with one that names everything except
+CI, as the first grant below does, and keep every existing tag in
+`tagOwners`: a tagged device that no rule names is unreachable.
+
+The policy as it stood after that fix, with the addresses left out; get each
+with `tailscale ip -4 <host>` from any machine on the tailnet. Your existing
+sections, such as `autoApprovers`, stay as they are:
 
 ```jsonc
-"tagOwners": {
-  "tag:ci": ["autogroup:admin"],
-},
-"hosts": {
-  "prostagma": "<prostagma's 100.x address>",
-  "scylla": "<scylla's 100.x address>",
-  "eltoro": "<eltoro's 100.x address>",
-},
-"grants": [
-  // CI runners may reach the cache port on prostagma and nothing else.
-  {"src": ["tag:ci"], "dst": ["prostagma"], "ip": ["tcp:8199"]},
-],
-"tests": [
-  {
-    "src": "tag:ci",
-    "accept": ["prostagma:8199"],
-    "deny": [
-      "prostagma:22", "prostagma:443",
-      "scylla:22", "eltoro:22",
-      "<an address inside a route prostagma advertises>:443",
-      "1.1.1.1:443",
-    ],
+{
+  "tagOwners": {
+    "tag:nas":       ["autogroup:admin"],
+    "tag:prostagma": ["autogroup:admin"],
+    "tag:ci":        ["autogroup:admin"],
   },
-],
+  "hosts": {
+    "prostagma": "<prostagma's 100.x address>",
+    "scylla":    "<scylla's 100.x address>",
+    "eltoro":    "<eltoro's 100.x address>",
+  },
+  "grants": [
+    // Everything except CI may reach everything. A bare "*" would include CI.
+    {
+      "src": ["autogroup:member", "autogroup:shared", "tag:nas", "tag:prostagma"],
+      "dst": ["*"],
+      "ip":  ["*"],
+    },
+    // CI runners may reach the cache port on prostagma and nothing else.
+    {"src": ["tag:ci"], "dst": ["prostagma"], "ip": ["tcp:8199"]},
+  ],
+  "tests": [
+    {
+      "src": "tag:ci",
+      "accept": ["prostagma:8199"],
+      "deny": [
+        "prostagma:22", "prostagma:443",
+        "scylla:22", "eltoro:22",
+        "192.168.5.252:443",
+        "1.1.1.1:443",
+      ],
+    },
+    // Fails a policy that cuts the servers off from scylla again.
+    {"src": "scylla", "accept": ["prostagma:22", "eltoro:22"]},
+  ],
+}
 ```
 
-Merge these into your existing sections rather than adding second copies. The
-console rejects a policy that breaks a test, but a test checks only the
+The console rejects a policy that breaks a test, but a test checks only the
 destinations it lists: here prostagma's SSH and HTTPS ports, SSH on scylla and
-eltoro, one LAN address and one internet address. Add a `deny` entry for any
-other device you care about.
+eltoro, TrueNAS's LAN address and one internet address for CI, and SSH from
+scylla to both servers. Add an entry for any other device you care about. No
+device advertises a subnet route (2026-11-11, `tailscale debug prefs | jq
+.AdvertiseRoutes` prints `null` on prostagma), so the LAN entry only matters
+once one does.
 
-Before the first CI runner joins, also read the whole policy and confirm:
+After any change to the policy, also read the whole policy and confirm:
 
-- No rule or grant has `src: "*"`. Tagged nodes match `*`, so such a rule
-  applies to CI. Narrow it to `autogroup:member` or the tags that need it.
+- `tagOwners` still lists every tag a device carries, and some rule still
+  names each tagged device as a source.
+- No rule or grant has `src: "*"`.
 - No rule or grant that applies to `tag:ci` reaches `*`, `autogroup:internet`
-  (exit nodes), or a LAN range (prostagma advertises subnet routes).
+  (exit nodes), or a LAN range.
 - No grant to a Tailscale Service (`svc:…`) applies to `tag:ci`. Services have
   their own addresses, which the tests above cannot see.
 - No `ssh` rule applies to `tag:ci`; the tests do not cover Tailscale SSH.
+
+Then check from scylla that nothing else was cut off:
+`tailscale status | grep -E 'prostagma|truenas'` lists both, and
+`ssh prostagma true` succeeds.
 
 Then, under **Settings → OAuth clients**, create a client with the `auth_keys`
 write scope and the tag `tag:ci` only, and store its ID and secret in the
