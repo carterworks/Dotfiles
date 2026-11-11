@@ -114,7 +114,7 @@ in
 
   virtualisation.oci-containers.containers = {
     "qbittorrent-vpn" = {
-      image = "ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:202f2fbbd5d70b2a57ce4fafdd22ef12af2f64ca2f87b277ea7456fe37c9063d";
+      image = "ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:4a2f23a2bd605116bc8f8ef84dd66b95be96b976c91197c158ead0253f0cfb1c";
       autoStart = true;
       ports = [
         "127.0.0.1:38080:8080/tcp"
@@ -148,7 +148,7 @@ in
     };
 
     prowlarr = mkArrContainer {
-      image = "ghcr.io/home-operations/prowlarr:2.3.4.5307@sha256:4df82f58d39fde43a206c4bba126226b63ecf2394df202e94c31afc9faae3ed9";
+      image = "ghcr.io/home-operations/prowlarr:2.7.0.5723@sha256:fcf7498692f97698ea8b8f7078a0f81120a16e7354e4c232b5e3810e3e783dff";
       envPrefix = "PROWLARR";
       instanceName = "Prowlarr";
       port = 30050;
@@ -174,7 +174,7 @@ in
     };
 
     sonarr = mkArrContainer {
-      image = "ghcr.io/home-operations/sonarr:4.0.17.2950@sha256:bdc787fe07bb7c0b6af9c030764902f70092ec9a426e52a36716d3a13917fe2d";
+      image = "ghcr.io/home-operations/sonarr:4.0.20.3012@sha256:1f19eb5e0f421418c1a956bbe01310a0141423afe28bd9a4b1dcb8629ff2bce2";
       envPrefix = "SONARR";
       instanceName = "Sonarr";
       port = 30113;
@@ -185,7 +185,7 @@ in
     };
 
     radarr = mkArrContainer {
-      image = "ghcr.io/home-operations/radarr:6.1.1.10317@sha256:5e08c0eefd2770d1d29395c4f84fe5bf7dfc3a986598021306a5d8ac017a3989";
+      image = "ghcr.io/home-operations/radarr:6.4.4.10685@sha256:1902ad2c08e9bac276ff9a1429af2eaa2f3c635a51f138f1b3eb734995171537";
       envPrefix = "RADARR";
       instanceName = "Radarr";
       port = 30025;
@@ -196,7 +196,7 @@ in
     };
 
     bazarr = {
-      image = "ghcr.io/home-operations/bazarr:1.6.0@sha256:133a3064b0b9ea18ad66cc88b6863f91b9c05dc32212805843fcfce4c4b8eb05";
+      image = "ghcr.io/home-operations/bazarr:1.6.2@sha256:b8434a7339ebd9c2bfe4464c28db79944e0f52f47da85345fc7e0563c19f83ac";
       autoStart = true;
       ports = [ "127.0.0.1:6767:6767/tcp" ];
       environment = appEnvironment // {
@@ -215,7 +215,7 @@ in
       # The official image has no PUID/PGID init, so identity comes from
       # --user in appExtraOptions and the media group comes from
       # --group-add, which is what grants read/write on the library.
-      image = "ghcr.io/advplyr/audiobookshelf:2.36.1@sha256:3528a93b6442ffe54bd46771bbbab7c97084e1101071586d9dc2254f30bb4358";
+      image = "ghcr.io/advplyr/audiobookshelf:2.37.2@sha256:b897c33f05972fb1bf484f7487bc878fa91ec8691335c1db6e2929c3a7658efa";
       autoStart = true;
       ports = [ "127.0.0.1:13378:13378/tcp" ];
       environment = appEnvironment // {
@@ -232,7 +232,7 @@ in
     };
 
     backrest = {
-      image = "garethgeorge/backrest:latest@sha256:9c9966b5c285ec791a6b06cb4545fa0247424d05442e12f9558b4322d9f8a15f";
+      image = "garethgeorge/backrest:latest@sha256:b852979754281026230cc69fb11428e6d57c9a97784ab4a444ffc7934c53a215";
       autoStart = true;
       ports = [ "127.0.0.1:9898:9898/tcp" ];
       environment = appEnvironment // {

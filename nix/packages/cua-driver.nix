@@ -4,7 +4,7 @@
 }:
 
 let
-  version = "0.45.4";
+  version = "0.47.9";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 in
 pkgs.stdenvNoCC.mkDerivation {
@@ -19,7 +19,7 @@ pkgs.stdenvNoCC.mkDerivation {
     tag = "cua-driver-rs-v${version}";
     asset = "cua-driver-rs-${version}-linux-x86_64-binary.tar.gz";
     inherit version;
-    hash = "sha256-XRv5MuzvlTjs27VP5wqctCiWa7E5DKQvVBHrSXPadto=";
+    hash = "sha256-VR6tBTbwyVKIStS8eCgfH8gh73wcqYJsukQPtUwtzfQ=";
   };
 
   nativeBuildInputs = [

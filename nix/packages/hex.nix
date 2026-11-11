@@ -8,18 +8,18 @@
 
 let
   pname = "hex";
-  version = "3.3.0";
+  version = "3.4.0";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # Fetch the prebuilt releases and skip the Rust/Vulkan compile.
   platformPackages = {
     aarch64-darwin = {
       asset = "hex-${version}-macos-arm64.zip";
-      hash = "sha256-HCjWoeeQMj7xmbSBvJIx5q2OcKF4W+hJE+Cnvwpuuzk=";
+      hash = "sha256-GrAkLcO7ARyIVokDy/Hp0wMQhnpG9RaDCYU9b4tMplA=";
     };
     x86_64-linux = {
       asset = "hex-${version}-linux-x64";
-      hash = "sha256-6MezouvrHX2l1idtXyUUWJHVIXjjY2NHyzrDMfdmJiI=";
+      hash = "sha256-f4EyoiAjOMG1LDYRPSPXQDz5HyILzb2e7IK8cm9fgCk=";
     };
   };
   platformPackage = packageUtils.selectPlatformPackage pname platformPackages;
