@@ -19,7 +19,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. eltoro runs a chain-based generation, so this can be done now.
-- [ ] `nix/hosts/prostagma/default.nix`: drop the `d /var/lib/secrets/bazarr` tmpfiles rule after the old secrets are removed (stage 7 of [docs/rollout.md](docs/rollout.md)); those files are now admin-only records in fnox.
+- [x] `nix/hosts/prostagma/default.nix`: drop the `d /var/lib/secrets/bazarr` tmpfiles rule after the old secrets are removed (stage 7 of [docs/rollout.md](docs/rollout.md)); those files are now admin-only records in fnox.
 - [ ] prostagma: find out why the Beszel agent does not report the Intel GPU, which `nix/hosts/prostagma/beszel.nix` configures from sysfs; the cause is unknown ("What each agent collects" in [docs/monitoring.md](docs/monitoring.md#what-each-agent-collects)).
 - [ ] Move scylla's `truenas-smb` credential into fnox and back up scylla's SSH host keys as admin-only records; both need `sudo` on scylla ("Still outside fnox" in `docs/secrets.md`).
 - [ ] eltoro: close DNS exfiltration. `hermes` can send any name to the local resolver and MagicDNS, which forward it upstream as another user; this needs a filtering resolver.
