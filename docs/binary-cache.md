@@ -280,7 +280,8 @@ cache adds (step 3), so any change to it must keep all of these:
   input to change it.
 - **`release` follows the cache.** `release` advances only when all three
   hosts' pushes succeeded. Missing secrets or an unreachable cache leave the
-  build green and `release` where it was; a push that fails turns the job red.
+  build green, `release` where it was and the `release` job red; a push that
+  fails turns the host's job red.
 
 ### Why an OAuth client and not workload identity
 

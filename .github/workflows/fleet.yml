@@ -110,15 +110,19 @@ jobs:
       - name: Check for the binary cache secrets
         id: secrets
         if: matrix.cache && github.ref == 'refs/heads/main'
-        # Only whether they are set, so this step never holds their values.
+        # Only the names of the unset ones, so this step never holds a value.
         env:
-          PRESENT: ${{ secrets.ATTIC_TOKEN != '' && secrets.TS_OAUTH_CLIENT_ID != '' && secrets.TS_OAUTH_SECRET != '' }}
+          MISSING: >-
+            ${{ secrets.ATTIC_TOKEN == '' && 'ATTIC_TOKEN' || '' }}
+            ${{ secrets.TS_OAUTH_CLIENT_ID == '' && 'TS_OAUTH_CLIENT_ID' || '' }}
+            ${{ secrets.TS_OAUTH_SECRET == '' && 'TS_OAUTH_SECRET' || '' }}
         run: |
-          if [[ $PRESENT == true ]]; then
+          read -ra missing <<<"$MISSING"
+          if (( ${#missing[@]} == 0 )); then
             echo present=true >>"$GITHUB_OUTPUT"
           else
             echo "${{ matrix.name }}=skipped" >>"$GITHUB_OUTPUT"
-            echo "::notice title=Cache push skipped::The binary-cache Environment has no secrets yet (docs/binary-cache.md), so release does not advance."
+            echo "::warning title=Cache push skipped::The binary-cache Environment lacks ${missing[*]} (docs/binary-cache.md), so release does not advance."
           fi
       # The action marks its nodes ephemeral and preauthorised itself; it has
       # no input to change that. Its cache is off because a hit installs the
@@ -161,15 +165,24 @@ jobs:
   release:
     needs: build
     # A nightly moves main first and then release itself.
-    if: >-
-      github.ref == 'refs/heads/main' && !inputs.commit
-      && needs.build.outputs.scylla == 'pushed'
-      && needs.build.outputs.prostagma == 'pushed'
-      && needs.build.outputs.eltoro == 'pushed'
+    if: github.ref == 'refs/heads/main' && !inputs.commit
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      # A skipped release job would leave the run green while the servers wait
+      # for a commit that never comes, so a host missing from the cache fails it.
+      - name: Check that every host pushed
+        env:
+          CACHE: >-
+            scylla=${{ needs.build.outputs.scylla }}
+            prostagma=${{ needs.build.outputs.prostagma }}
+            eltoro=${{ needs.build.outputs.eltoro }}
+        run: |
+          if [[ $CACHE != "scylla=pushed prostagma=pushed eltoro=pushed" ]]; then
+            echo "::error title=Not every host pushed::Not every host is in the binary cache ($CACHE), so release stays where it was (docs/ci.md, \"When it goes red\")."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
