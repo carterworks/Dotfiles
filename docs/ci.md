@@ -51,7 +51,9 @@ builds software. Two workflows do it:
    ([binary-cache.md](binary-cache.md)) with the flake's own Attic client.
 3. When every job passed and all three pushes succeeded, the `release` job
    fast-forwards the `release` branch to that commit, creating it the first
-   time.
+   time. When every job passed but a host did not push, the `release` job
+   fails with "Not every host pushed", so the run is red rather than green
+   with `release` silently left behind.
 4. The servers upgrade from `github:carterworks/dotfiles/release` every night
    ([auto-upgrade.md](auto-upgrade.md)), so every path they need is already in
    the cache or upstream.
@@ -61,16 +63,17 @@ newer one leaves it alone.
 
 A cache push ends one of four ways:
 
-| Result | Job | `release` |
-|---|---|---|
-| pushed | green | advances when all three hosts pushed |
-| skipped: the `binary-cache` Environment has no secrets | green, with a notice | stays |
-| unreachable: the tailnet join or the cache did not answer | green, with a warning | stays |
-| failed: the push started and errored (an expired token, a full disk) | red | stays |
+| Result | Host job | `release` job | `release` |
+|---|---|---|---|
+| pushed | green | green | advances when all three hosts pushed |
+| skipped: a `binary-cache` Environment secret is unset | green, with a warning naming the unset secrets | red | stays |
+| unreachable: the tailnet join or the cache did not answer | green, with a warning | red | stays |
+| failed: the push started and errored (an expired token, a full disk) | red | skipped | stays |
 
-An unreachable cache does not make a build wrong, so the job stays green, but
-nothing it built is in the cache, so `release` waits for the next green run
-on `main`.
+A skipped or unreachable push does not make a build wrong, so the host job
+stays green, but nothing it built is in the cache, so `release` waits for the
+next run on `main` in which all three push, and the `release` job is red until
+then.
 
 ### When `release` does not move
 
@@ -198,8 +201,9 @@ to save at most a day.
    OAuth client. Nothing in the workflows changes afterwards; the next run on
    `main` pushes.
 
-Until then, every run on `main` reports "Cache push skipped" and `release` does
-not exist yet.
+Until then, every run on `main` warns "Cache push skipped" with the unset
+secrets' names, its `release` job fails with "Not every host pushed", and
+`release` does not exist yet.
 
 ## By hand
 
@@ -259,6 +263,11 @@ kind of failure it was.
   and release.
 - **A host's push failed**: usually an expired `ATTIC_TOKEN`; rotate it
   ([binary-cache.md](binary-cache.md) step 3) and re-run the failed jobs.
+- **Not every host pushed** (Fleet's `release` job): every build passed but
+  `release` did not move. The host jobs' "Cache push skipped" warning names
+  each unset `binary-cache` Environment secret; set it
+  ([binary-cache.md](binary-cache.md) steps 3 and 4). A "Cache unreachable"
+  warning is the unreachable cache above. Then run Fleet on `main` by hand.
 
 ## Moving `release` back
 
