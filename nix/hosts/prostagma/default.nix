@@ -239,8 +239,6 @@ in
   # ACLs, so setfacl fails with EOPNOTSUPP after walking ~500k entries on every
   # activation. The copyparty service user can already read that directory.
   systemd.tmpfiles.rules = [
-    "d /var/lib/secrets/bazarr 0700 root root -"
-
     # Local directories on the container root filesystem (mountpoint parents).
     "d /mnt/truenas 0755 root root -"
     "d /mnt/truenas/media-direct 0755 root root -"
