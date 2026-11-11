@@ -122,9 +122,32 @@ over three hours after Nightly is due in either season. That covers GitHub
 starting it late, which can be most of an hour, and a nixpkgs update that takes
 another hour to build.
 
-GitHub turns off a public repository's schedules after 60 days without
-activity. Nightly's own commits normally prevent that; if the Actions tab says
-Nightly is disabled, turn it back on there.
+### When Nightly does not start
+
+Nothing reports a schedule that never fires: no run means no red run and no
+email. Check that the latest scheduled run is from the last day, and the
+workflow's state:
+
+```sh
+gh run list --repo carterworks/dotfiles --workflow nightly.yml --event schedule -L 3
+gh api repos/carterworks/dotfiles/actions/workflows/nightly.yml --jq .state
+```
+
+- **`disabled_inactivity`**: GitHub turns off a public repository's schedules
+  after 60 days without activity. Turn it back on with
+  `gh workflow enable nightly.yml --repo carterworks/dotfiles`.
+- **`disabled_manually`**: someone paused it ([By hand](#by-hand)); turn it on
+  the same way.
+- **`active`, but no scheduled run for over a day**: GitHub documents that it
+  may drop scheduled runs under load, and nothing in the repository can make
+  it start one. The first slot after Nightly reached `main` (2026-11-11
+  07:17 UTC) started no run, although the file passes actionlint, the
+  workflow is active, the repository is public and not a fork, Actions are
+  enabled and `main` is the default branch. GitHub reads a workflow's
+  schedule again when a push to the default branch changes the file;
+  disabling and enabling the workflow is reported to do the same (unverified
+  here). Do either, then run Nightly by hand ([By hand](#by-hand)) so that
+  night's update is not lost.
 
 ### What the gate catches
 
