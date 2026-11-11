@@ -42,7 +42,7 @@ or a deploy; nothing in the repository does them.
   The fingerprint is a hash of the machine ID, which any user on that host can
   read, so the token is the only credential an agent holds.
   Each host has its own token, a secret in fnox (`BESZEL_TOKEN_<HOST>`),
-  encrypted to the hub and that host only.
+  encrypted to the hub, that host and the admin key only.
 - **Systems are declared.** On every start the hub writes its `config.yml`
   from the host list in `beszel.nix` and the tokens, and Beszel syncs its
   systems to it. A system added in the web interface is deleted at the next
