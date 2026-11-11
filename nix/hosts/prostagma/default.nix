@@ -220,7 +220,6 @@ in
   ];
 
   networking.hostName = "prostagma";
-  networking.hosts."100.91.175.4" = [ "homeassistant.local" ];
   networking.firewall.allowedTCPPorts = [
     copypartyPort
   ];
