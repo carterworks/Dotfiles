@@ -480,3 +480,15 @@ ssh root@eltoro 'systemd-tmpfiles --create && systemctl restart hermes-gateway h
 - **The admin's own keys and personal stores on prostagma**: the admin age key,
   a personal fnox config, and an admin SSH key. They are not deployment inputs.
   The age key's presence there is an accepted risk (see the top of this page).
+- **The CI secrets** in the `binary-cache` GitHub Environment: `ATTIC_TOKEN`,
+  `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET`. GitHub cannot read them back, so
+  they cannot be backed up; mint new ones instead (see
+  [Binary cache](binary-cache.md)).
+- **The owner's personal fnox store** on each workstation,
+  `~/.config/fnox/config.toml`, which holds API tokens for workstation tools
+  such as `CONTEXT7_API_KEY` and is loaded by `fnox activate` in
+  `nix/modules/home/workstation.nix`. It is encrypted with fnox to the admin
+  key, but lives outside this repository.
+- **eltoro's workspace deploy key**, the write-enabled GitHub key for
+  `/var/lib/hermes/workspace`. It is configured out of band (see
+  [eltoro](eltoro.md#application-workspace)); if lost, add a new one on GitHub.
