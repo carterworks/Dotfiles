@@ -2,7 +2,10 @@
 
 What is left of the owner's first rollout of the fleet configuration, in order.
 Pull requests #3 and #4 are merged, all four hosts are deployed from `main`,
-the cache `fleet` exists, and Nightly runs (2026-11-10). Each step
+the cache `fleet` exists, and Nightly is active on `main` (2026-11-10), though
+GitHub has not started it on its schedule yet (2026-11-11). Nothing updates the
+servers until stage 5 is done: `release` does not exist, and their unattended
+upgrade is off until the cache's public key is set. Each step
 names what to do and links to the runbook section that has the commands. You
 can stop safely at the end of any stage. **No return** marks a step that cannot
 simply be undone.
@@ -88,24 +91,47 @@ cannot show the two checks below.
 
 ## 5. Binary cache and `release`
 
+Until step 1 is done, every Fleet run on `main` is red in its `release` job
+("Not every host pushed"), and every Nightly that merges an update is red with
+"a binary-cache Environment secret is unset" ([CI, when it goes
+red](ci.md#when-it-goes-red)). On 2026-11-11 the Environment held only
+`ATTIC_TOKEN`.
+
 1. Add `tag:ci` to the tailnet policy with its tests, check the whole policy,
-   and create the OAuth client. Store its two secrets in the `binary-cache`
-   Environment, next to `ATTIC_TOKEN`
-   ([Tailscale policy](binary-cache.md#tailscale-policy-you)).
+   and create the OAuth client with the `auth_keys` write scope and the tag
+   `tag:ci` only. Store its ID and secret as `TS_OAUTH_CLIENT_ID` and
+   `TS_OAUTH_SECRET` in the `binary-cache` Environment, next to `ATTIC_TOKEN`
+   ([Tailscale policy](binary-cache.md#tailscale-policy-you)). Check by name
+   only: `gh secret list --repo carterworks/dotfiles --env binary-cache` lists
+   all three, and `gh secret list --repo carterworks/dotfiles` lists none of
+   them ([Binary cache, step 0](binary-cache.md#0-github-environment-before-merging-the-ci-workflows-you)).
 2. Put a reminder in your calendar for about 2027-01-30 to
    [rotate `ATTIC_TOKEN`](binary-cache.md#rotate-the-ci-token), which expires
    2027-02-08. After that every push fails and `release` stops moving.
-3. Run Fleet on `main` and confirm that all three hosts pushed and `release`
-   was created ([CI, from a push to a server](ci.md#from-a-push-to-a-server)).
+3. Create `release`: run Fleet on `main`
+   (`gh workflow run fleet.yml --repo carterworks/dotfiles --ref main`) and
+   confirm that no host job warns "Cache push skipped" or "Cache unreachable",
+   the `release` job is green, and
+   `git ls-remote --heads https://github.com/carterworks/dotfiles release`
+   prints `main`'s commit
+   ([CI, from a push to a server](ci.md#from-a-push-to-a-server)). The
+   `release: no rewrite` ruleset is already active (2026-11-11).
    **No return**: whatever reaches `main` now reaches `release`.
-4. Set the cache's public key, `fleet:FxyZ66qA3l/VyllFphclDlUz1qULGhYdDaXjWHeg+MU=`
-   (check it against `attic cache info prostagma:fleet`), commit it to `main`,
-   and deploy scylla, prostagma and eltoro by hand
+4. Confirm the nightly loop: the morning after, the latest scheduled Nightly
+   run is from the last day, green, and reads "main and release are now
+   `<commit>`." or "Nothing to update." If there is no scheduled run, follow
+   [CI, when Nightly does not start](ci.md#when-nightly-does-not-start).
+5. Set the cache's public key, `fleet:FxyZ66qA3l/VyllFphclDlUz1qULGhYdDaXjWHeg+MU=`
+   (check it against `attic cache info prostagma:fleet`), as the default of
+   `dotfiles.binaryCache.publicKey` in `nix/modules/nixos/binary-cache.nix`,
+   commit it to `main`, and deploy scylla, prostagma and eltoro by hand
    ([Binary cache, turn the client on](binary-cache.md#turn-the-client-on)).
    eltoro reaches the cache under the current tailnet policy (checked
    2026-11-10); if the policy has changed since, check again first.
    **No return**: both servers now upgrade themselves to `release` every night
-   ([Server auto-upgrade](auto-upgrade.md)).
+   ([Server auto-upgrade](auto-upgrade.md)). Check
+   `systemctl list-timers nixos-upgrade.timer` on prostagma and eltoro shows
+   the next run.
 
 ## 6. The Mac
 

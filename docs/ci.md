@@ -6,7 +6,7 @@ builds software. Two workflows do it:
 | Workflow | Triggers | Jobs | Token permissions |
 |---|---|---|---|
 | [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux, checks-mac); `release` | `build`: `contents: read`; `release`: `contents: write` |
-| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read` |
+| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `contents: read` |
 
 ## Trust roots
 
@@ -51,7 +51,9 @@ builds software. Two workflows do it:
    ([binary-cache.md](binary-cache.md)) with the flake's own Attic client.
 3. When every job passed and all three pushes succeeded, the `release` job
    fast-forwards the `release` branch to that commit, creating it the first
-   time.
+   time. When every job passed but a host did not push, the `release` job
+   fails with "Not every host pushed", so the run is red rather than green
+   with `release` silently left behind.
 4. The servers upgrade from `github:carterworks/dotfiles/release` every night
    ([auto-upgrade.md](auto-upgrade.md)), so every path they need is already in
    the cache or upstream.
@@ -61,16 +63,17 @@ newer one leaves it alone.
 
 A cache push ends one of four ways:
 
-| Result | Job | `release` |
-|---|---|---|
-| pushed | green | advances when all three hosts pushed |
-| skipped: the `binary-cache` Environment has no secrets | green, with a notice | stays |
-| unreachable: the tailnet join or the cache did not answer | green, with a warning | stays |
-| failed: the push started and errored (an expired token, a full disk) | red | stays |
+| Result | Host job | `release` job | `release` |
+|---|---|---|---|
+| pushed | green | green | advances when all three hosts pushed |
+| skipped: a `binary-cache` Environment secret is unset | green, with a warning naming the unset secrets | red | stays |
+| unreachable: the tailnet join or the cache did not answer | green, with a warning | red | stays |
+| failed: the push started and errored (an expired token, a full disk) | red | skipped | stays |
 
-An unreachable cache does not make a build wrong, so the job stays green, but
-nothing it built is in the cache, so `release` waits for the next green run
-on `main`.
+A skipped or unreachable push does not make a build wrong, so the host job
+stays green, but nothing it built is in the cache, so `release` waits for the
+next run on `main` in which all three push, and the `release` job is red until
+then.
 
 ### When `release` does not move
 
@@ -100,7 +103,10 @@ At 07:17 UTC, 00:17 in Denver in winter and 01:17 in summer, Nightly:
 5. if everything is green, fast-forwards `main` to the commit and then
    advances `release` as above;
 6. writes a summary of what it attempted and what happened, and fails the run
-   if anything needs you.
+   if anything needs you. On a night with nothing else to report, that
+   includes a `release` that does not exist or is behind `main`, so a
+   `release` left behind by a Fleet run, or never created, does not hide
+   behind "Nothing to update."
 
 When `./update` exits 3, some items failed: they are left out, the rest are
 built and merged as usual, and the run still ends red with the failed items
@@ -116,9 +122,32 @@ over three hours after Nightly is due in either season. That covers GitHub
 starting it late, which can be most of an hour, and a nixpkgs update that takes
 another hour to build.
 
-GitHub turns off a public repository's schedules after 60 days without
-activity. Nightly's own commits normally prevent that; if the Actions tab says
-Nightly is disabled, turn it back on there.
+### When Nightly does not start
+
+Nothing reports a schedule that never fires: no run means no red run and no
+email. Check that the latest scheduled run is from the last day, and the
+workflow's state:
+
+```sh
+gh run list --repo carterworks/dotfiles --workflow nightly.yml --event schedule -L 3
+gh api repos/carterworks/dotfiles/actions/workflows/nightly.yml --jq .state
+```
+
+- **`disabled_inactivity`**: GitHub turns off a public repository's schedules
+  after 60 days without activity. Turn it back on with
+  `gh workflow enable nightly.yml --repo carterworks/dotfiles`.
+- **`disabled_manually`**: someone paused it ([By hand](#by-hand)); turn it on
+  the same way.
+- **`active`, but no scheduled run for over a day**: GitHub documents that it
+  may drop scheduled runs under load, and nothing in the repository can make
+  it start one. The first slot after Nightly reached `main` (2026-11-11
+  07:17 UTC) started no run, although the file passes actionlint, the
+  workflow is active, the repository is public and not a fork, Actions are
+  enabled and `main` is the default branch. GitHub reads a workflow's
+  schedule again when a push to the default branch changes the file;
+  disabling and enabling the workflow is reported to do the same (unverified
+  here). Do either, then run Nightly by hand ([By hand](#by-hand)) so that
+  night's update is not lost.
 
 ### What the gate catches
 
@@ -198,8 +227,9 @@ to save at most a day.
    OAuth client. Nothing in the workflows changes afterwards; the next run on
    `main` pushes.
 
-Until then, every run on `main` reports "Cache push skipped" and `release` does
-not exist yet.
+Until then, every run on `main` warns "Cache push skipped" with the unset
+secrets' names, its `release` job fails with "Not every host pushed", and
+`release` does not exist yet.
 
 ## By hand
 
@@ -257,8 +287,21 @@ kind of failure it was.
   "Behaviour when the cache is down"), then run Fleet on `main` by hand
   (`gh workflow run fleet.yml --repo carterworks/dotfiles --ref main`) to push
   and release.
+- **A binary-cache Environment secret is unset**: `main` moved, `release` did
+  not, and the build jobs' "Cache push skipped" warning names the unset
+  secrets. Set them ([binary-cache.md](binary-cache.md) steps 3 and 4), then
+  run Fleet on `main` by hand as above.
+- **release is behind main** or **could not compare release with main**:
+  nothing else went wrong tonight, but `release` is older than `main` or does
+  not exist. Open the latest Fleet run on `main`; a push to `main` still
+  building when the report ran also shows this, and clears with that run.
 - **A host's push failed**: usually an expired `ATTIC_TOKEN`; rotate it
   ([binary-cache.md](binary-cache.md) step 3) and re-run the failed jobs.
+- **Not every host pushed** (Fleet's `release` job): every build passed but
+  `release` did not move. The host jobs' "Cache push skipped" warning names
+  each unset `binary-cache` Environment secret; set it
+  ([binary-cache.md](binary-cache.md) steps 3 and 4). A "Cache unreachable"
+  warning is the unreachable cache above. Then run Fleet on `main` by hand.
 
 ## Moving `release` back
 
