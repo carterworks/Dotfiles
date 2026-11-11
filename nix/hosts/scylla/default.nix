@@ -1,4 +1,5 @@
 {
+  fleet,
   inputs,
   lib,
   pkgs,
@@ -6,7 +7,7 @@
 }:
 
 let
-  truenasHost = "100.80.16.49";
+  truenasHost = "truenas.${fleet.tailnetDomain}";
 
   truenasSmbOptions = [
     "credentials=%d/truenas-smb.creds"
