@@ -131,18 +131,13 @@ The tailnet policy, the OAuth client and its two secrets are in place, and
 ## 7. Remove old secrets
 
 The old plain-text copies are gone from prostagma and eltoro, each checked by
-hash against fnox first (2026-11-11). What remains:
+hash against fnox first, the removed Bifrost service's keys are revoked, and
+PodMaker's feed token is rotated after it stopped logging it (2026-11-11). What
+remains:
 
-1. Revoke at their source the old keys of the removed Bifrost service
-   (OpenRouter, OpenCode Zen, Hugging Face, Fastmail). None of them is a key
-   still in use; their files are deleted.
-2. Rotate PodMaker's feed token once a build that no longer logs it is
-   running, and drop the journal entries that hold the old one.
-3. Change the short passwords, if decision 3 says so
+1. Change the short passwords, if decision 3 says so
    ([Secrets, rotate a secret](secrets.md#rotate-a-secret)).
-4. Keep or delete the app backups in prostagma's recovery archive under
-   `/srv/apps/archive/`, which may hold those apps' own API keys.
-5. Two leftovers on prostagma are not secrets and can go any time:
+2. Two leftovers on prostagma are not secrets and can go any time:
    `/root/reindex`, and the unreferenced store paths, which a garbage
    collection removes.
 
