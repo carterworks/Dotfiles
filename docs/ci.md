@@ -6,7 +6,7 @@ builds software. Two workflows do it:
 | Workflow | Triggers | Jobs | Token permissions |
 |---|---|---|---|
 | [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux, checks-mac); `release` | `build`: `contents: read`; `release`: `contents: write` |
-| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read` |
+| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `contents: read` |
 
 ## Trust roots
 
@@ -103,7 +103,10 @@ At 07:17 UTC, 00:17 in Denver in winter and 01:17 in summer, Nightly:
 5. if everything is green, fast-forwards `main` to the commit and then
    advances `release` as above;
 6. writes a summary of what it attempted and what happened, and fails the run
-   if anything needs you.
+   if anything needs you. On a night with nothing else to report, that
+   includes a `release` that does not exist or is behind `main`, so a
+   `release` left behind by a Fleet run, or never created, does not hide
+   behind "Nothing to update."
 
 When `./update` exits 3, some items failed: they are left out, the rest are
 built and merged as usual, and the run still ends red with the failed items
@@ -261,6 +264,14 @@ kind of failure it was.
   "Behaviour when the cache is down"), then run Fleet on `main` by hand
   (`gh workflow run fleet.yml --repo carterworks/dotfiles --ref main`) to push
   and release.
+- **A binary-cache Environment secret is unset**: `main` moved, `release` did
+  not, and the build jobs' "Cache push skipped" warning names the unset
+  secrets. Set them ([binary-cache.md](binary-cache.md) steps 3 and 4), then
+  run Fleet on `main` by hand as above.
+- **release is behind main** or **could not compare release with main**:
+  nothing else went wrong tonight, but `release` is older than `main` or does
+  not exist. Open the latest Fleet run on `main`; a push to `main` still
+  building when the report ran also shows this, and clears with that run.
 - **A host's push failed**: usually an expired `ATTIC_TOKEN`; rotate it
   ([binary-cache.md](binary-cache.md) step 3) and re-run the failed jobs.
 - **Not every host pushed** (Fleet's `release` job): every build passed but

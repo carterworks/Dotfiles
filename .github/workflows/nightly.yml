@@ -142,6 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      contents: read
     steps:
       - name: Report
         env:
@@ -185,6 +186,18 @@ jobs:
           [[ $STATUS != 3 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
           if [[ $MAIN == success && $CACHE == *unreachable* ]]; then
             problems+=("main moved but release did not: the binary cache was unreachable")
+          fi
+          if [[ $MAIN == success && $CACHE == *skipped* ]]; then
+            problems+=("main moved but release did not: a binary-cache Environment secret is unset; the build jobs' warnings name it")
+          fi
+          # A night with nothing to update builds nothing, so only this notices
+          # a release that no run on main has created or that has fallen behind.
+          if (( ${#problems[@]} == 0 )); then
+            if ! behind=$(gh api "repos/$GITHUB_REPOSITORY/compare/release...main" --jq .ahead_by); then
+              problems+=("could not compare release with main; release may not exist yet")
+            elif (( behind > 0 )); then
+              problems+=("release is $behind commits behind main; see the latest Fleet run on main")
+            fi
           fi
 
           if [[ -z $COMMIT ]]; then
