@@ -118,9 +118,12 @@ A push made with the workflow's own token starts no other workflow, so moving
 released that commit itself. No personal access token is involved.
 
 The servers upgrade at 04:30 Denver time ([auto-upgrade.md](auto-upgrade.md)),
-over three hours after Nightly is due in either season. That covers GitHub
-starting it late, which can be most of an hour, and a nixpkgs update that takes
-another hour to build.
+over three hours after Nightly is due in either season, enough for a late
+start of up to two hours and a nixpkgs update that takes another hour to build.
+GitHub can start it much later: the first scheduled run (2026-11-11) started at
+15:15 UTC, eight hours after its 07:17 slot and after both servers' upgrade
+time. A run that late is not lost, only a day behind: the servers take its
+commit at their next nightly upgrade.
 
 ### When Nightly does not start
 
@@ -139,14 +142,12 @@ gh api repos/carterworks/dotfiles/actions/workflows/nightly.yml --jq .state
 - **`disabled_manually`**: someone paused it ([By hand](#by-hand)); turn it on
   the same way.
 - **`active`, but no scheduled run for over a day**: GitHub documents that it
-  may drop scheduled runs under load, and nothing in the repository can make
-  it start one. The first slot after Nightly reached `main` (2026-11-11
-  07:17 UTC) started no run, although the file passes actionlint, the
-  workflow is active, the repository is public and not a fork, Actions are
-  enabled and `main` is the default branch. GitHub reads a workflow's
-  schedule again when a push to the default branch changes the file;
-  disabling and enabling the workflow is reported to do the same (unverified
-  here). Do either, then run Nightly by hand ([By hand](#by-hand)) so that
+  delays scheduled runs under load and may drop them, and nothing in the
+  repository can make it start one. Allow for a late start before acting: the
+  first scheduled run (2026-11-11) started eight hours after its slot. GitHub
+  reads a workflow's schedule again when a push to the default branch changes
+  the file; disabling and enabling the workflow is reported to do the same
+  (unverified here). Do either, then run Nightly by hand ([By hand](#by-hand)) so that
   night's update is not lost.
 
 ### What the gate catches
