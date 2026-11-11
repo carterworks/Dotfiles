@@ -130,22 +130,14 @@ The tailnet policy, the OAuth client and its two secrets are in place, and
 
 ## 7. Remove old secrets
 
-Wait until the services have run on the new secrets through a reboot or an
-unattended upgrade.
+The old plain-text copies are gone from prostagma and eltoro, each checked by
+hash against fnox first, the removed Bifrost service's keys are revoked, and
+PodMaker's feed token is rotated after it stopped logging it (2026-11-11). What
+remains:
 
-1. **No return:** delete the ten renamed files on prostagma
-   ([Secrets, clean-up](secrets.md#clean-up-removing-the-old-plain-text-files)).
-2. Classify the unresolved entries in the private clean-up list
-   (`~/.config/dotfiles-private/secrets-cleanup.md`) without opening them in a
-   shared session. Treat an old system backup as possibly holding an earlier
-   SSH host key.
-3. **No return:** run the private list's removals on prostagma and eltoro.
-   Never touch `/var/lib/secrets/attic/`, the cache's own secret.
-4. Revoke at their source the credentials of services that are not in the Nix
-   configuration, whether or not a hand-started container still uses them.
-5. Change the short passwords, if decision 3 says so
+1. Change the short passwords, if decision 3 says so
    ([Secrets, rotate a secret](secrets.md#rotate-a-secret)).
-6. Two leftovers on prostagma are not secrets and can go any time:
+2. Two leftovers on prostagma are not secrets and can go any time:
    `/root/reindex`, and the unreferenced store paths, which a garbage
    collection removes.
 

@@ -13,7 +13,8 @@ module, `nix/modules/nixos/secrets.nix`.
 - The admin age key also exists on prostagma, so root or the admin user there
   can read every value, including the admin-only ones.
 - The admin-only records include eltoro's agent store (its age key, its own
-  fnox store, `.env` and provider logins) and both servers' SSH host keys.
+  fnox store, `.env` and provider logins), Backrest's off-site repository
+  password and S3 keys, and both servers' SSH host keys.
 
 ## How it works
 
@@ -180,7 +181,8 @@ themselves:
 - **The admin key leaked:** change every value in the store at its source.
   That includes each credential inside eltoro's agent store (log the providers
   out and back in, and rotate every API key and token in its `.env` and fnox
-  store), the operator records, and both servers' SSH host keys. Then
+  store), the operator records, Backrest's repository password and S3 keys,
+  and both servers' SSH host keys. Then
   [rotate the admin key](#rotate-the-admin-key).
 - **A host's key leaked:** change every value addressed to that host (every
   secret with that host's provider), then give the host a new SSH host key and
@@ -251,6 +253,13 @@ no `sudo`, so drop it.
 
 A rebuilt host with a fresh key instead fails every `fnox-secret-*` unit, and
 only the services that require them, until it is enrolled as above.
+
+### Restore Backrest's repository
+
+The off-site repository's credentials are admin-only records, so losing
+prostagma does not lose its backups: add the repository in Backrest's web
+interface with `BACKREST_REPO_PASSWORD`, `BACKREST_AWS_ACCESS_KEY_ID` and
+`BACKREST_AWS_SECRET_ACCESS_KEY`.
 
 ## Rotate the admin key
 
@@ -471,3 +480,15 @@ ssh root@eltoro 'systemd-tmpfiles --create && systemctl restart hermes-gateway h
 - **The admin's own keys and personal stores on prostagma**: the admin age key,
   a personal fnox config, and an admin SSH key. They are not deployment inputs.
   The age key's presence there is an accepted risk (see the top of this page).
+- **The CI secrets** in the `binary-cache` GitHub Environment: `ATTIC_TOKEN`,
+  `TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET`. GitHub cannot read them back, so
+  they cannot be backed up; mint new ones instead (see
+  [Binary cache](binary-cache.md)).
+- **The owner's personal fnox store** on each workstation,
+  `~/.config/fnox/config.toml`, which holds API tokens for workstation tools
+  such as `CONTEXT7_API_KEY` and is loaded by `fnox activate` in
+  `nix/modules/home/workstation.nix`. It is encrypted with fnox to the admin
+  key, but lives outside this repository.
+- **eltoro's workspace deploy key**, the write-enabled GitHub key for
+  `/var/lib/hermes/workspace`. It is configured out of band (see
+  [eltoro](eltoro.md#application-workspace)); if lost, add a new one on GitHub.
