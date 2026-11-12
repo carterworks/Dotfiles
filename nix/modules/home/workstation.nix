@@ -67,6 +67,7 @@ in
       ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
       ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
       ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
+      ".copilot/mcp-config.json" = link "copilot/mcp-config.json";
     };
 
   # A missing checkout would leave every link above dangling. Evaluation
