@@ -16,6 +16,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 ## Follow-up work
 
+- [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. eltoro runs a chain-based generation, so this can be done now.
 - [x] `nix/hosts/prostagma/default.nix`: drop the `d /var/lib/secrets/bazarr` tmpfiles rule after the old secrets are removed (stage 7 of [docs/rollout.md](docs/rollout.md)); those files are now admin-only records in fnox.
