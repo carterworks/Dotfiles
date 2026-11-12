@@ -332,7 +332,6 @@ in
     samba
     vim
     vulkan-tools
-    cua-driver
   ];
 
   services.gvfs.enable = true;

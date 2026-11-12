@@ -19,14 +19,6 @@ let
       type = "http";
       url = "https://mcp.cloudflare.com/mcp";
     };
-    cua-driver = {
-      type = "stdio";
-      command = "/bin/sh";
-      args = [
-        "-c"
-        "exec cua-driver mcp --socket \"\${XDG_CACHE_HOME:-$HOME/.cache}/cua-driver/cua-driver.sock\""
-      ];
-    };
     fff = {
       type = "stdio";
       command = "fff-mcp";
