@@ -130,7 +130,7 @@ must match a flake host.
 - [Monitoring](docs/monitoring.md): the Beszel hub on prostagma and its agents
 - [Rex](docs/rex.md): the macOS client
 - [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,
-  Cua Driver, Hex
+  Hex
 
 ## Config files
 

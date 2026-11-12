@@ -1,14 +1,5 @@
 {
   "mcpServers": {
-    "cua-driver": {
-      "type": "stdio",
-      "command": "/bin/sh",
-      "args": [
-        "-c",
-        "exec cua-driver mcp --socket \"${XDG_CACHE_HOME:-$HOME/.cache}/cua-driver/cua-driver.sock\""
-      ],
-      "tools": ["*"]
-    },
     "fff": {
       "type": "stdio",
       "command": "fff-mcp",
