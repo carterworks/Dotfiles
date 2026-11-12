@@ -8,7 +8,7 @@ in
   options.dotfiles.binaryCache.publicKey = lib.mkOption {
     type = lib.types.nullOr lib.types.str;
     description = "Public key from `attic cache info fleet`. The cache stays off while this is null; see docs/binary-cache.md.";
-    default = null;
+    default = "fleet:FxyZ66qA3l/VyllFphclDlUz1qULGhYdDaXjWHeg+MU=";
   };
 
   config = lib.mkIf (publicKey != null) {
