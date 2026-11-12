@@ -5,7 +5,7 @@ Pull requests #3 and #4 are merged, all four hosts are deployed from `main`,
 the cache `fleet` exists, and Nightly is active on `main` (2026-11-10). CI
 pushes to the cache and created `release`, and GitHub started Nightly on its
 schedule for the first time (2026-11-11). The servers do not follow `release`
-until the cache's public key is set (stage 5). Each step
+until they are deployed with the cache's public key (stage 5). Each step
 names what to do and links to the runbook section that has the commands. You
 can stop safely at the end of any stage. **No return** marks a step that cannot
 simply be undone.
@@ -92,23 +92,17 @@ cannot show the two checks below.
 ## 5. Binary cache and `release`
 
 The tailnet policy, the OAuth client and its two secrets are in place, and
-`release` exists (2026-11-11).
+`release` exists (2026-11-11). A scheduled Nightly moved `main` and `release`
+on its own, and eltoro reached the cache under the new tailnet policy
+(2026-11-12). The cache's public key is the default of
+`dotfiles.binaryCache.publicKey` in `nix/modules/nixos/binary-cache.nix`.
 
 1. Put a reminder in your calendar for about 2027-01-30 to
    [rotate `ATTIC_TOKEN`](binary-cache.md#rotate-the-ci-token), which expires
    2027-02-08. After that every push fails and `release` stops moving.
-2. Confirm the nightly loop: the morning after, the latest scheduled Nightly
-   run is from the last day, green, and reads "main and release are now
-   `<commit>`." or "Nothing to update." If there is no scheduled run, follow
-   [CI, when Nightly does not start](ci.md#when-nightly-does-not-start).
-3. Set the cache's public key, `fleet:FxyZ66qA3l/VyllFphclDlUz1qULGhYdDaXjWHeg+MU=`
-   (check it against `attic cache info prostagma:fleet`), as the default of
-   `dotfiles.binaryCache.publicKey` in `nix/modules/nixos/binary-cache.nix`,
-   commit it to `main`, and deploy scylla, prostagma and eltoro by hand
+2. Once `release` contains the public key, deploy scylla, prostagma and eltoro
+   by hand
    ([Binary cache, turn the client on](binary-cache.md#turn-the-client-on)).
-   The tailnet policy changed on 2026-11-11, after eltoro's access to the
-   cache was last checked, so check it again first
-   ([Binary cache, step 2](binary-cache.md#2-create-the-cache-and-read-its-public-key-you)).
    **No return**: both servers now upgrade themselves to `release` every night
    ([Server auto-upgrade](auto-upgrade.md)). Check
    `systemctl list-timers nixos-upgrade.timer` on prostagma and eltoro shows
