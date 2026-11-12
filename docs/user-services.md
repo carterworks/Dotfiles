@@ -36,14 +36,6 @@ origin or port changes, or a pairing is revoked.
 `~/.config/obsidian-headless` was seeded from prostagma's login; if sync
 starts failing with an expired session, run `ob login` on that host.
 
-## Cua Driver
-
-Cua Driver gives an agent background control of GUI apps.
-`nix/packages/cua-driver.nix` packages the upstream x86_64-linux binary, scylla
-runs `cua-driver serve` in its Hyprland session, and OpenCode reaches it
-through the `cua-driver` MCP server. The Mac has no package yet, so OpenCode
-reports that MCP server as failed there.
-
 ## Hex dictation
 
 Hex replaces Handy. `nix/packages/hex.nix` pins Hex's prebuilt releases (the

@@ -14,24 +14,6 @@
   '';
 
   systemd.user.services = {
-    # The Cua Driver daemon owns accessibility snapshots and the agent cursor
-    # overlay, so it must run inside the desktop session; MCP clients reach it
-    # over its socket instead of starting a display-less runtime of their own.
-    cua-driver = {
-      Unit = {
-        Description = "Cua Driver desktop automation daemon";
-        PartOf = [ "graphical-session.target" ];
-        After = [ "wayland-session-waitenv.service" ];
-      };
-      Service = {
-        ExecStart = "${lib.getExe pkgs.cua-driver} serve";
-        Environment = [ "CUA_DRIVER_RS_ENABLE_WAYLAND=1" ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
-    };
-
     hyprland-trayscale = {
       Unit = {
         Description = "Tailscale system tray for Hyprland";
