@@ -34,6 +34,5 @@ in
 }
 // prev.lib.optionalAttrs isLinux {
   bambu-studio = localPackage ./bambu-studio.nix;
-  cua-driver = localPackage ./cua-driver.nix;
   ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
 }
