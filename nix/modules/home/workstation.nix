@@ -67,8 +67,14 @@ in
       ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
       ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
       ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
-      ".copilot/mcp-config.json" = link "copilot/mcp-config.json";
     };
+
+  # Keep work-only MCP entries out of the checkout when Copilot edits its config.
+  home.activation.copilotMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run ${pkgs.python3}/bin/python3 ${../../../copilot/merge-mcp.py} \
+      ${lib.escapeShellArg "${checkout}/copilot/mcp-config.json"} \
+      ${lib.escapeShellArg "${config.home.homeDirectory}/.copilot/mcp-config.json"}
+  '';
 
   # A missing checkout would leave every link above dangling. Evaluation
   # cannot see the home directory, so stop before any link is touched.
@@ -87,7 +93,6 @@ in
   '';
   xdg.configFile."fish/completions/pnpm.fish".source = ../../../fish/completions/pnpm.fish;
   xdg.configFile."fish/completions/tinty.fish".source = ../../../fish/completions/tinty.fish;
-  xdg.configFile."fish/completions/scout.fish".source = ../../../fish/completions/scout.fish;
 
   programs.fish = {
     plugins = [
@@ -285,6 +290,7 @@ in
   home.sessionVariables = {
     CODEHOME = "${config.home.homeDirectory}/Projects/code";
     WORKTREEHOME = "${config.home.homeDirectory}/Projects/code/worktrees";
+    COPILOT_SKILLS_DIRS = "${config.home.homeDirectory}/.claude/skills/synced,${config.home.homeDirectory}/.config/opencode/skills";
   };
 
   programs.gh = {
