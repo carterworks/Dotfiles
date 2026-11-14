@@ -10,6 +10,7 @@ let
 in
 {
   imports = [
+    ../../modules/home/nix-profile-prune.nix
     ../../modules/home/obsidian-sync.nix
   ];
 
@@ -73,29 +74,5 @@ in
         };
       };
     };
-  };
-
-  systemd.user.services.carter-nix-profile-prune = {
-    Unit = {
-      Description = "Prune old Carter Nix profile generations";
-      ConditionPathExists = "${config.home.homeDirectory}/.local/state/nix/profiles/profile";
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.nix}/bin/nix-env --profile ${config.home.homeDirectory}/.local/state/nix/profiles/profile --delete-generations +5";
-    };
-  };
-
-  systemd.user.timers.carter-nix-profile-prune = {
-    Unit = {
-      Description = "Daily pruning of old Carter Nix profile generations";
-    };
-    Timer = {
-      OnCalendar = "02:45";
-      Persistent = true;
-      RandomizedDelaySec = "10m";
-      Unit = "carter-nix-profile-prune.service";
-    };
-    Install.WantedBy = [ "timers.target" ];
   };
 }
