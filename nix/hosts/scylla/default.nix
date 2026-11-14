@@ -143,6 +143,7 @@ in
 
   home-manager.users.carter = lib.mkMerge [
     ../../modules/home/workstation.nix
+    ../../modules/home/nix-profile-prune.nix
     ./home.nix
     ./hyprland-home.nix
   ];
