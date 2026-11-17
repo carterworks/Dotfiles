@@ -5,8 +5,15 @@ builds software. Two workflows do it:
 
 | Workflow | Triggers | Jobs | Token permissions |
 |---|---|---|---|
-| [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux, checks-mac); `release` | `build`: `contents: read`; `release`: `contents: write` |
-| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `contents: read` |
+| [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux); `release` | `build`: `contents: read`; `release`: `contents: write` |
+| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `checks: read`, `contents: read` |
+
+The Mac build and checks share one `macos-latest` runner: GitHub's ARM64 Mac
+pool sometimes cannot allocate a runner, so the workflow requests only one.
+They remain separate steps, and checks still run after a failed build if setup
+succeeded. Either failure blocks the single shared `release` gate. Linux jobs
+stay separate for parallelism, independent disk/RAM budgets and individual
+reruns; the VM checks also stay outside jobs holding binary-cache credentials.
 
 ## Trust roots
 
@@ -253,13 +260,24 @@ pushes to `main` still advances it.
 
 ## When it goes red
 
-Open the run; its summary lists the update and, for each failed job, which
-kind of failure it was.
+Open the Nightly run's summary. It includes the tested commit and base, attempt,
+failed jobs and steps, runner labels, GitHub's annotations, bounded error
+excerpts, direct log links and target-specific reproduction commands.
+[`.github/report.py`](../.github/report.py) reads the current attempt only,
+including cancelled jobs that never got a runner. An unavailable log or API
+does not turn a failure green. Infrastructure failures still block promotion;
+they do not mean the updated code is broken.
 
-- **Failed before or outside the build**: a job failed in a step other than
-  Build, such as "Install Nix" or a download, or in setting up the runner.
-  That is the runner or its network, not the update, and nothing moved. Rerun
-  the failed jobs; the rerun builds the same commit and, if green, merges it:
+- **Runner allocation failure**: no runner was assigned and no steps ran.
+  The summary includes the acquisition/capacity annotations. The update has
+  not been validated; rerun the affected job manually.
+- **Download/network failure**: a build command failed fetching a substitute,
+  rather than showing that the source does not build. The summary includes
+  the download error. Rerun the affected job.
+- **CI setup/service failure**: checkout, Nix installation, an artifact transfer
+  or another non-build step failed. Inspect its excerpt and linked log rather
+  than changing packages on the assumption that the build is broken.
+  For transient infrastructure failures, rerun the failed jobs:
 
   ```sh
   gh run rerun <run-id> --failed --repo carterworks/dotfiles
@@ -269,20 +287,24 @@ kind of failure it was.
   commit is kept as an artifact for seven days; after that, run Nightly
   again). Fleet runs recover the same way.
   Installing Nix already tries twice; Nix retries each download itself.
-- **The update does not build**: a host or check failed in its Build step, and
-  nothing moved. The step's log shows what broke on the new inputs. A Build
-  step can also fail on a download that Nix's own retries did not get past; if
-  its log ends in a download or TLS error rather than a build error, rerun as
-  above.
-  Reproduce with `./update --apply` and a `nix build` of the failed host (see
-  the README), fix on `main`, and run Nightly again.
-- **These updates failed**: `./update` could not update the items named; the
-  rest were merged. Run `./update` locally to see why, fix or hold the item.
-- **./update --apply failed**: the updater broke; nothing was built or merged.
-  Its log is in the update job.
-- **main did not move**: see "When `main` moves during a nightly".
-- **main moved but release could not be moved**: see "When `release` does not
-  move".
+- **Build/check failure**: a host or check command failed. Inspect the root
+  error, not just the final "dependency failed" lines; classification of known
+  download errors is deliberately narrow, so the full log remains authoritative.
+  The summary provides the exact target and, when present, a failing derivation
+  to inspect with `nix log`. For an unmerged update, use a clean checkout and
+  the summary's commands to fetch the `update` bundle and check out the tested
+  commit. Do not rerun `./update --apply` to reproduce: upstream may have moved.
+  Fix on `main`, then run Nightly again.
+- **Job interrupted**: an allocated job was cancelled, timed out or abandoned.
+  It did not establish that the update builds; inspect the job and rerun it.
+- **Update incomplete / These updates failed**: `./update` could not update
+  the named items. Its error excerpt is included even though the update job
+  succeeded. Other updates can still be merged; the outcome says whether they
+  were. Run `./update` locally to see why, fix or hold the item.
+- **Updater failure**: the updater broke; nothing was built or merged.
+- **Promotion failure**: the failed step distinguishes moving `main` from
+  moving `release`. See "When `main` moves during a nightly" and "When `release`
+  does not move".
 - **The binary cache was unreachable**: `main` moved, `release` did not. Check
   atticd on prostagma ([binary-cache.md](binary-cache.md), "Size cap" and
   "Behaviour when the cache is down"), then run Fleet on `main` by hand
@@ -296,6 +318,8 @@ kind of failure it was.
   nothing else went wrong tonight, but `release` is older than `main` or does
   not exist. Open the latest Fleet run on `main`; a push to `main` still
   building when the report ran also shows this, and clears with that run.
+  A successful promotion already verified `release`, so Nightly does not
+  immediately second-guess that push using the comparison API.
 - **A host's push failed**: usually an expired `ATTIC_TOKEN`; rotate it
   ([binary-cache.md](binary-cache.md) step 3) and re-run the failed jobs.
 - **Not every host pushed** (Fleet's `release` job): every build passed but

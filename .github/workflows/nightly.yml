@@ -142,8 +142,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      checks: read
       contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Report
         env:
           GH_TOKEN: ${{ github.token }}
@@ -151,6 +155,7 @@ jobs:
           STATUS: ${{ needs.update.outputs.status }}
           FAILED: ${{ needs.update.outputs.failed }}
           SUMMARY: ${{ needs.update.outputs.summary }}
+          BASE: ${{ needs.update.outputs.base }}
           COMMIT: ${{ needs.update.outputs.commit }}
           BUILD: ${{ needs.build.result }}
           MAIN: ${{ needs.promote.outputs.main }}
@@ -159,71 +164,4 @@ jobs:
             scylla=${{ needs.build.outputs.scylla || 'none' }}
             prostagma=${{ needs.build.outputs.prostagma || 'none' }}
             eltoro=${{ needs.build.outputs.eltoro || 'none' }}
-        run: |
-          # The failed step tells a broken update (Build) from a runner or
-          # network problem anywhere else, which a rerun fixes.
-          mapfile -t failures < <(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
-            --jq '.jobs[] | select(.conclusion == "failure") | "\(.name)\t\([.steps[] | select(.conclusion == "failure") | .name] | last // "Set up job")"')
-          problems=()
-          broken=()
-          flaky=()
-          for failure in "${failures[@]}"; do
-            job=${failure%%$'\t'*}
-            step=${failure#*$'\t'}
-            case "$job/$step" in
-              "build / "*/Build) broken+=("${job#build / }") ;;
-              update/Update) problems+=("./update --apply failed (exit $STATUS); nothing was built") ;;
-              "promote/Fast-forward main") problems+=("main did not move; see the promote job") ;;
-              "promote/Advance release") problems+=("main moved but release could not be moved; see the promote job") ;;
-              *) flaky+=("$job (in \"$step\")") ;;
-            esac
-          done
-          (( ${#broken[@]} == 0 )) || problems+=("the update does not build: ${broken[*]}; main and release did not move")
-          (( ${#flaky[@]} == 0 )) || problems+=("failed before or outside the build, which a rerun of the failed jobs usually fixes: ${flaky[*]}")
-          if [[ " $UPDATE $BUILD $MAIN $RELEASE " == *" failure "* ]] && (( ${#failures[@]} == 0 )); then
-            problems+=("a job failed; see the run")
-          fi
-          [[ $STATUS != 3 ]] || problems+=("these updates failed and are not in the commit: $FAILED")
-          if [[ $MAIN == success && $CACHE == *unreachable* ]]; then
-            problems+=("main moved but release did not: the binary cache was unreachable")
-          fi
-          if [[ $MAIN == success && $CACHE == *skipped* ]]; then
-            problems+=("main moved but release did not: a binary-cache Environment secret is unset; the build jobs' warnings name it")
-          fi
-          # A night with nothing to update builds nothing, so only this notices
-          # a release that no run on main has created or that has fallen behind.
-          if (( ${#problems[@]} == 0 )); then
-            if ! behind=$(gh api "repos/$GITHUB_REPOSITORY/compare/release...main" --jq .ahead_by); then
-              problems+=("could not compare release with main; release may not exist yet")
-            elif (( behind > 0 )); then
-              problems+=("release is $behind commits behind main; see the latest Fleet run on main")
-            fi
-          fi
-
-          if [[ -z $COMMIT ]]; then
-            outcome="Nothing to update."
-          elif [[ $MAIN != success ]]; then
-            outcome="Not merged: main and release are unchanged."
-          elif [[ $RELEASE == success ]]; then
-            outcome="main and release are now \`$COMMIT\`."
-          elif [[ $RELEASE == failure ]]; then
-            outcome="main is now \`$COMMIT\`; moving release failed."
-          else
-            outcome="main is now \`$COMMIT\`; release did not move ($CACHE)."
-          fi
-          {
-            echo "## Nightly update"
-            echo
-            echo "$outcome"
-            if [[ -n $SUMMARY ]]; then
-              printf '\n~~~\n%s\n~~~\n' "$SUMMARY"
-            fi
-            if (( ${#problems[@]} > 0 )); then
-              echo
-              printf -- '- **%s**\n' "${problems[@]}"
-            fi
-          } >>"$GITHUB_STEP_SUMMARY"
-          for problem in "${problems[@]}"; do
-            echo "::error::$problem"
-          done
-          (( ${#problems[@]} == 0 ))
+        run: python3 .github/report.py
