@@ -96,6 +96,17 @@ in
     shortcut = "option+space";
   };
 
+  # Hex's GlobalShortcuts session lives in the Hyprland portal, so a switch that
+  # restarts the portal silently drops Alt+Space. Stopping and starting Hex with
+  # the portal makes it register its shortcuts again.
+  systemd.user.services.hex = {
+    Unit = {
+      PartOf = [ "xdg-desktop-portal-hyprland.service" ];
+      After = [ "xdg-desktop-portal-hyprland.service" ];
+    };
+    Install.WantedBy = [ "xdg-desktop-portal-hyprland.service" ];
+  };
+
   dotfiles.desktopTheme.zenProfile = ".config/zen/jhvzidh2.Default Profile";
 
   # kde/kdeglobals stays unlinked: desktopThemeKde edits the live file.
