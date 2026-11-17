@@ -309,6 +309,31 @@ apply_update bambu-studio "$PACKAGE" 1 2 '{"assetPattern":"x"}' x86_64-linux
                 'version = "2"; asset = "Bambu-2-20261103.AppImage"; hash = "newhash";\n')
 
 
+class SourceBuildUpdateTests(unittest.TestCase):
+    def test_apply_moves_the_version_and_the_source_tag_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            package = root / "klad.nix"
+            package.write_text('version = "1"; skia.hash = "sha256-skia";')
+            (root / "flake.nix").write_text('klad.url = "github:o/klad/v1";\n')
+            result = bash('''
+BASEDIR="$PWD"
+nix() {
+  case "$*" in
+    "flake update klad") touch flake-updated ;;
+    *version) sed -n 's/.*version = "\\([^"]*\\)".*/\\1/p' "$PACKAGE" ;;
+    *) return 1 ;;
+  esac
+}
+apply_update klad "$PACKAGE" 1 2 \\
+  '{"build":"source","owner":"o","repo":"klad","tagPrefix":"v","flakeInput":"klad"}' x86_64-linux
+''', cwd=root, PACKAGE=str(package))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(package.read_text(), 'version = "2"; skia.hash = "sha256-skia";\n')
+            self.assertEqual((root / "flake.nix").read_text(), 'klad.url = "github:o/klad/v2";\n')
+            self.assertTrue((root / "flake-updated").exists())
+
+
 class PrivateSourceTests(unittest.TestCase):
     def test_reads_url_from_external_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
