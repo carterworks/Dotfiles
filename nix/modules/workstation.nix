@@ -27,6 +27,7 @@
     home-assistant-cli
     hunk
     hyperfine
+    klad
     markdown-oxide
     nodejs_24
     neovim
