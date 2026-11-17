@@ -96,6 +96,10 @@ let
         python3 ${source}/copilot/test-merge-mcp.py
         touch "$out"
       '';
+      ci-report = pkgs.runCommandLocal "ci-report-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+        python3 ${source}/.github/test-report.py
+        touch "$out"
+      '';
       obsidian-sync-module =
         assert import ./tests/obsidian-sync.nix { inherit lib; };
         pkgs.runCommandLocal "obsidian-sync-module-check" { } ''
