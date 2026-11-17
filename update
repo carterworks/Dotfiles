@@ -244,6 +244,19 @@ apply_update() {
   local -a new_hashes=()
 
   content="$(<"${file}")"
+  # A source build has no release asset to rehash; its flake input is the source.
+  if [[ "$(jq -r '.build // ""' <<<"${update_info}")" == source ]]; then
+    printf '%s\n' "${content//version = \"${current}\"/version = \"${latest}\"}" >"${file}"
+    update_flake_input "${current}" "${latest}" "${update_info}" || return 1
+    for system in "${systems[@]}"; do
+      if [[ "$(quiet nix eval --raw ".#packages.${system}.${pkg}.version")" != "${latest}" ]]; then
+        log "${pkg}: ${system} does not evaluate to ${latest} after the rewrite"
+        return 1
+      fi
+    done
+    return 0
+  fi
+
   for system in "${systems[@]}"; do
     oldhash="$(quiet nix eval --raw ".#packages.${system}.${pkg}.src.outputHash")" || return 1
     if [[ "$(jq -r '.strategy // ""' <<<"${update_info}")" == require-file ]]; then
