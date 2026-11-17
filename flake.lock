@@ -357,6 +357,23 @@
         "type": "github"
       }
     },
+    "klad": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794495773,
+        "narHash": "sha256-KqGW7JKjibMpBtaZgljwPRRlaXbk1W125YsfQZGU6Qs=",
+        "owner": "klad-app",
+        "repo": "klad",
+        "rev": "3f417357e23ee06aa3c71997f6bff8eb846b619a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "klad-app",
+        "ref": "v0.2.0",
+        "repo": "klad",
+        "type": "github"
+      }
+    },
     "nix": {
       "inputs": {
         "bdwgc": "bdwgc",
@@ -610,6 +627,7 @@
         "hermes-agent": "hermes-agent",
         "hex": "hex",
         "home-manager": "home-manager_2",
+        "klad": "klad",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_4",
         "numtide-llm-agents": "numtide-llm-agents",

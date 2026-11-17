@@ -22,6 +22,7 @@ in
   # nixpkgs' fnox fails to build, so it is never cached. See TODO.md.
   fnox = localPackage ./fnox.nix;
   hex = final.callPackage ./hex.nix { hexSource = inputs.hex; };
+  klad = final.callPackage ./klad.nix { kladSource = inputs.klad; };
   nub = localPackage ./nub.nix;
   # Upstream publishes self-contained nightly builds, so these wrap them instead
   # of using llm-agents' source builds.

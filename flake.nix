@@ -44,6 +44,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+    # Pinned to the release nix/packages/klad.nix builds; ./update bumps both
+    # together.
+    klad = {
+      url = "github:klad-app/klad/v0.2.0";
+      flake = false;
+    };
     # Held at the rev the standalone eltoro repo ran, so ./update leaves it
     # alone; see TODO.md. Bump it by editing the rev here, then run
     # `nix flake update hermes-agent`.
