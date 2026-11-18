@@ -108,6 +108,11 @@ jobs:
       - name: Checks
         if: ${{ !cancelled() && matrix.name == 'mac' && steps.caches.outcome == 'success' }}
         run: nix build -L --impure -f .github/ci.nix checks
+      # Evaluation is the same on any platform, so Linux can do it without a
+      # Mac runner. Import-from-derivation would need a Mac build mid-way.
+      - name: Evaluate the Mac
+        if: ${{ !cancelled() && matrix.name == 'checks-linux' && steps.caches.outcome == 'success' }}
+        run: nix eval --raw --option allow-import-from-derivation false --impure -f .github/ci.nix mac.drvPath
       - name: Check for the binary cache secrets
         id: secrets
         if: matrix.cache && github.ref == 'refs/heads/main'

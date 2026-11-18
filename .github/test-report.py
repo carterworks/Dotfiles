@@ -244,6 +244,14 @@ class ReportTests(unittest.TestCase):
         self.assertIn("Job never started", text)
         self.assertNotIn("Runner allocation failure", text)
 
+    def test_a_mac_evaluation_failure_on_linux_fails_the_report_with_its_command(self):
+        text, problems = self.render(
+            [job(name="build / checks-linux", step="Evaluate the Mac")],
+            log="error: The option `programs.gone' does not exist.",
+        )
+        self.assertEqual(problems, ["Build/check failure: build / checks-linux (Evaluate the Mac)"])
+        self.assertIn("nix eval --raw --option allow-import-from-derivation false --impure -f .github/ci.nix mac.drvPath", text)
+
     def test_download_errors_do_not_hide_an_independent_builder_failure(self):
         text, _ = self.render(
             [job()],
