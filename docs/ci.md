@@ -11,7 +11,13 @@ builds software. Two workflows do it:
 The Mac build and checks share one `macos-latest` runner: GitHub's ARM64 Mac
 pool sometimes cannot allocate a runner, so the workflow requests only one.
 They remain separate steps, and checks still run after a failed build if setup
-succeeded. Either failure blocks the single shared `release` gate. Linux jobs
+succeeded. Either failure blocks the single shared `release` gate.
+`checks-linux` also evaluates the Mac's configuration
+(`nix eval ... -f .github/ci.nix mac.drvPath`). Evaluation works the same on
+any platform, so an x86_64 Linux runner catches what an update usually breaks:
+a renamed or removed option, a package gone from nixpkgs, a failed assertion.
+It does not compile anything. The step turns import-from-derivation off,
+because that would need a Mac build mid-evaluation. Linux jobs
 stay separate for parallelism, independent disk/RAM budgets and individual
 reruns; the VM checks also stay outside jobs holding binary-cache credentials.
 
@@ -52,7 +58,8 @@ reruns; the VM checks also stay outside jobs holding binary-cache credentials.
 ## From a push to a server
 
 1. A push to any branch builds the three NixOS hosts, the Mac and the flake
-   checks (VM tests included). On a branch other than `main` that is all.
+   checks (VM tests included), and evaluates the Mac on Linux. On a branch
+   other than `main` that is all.
 2. On `main`, each NixOS host's job then joins the tailnet as an ephemeral
    `tag:ci` node and pushes its system's closure to the private cache
    ([binary-cache.md](binary-cache.md)) with the flake's own Attic client.

@@ -64,7 +64,7 @@ def category(job, steps, log, notes):
         return "Promotion failure"
     if "Push to the binary cache" in steps:
         return "Cache push failure"
-    if any(step in ("Build", "Checks") for step in steps):
+    if any(step in ("Build", "Checks", "Evaluate the Mac") for step in steps):
         if re.search(r"(?im)^error:.*(?:unable to download|failed to download|some substitutes.*failed)", log):
             if re.search(r"builder.*failed with exit code", log):
                 return "Build/check and download failures"
@@ -85,6 +85,8 @@ def reproduce(job, steps):
             commands.append("nix build -L --impure -f .github/ci.nix checks")
     if "Checks" in steps:
         commands.append("nix build -L --impure -f .github/ci.nix checks")
+    if "Evaluate the Mac" in steps:
+        commands.append("nix eval --raw --option allow-import-from-derivation false --impure -f .github/ci.nix mac.drvPath")
     return commands
 
 
