@@ -23,7 +23,7 @@ ENV = {
 }
 
 
-def job(name="build / mac", conclusion="failure", step="Build", runner="mac-1"):
+def job(name="mac / mac", conclusion="failure", step="Build", runner="mac-1"):
     return {
         "id": 7,
         "name": name,
@@ -58,7 +58,8 @@ class ReportTests(unittest.TestCase):
                 return {"ahead_by": behind}
             self.fail(f"Unexpected API call: {path}")
 
-        return REPORT.report({**ENV, **(env or {})}, api)
+        text, problems, self.warnings = REPORT.report({**ENV, **(env or {})}, api)
+        return text, problems
 
     def test_success_reports_the_tested_commit_and_attempt(self):
         text, problems = self.render()
@@ -71,13 +72,14 @@ class ReportTests(unittest.TestCase):
         text, problems = self.render(
             [job(conclusion="cancelled", runner="", step=None)],
             annotations=[{"message": "The job was not acquired by Runner of type hosted"}],
-            env={"BUILD": "abandoned", "MAIN": "", "RELEASE": ""},
         )
-        self.assertTrue(problems)
+        self.assertEqual(problems, [])
+        self.assertTrue(self.warnings)
         self.assertIn("Runner allocation failure", text)
         self.assertIn("macos-latest", text)
         self.assertIn("The job was not acquired", text)
-        self.assertIn("not validated", text)
+        self.assertIn("The Mac was not built; nothing waited for it", text)
+        self.assertNotIn("not validated", text)
         self.assertNotIn("the update does not build", text)
         self.assertFalse(any(path.endswith("/logs") for path in self.calls))
 
@@ -88,7 +90,7 @@ class ReportTests(unittest.TestCase):
                 "error: some substitutes for the outputs failed (usually happens due to networking issues)",
             env={"BUILD": "failure", "MAIN": "", "RELEASE": ""},
         )
-        self.assertTrue(problems)
+        self.assertTrue(self.warnings)
         self.assertIn("Download/network failure", text)
         self.assertIn("HTTP error 206", text)
         self.assertNotIn("the update does not build", text)
@@ -102,7 +104,7 @@ class ReportTests(unittest.TestCase):
                 "error: Cannot build '/nix/store/def-system.drv'. Reason: 1 dependency failed.",
             env={"BUILD": "failure", "MAIN": "", "RELEASE": ""},
         )
-        self.assertTrue(problems)
+        self.assertTrue(self.warnings)
         self.assertIn("Build/check failure", text)
         self.assertIn("hex> error: missing header", text)
         self.assertIn("job/7#step:5:1", text)
@@ -128,9 +130,12 @@ class ReportTests(unittest.TestCase):
     def test_cancelled_and_timed_out_jobs_are_not_called_build_failures(self):
         for conclusion in ("cancelled", "timed_out", "abandoned"):
             with self.subTest(conclusion=conclusion):
-                text, problems = self.render([job(conclusion=conclusion, step=None)])
-                self.assertTrue(problems)
+                text, _ = self.render([job(conclusion=conclusion, step=None)])
+                self.assertTrue(self.warnings)
                 self.assertIn(conclusion, text)
+                self.assertNotIn("Build/check failure", text)
+                text, problems = self.render([job(name="build / scylla", conclusion=conclusion, step=None)])
+                self.assertTrue(problems)
                 self.assertNotIn("Build/check failure", text)
 
     def test_partial_update_includes_updater_errors_even_though_update_job_succeeded(self):
@@ -161,9 +166,9 @@ class ReportTests(unittest.TestCase):
         self.assertIn("Could not read jobs", text)
 
     def test_unavailable_logs_preserve_the_original_job_failure(self):
-        text, problems = self.render([job()], fail="/logs")
-        self.assertTrue(problems)
-        self.assertIn("build / mac", text)
+        text, _ = self.render([job()], fail="/logs")
+        self.assertTrue(self.warnings)
+        self.assertIn("mac / mac", text)
         self.assertIn("Could not read job logs", text)
 
     def test_unexpected_unsuccessful_build_result_is_not_silently_green(self):
@@ -239,10 +244,37 @@ class ReportTests(unittest.TestCase):
         self.assertFalse(any("/compare/" in path for path in self.calls))
 
     def test_cancellation_before_allocation_does_not_invent_a_capacity_failure(self):
-        text, problems = self.render([job(conclusion="cancelled", runner="", step=None)])
-        self.assertTrue(problems)
+        text, _ = self.render([job(conclusion="cancelled", runner="", step=None)])
+        self.assertTrue(self.warnings)
         self.assertIn("Job never started", text)
         self.assertNotIn("Runner allocation failure", text)
+
+    def test_a_mac_failure_warns_without_failing_the_report(self):
+        text, problems = self.render([job()], log="error: builder failed")
+        self.assertEqual(problems, [])
+        self.assertEqual(self.warnings, ["Build/check failure: mac / mac (Build)"])
+        self.assertIn("### Build/check failure: mac / mac", text)
+        self.assertIn("main and release are now", text)
+
+    def test_a_mac_warning_does_not_hide_an_unmerged_update(self):
+        _, problems = self.render(
+            [job(conclusion="cancelled", runner="", step=None)],
+            env={"BUILD": "cancelled", "MAIN": "", "RELEASE": ""},
+        )
+        self.assertEqual(problems, ["build finished with cancelled; see the run's jobs"])
+
+    def test_a_linux_job_failure_still_fails_the_report(self):
+        _, problems = self.render([job(name="build / checks-linux", step="Checks")], log="error: check failed")
+        self.assertEqual(problems, ["Build/check failure: build / checks-linux (Checks)"])
+        self.assertEqual(self.warnings, [])
+
+    def test_a_mac_evaluation_failure_on_linux_fails_the_report_with_its_command(self):
+        text, problems = self.render(
+            [job(name="build / checks-linux", step="Evaluate the Mac")],
+            log="error: The option `programs.gone' does not exist.",
+        )
+        self.assertEqual(problems, ["Build/check failure: build / checks-linux (Evaluate the Mac)"])
+        self.assertIn("nix eval --raw --option allow-import-from-derivation false --impure -f .github/ci.nix mac.drvPath", text)
 
     def test_download_errors_do_not_hide_an_independent_builder_failure(self):
         text, _ = self.render(

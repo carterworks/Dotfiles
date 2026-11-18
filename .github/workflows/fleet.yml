@@ -14,6 +14,10 @@ on:
         description: Commit in the update bundle to build
         type: string
         required: true
+      part:
+        description: linux or mac; a caller that waits only for the servers runs each separately
+        type: string
+        required: true
     outputs:
       scylla:
         value: ${{ jobs.build.outputs.scylla }}
@@ -26,13 +30,14 @@ permissions:
   contents: read
 
 # The commit keeps a nightly's build out of the group of a push to main, which
-# would otherwise cancel it.
+# would otherwise cancel it; the part keeps a nightly's two calls apart.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.commit }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.commit }}-${{ inputs.part }}
   cancel-in-progress: true
 
 jobs:
   build:
+    if: inputs.part != 'mac'
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     # Only a run for main names the Environment, so a workflow edited on any
@@ -61,13 +66,10 @@ jobs:
             runner: ubuntu-latest
             target: .#nixosConfigurations.eltoro.config.system.build.toplevel
             cache: true
-          - name: mac
-            runner: macos-latest
-            target: --impure -f .github/ci.nix mac
           - name: checks-linux
             runner: ubuntu-latest
             target: --impure -f .github/ci.nix checks
-    steps:
+    steps: &steps
       - run: df -h
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -108,6 +110,11 @@ jobs:
       - name: Checks
         if: ${{ !cancelled() && matrix.name == 'mac' && steps.caches.outcome == 'success' }}
         run: nix build -L --impure -f .github/ci.nix checks
+      # Evaluation is the same on any platform, so Linux can do it without a
+      # Mac runner. Import-from-derivation would need a Mac build mid-way.
+      - name: Evaluate the Mac
+        if: ${{ !cancelled() && matrix.name == 'checks-linux' && steps.caches.outcome == 'success' }}
+        run: nix eval --raw --option allow-import-from-derivation false --impure -f .github/ci.nix mac.drvPath
       - name: Check for the binary cache secrets
         id: secrets
         if: matrix.cache && github.ref == 'refs/heads/main'
@@ -162,6 +169,25 @@ jobs:
           echo "${{ matrix.name }}=pushed" >>"$GITHUB_OUTPUT"
       - run: df -h
         if: always()
+
+  # GitHub's ARM64 Mac pool often cannot allocate a runner, and the MacBook
+  # builds for itself, so nothing waits for this job; checks-linux evaluates its
+  # configuration instead, which catches what an update usually breaks. A job
+  # that never gets a runner also drops every output of its workflow, which is
+  # why it is outside build and Nightly calls it separately.
+  mac:
+    if: inputs.part != 'linux'
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          - name: mac
+            runner: macos-latest
+            target: --impure -f .github/ci.nix mac
+            cache: false
+    steps: *steps
 
   release:
     needs: build
