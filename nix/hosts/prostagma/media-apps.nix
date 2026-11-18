@@ -196,7 +196,7 @@ in
     };
 
     bazarr = {
-      image = "ghcr.io/home-operations/bazarr:1.6.2@sha256:b8434a7339ebd9c2bfe4464c28db79944e0f52f47da85345fc7e0563c19f83ac";
+      image = "ghcr.io/home-operations/bazarr:1.6.2@sha256:6c40dfa683f767d28d1dc502837ed0a5a57682a84231f03e704e2b3f61b25a46";
       autoStart = true;
       ports = [ "127.0.0.1:6767:6767/tcp" ];
       environment = appEnvironment // {
@@ -215,7 +215,7 @@ in
       # The official image has no PUID/PGID init, so identity comes from
       # --user in appExtraOptions and the media group comes from
       # --group-add, which is what grants read/write on the library.
-      image = "ghcr.io/advplyr/audiobookshelf:2.37.2@sha256:b897c33f05972fb1bf484f7487bc878fa91ec8691335c1db6e2929c3a7658efa";
+      image = "ghcr.io/advplyr/audiobookshelf:2.38.0@sha256:60064c23f32fd9099fd39e82c5132c51701d1221135bbca04cd099b589e1edc3";
       autoStart = true;
       ports = [ "127.0.0.1:13378:13378/tcp" ];
       environment = appEnvironment // {
