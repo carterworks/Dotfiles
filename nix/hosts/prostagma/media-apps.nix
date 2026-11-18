@@ -264,6 +264,13 @@ in
     };
   };
 
+  # Bazarr asks Jellyfin, which runs on the host, to rescan an item after each
+  # subtitle change. Jellyfin listens on every interface, so only the container
+  # network is let in rather than opening the port to the LAN.
+  networking.firewall.extraCommands = ''
+    iptables -A nixos-fw -s ${dockerSubnet} -p tcp --dport 8096 -j nixos-fw-accept
+  '';
+
   systemd.tmpfiles.rules = map (dir: "d ${appRoot}/${dir} 0775 ${uid} ${gid} -") [
     "bazarr/config"
     "audiobookshelf/config"
