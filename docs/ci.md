@@ -5,18 +5,23 @@ builds software. Two workflows do it:
 
 | Workflow | Triggers | Jobs | Token permissions |
 |---|---|---|---|
-| [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, mac, checks-linux); `release` | `build`: `contents: read`; `release`: `contents: write` |
-| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` (calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `checks: read`, `contents: read` |
+| [Fleet](../.github/workflows/fleet.yml) | push to any branch, a dispatch, a call from Nightly | `build` (scylla, prostagma, eltoro, checks-linux); `mac`; `release` | `build`: `contents: read`; `release`: `contents: write` |
+| [Nightly](../.github/workflows/nightly.yml) | daily at 07:17 UTC, a dispatch | `update`, `build` and `mac` (each calls Fleet), `promote`, `report` | `update`: `contents: read`; `promote`: `contents: write`; `report`: `actions: read`, `checks: read`, `contents: read` |
 
 The Mac build and checks share one `macos-latest` runner: GitHub's ARM64 Mac
-pool sometimes cannot allocate a runner, so the workflow requests only one.
+pool often cannot allocate a runner, so the workflow requests only one.
 They remain separate steps, and checks still run after a failed build if setup
-succeeded. Either failure blocks the single shared `release` gate.
-`checks-linux` also evaluates the Mac's configuration
+succeeded. Nothing waits for the Mac job: `release` needs only `build`, and
+Nightly calls Fleet once for `build` and once for `mac`, so `promote` needs only
+the first. Two calls, because a job that never gets a runner leaves its whole
+workflow without outputs, the hosts' push results included. A Mac failure is a
+warning in the Nightly report; its job still shows red.
+`checks-linux` evaluates the Mac's configuration instead
 (`nix eval ... -f .github/ci.nix mac.drvPath`). Evaluation works the same on
 any platform, so an x86_64 Linux runner catches what an update usually breaks:
 a renamed or removed option, a package gone from nixpkgs, a failed assertion.
-It does not compile anything. The step turns import-from-derivation off,
+It does not compile anything, so a package that fails to build on darwin shows
+up only in the Mac job and in the MacBook's own build. The step turns import-from-derivation off,
 because that would need a Mac build mid-evaluation. Linux jobs
 stay separate for parallelism, independent disk/RAM budgets and individual
 reruns; the VM checks also stay outside jobs holding binary-cache credentials.
@@ -63,9 +68,9 @@ reruns; the VM checks also stay outside jobs holding binary-cache credentials.
 2. On `main`, each NixOS host's job then joins the tailnet as an ephemeral
    `tag:ci` node and pushes its system's closure to the private cache
    ([binary-cache.md](binary-cache.md)) with the flake's own Attic client.
-3. When every job passed and all three pushes succeeded, the `release` job
+3. When every `build` job passed and all three pushes succeeded, the `release` job
    fast-forwards the `release` branch to that commit, creating it the first
-   time. When every job passed but a host did not push, the `release` job
+   time. When every `build` job passed but a host did not push, the `release` job
    fails with "Not every host pushed", so the run is red rather than green
    with `release` silently left behind.
 4. The servers upgrade from `github:carterworks/dotfiles/release` every night
@@ -114,8 +119,8 @@ At 07:17 UTC, 00:17 in Denver in winter and 01:17 in summer, Nightly:
    bundle (no branch is pushed);
 4. builds exactly that commit with Fleet, Mac and checks included, pushing the
    NixOS hosts' builds to the cache;
-5. if everything is green, fast-forwards `main` to the commit and then
-   advances `release` as above;
+5. if the hosts and checks are green, fast-forwards `main` to the commit and
+   then advances `release` as above, without waiting for the Mac;
 6. writes a summary of what it attempted and what happened, and fails the run
    if anything needs you. On a night with nothing else to report, that
    includes a `release` that does not exist or is behind `main`, so a
@@ -166,10 +171,11 @@ gh api repos/carterworks/dotfiles/actions/workflows/nightly.yml --jq .state
 
 ### What the gate catches
 
-`release` moves only when every host evaluates and builds and every check
-passes, including the VM tests such as eltoro's egress fence. It does not
-catch:
+`release` moves only when every NixOS host evaluates and builds, the Mac
+evaluates, and every check passes, including the VM tests such as eltoro's
+egress fence. It does not catch:
 
+- a Mac package that evaluates but fails to build;
 - an upstream that is backdoored but still builds and passes;
 - behaviour no check exercises;
 - a data migration within a major version (a database schema an app upgrades
@@ -272,8 +278,10 @@ failed jobs and steps, runner labels, GitHub's annotations, bounded error
 excerpts, direct log links and target-specific reproduction commands.
 [`.github/report.py`](../.github/report.py) reads the current attempt only,
 including cancelled jobs that never got a runner. An unavailable log or API
-does not turn a failure green. Infrastructure failures still block promotion;
-they do not mean the updated code is broken.
+does not turn a failure green. Infrastructure failures in `build` still block
+promotion; they do not mean the updated code is broken. The Mac job's failures,
+of any kind, are warnings: they leave the report green and block nothing.
+"Evaluate the Mac" in `checks-linux` blocks like any other check.
 
 - **Runner allocation failure**: no runner was assigned and no steps ran.
   The summary includes the acquisition/capacity annotations. The update has
@@ -433,7 +441,8 @@ workflow and open pull requests. The trust roots above come first.
 
 ### Accepted limits
 
-- The Mac jobs gate the servers' updates: a Mac-only breakage holds `release`.
+- A Mac package that evaluates but does not build reaches `main`; the Mac job
+  warns, and the MacBook's own build is where it fails.
 - If one host's push fails, `release` waits for the next nightly with changes,
   your next push, or a Fleet run started by hand.
 - Re-running an old Fleet run weeks later can reuse its earlier "pushed"

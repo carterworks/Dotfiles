@@ -100,6 +100,9 @@ def report(env, api=github_api):
     release = env.get("RELEASE", "")
     cache = env.get("CACHE", "")
     problems = []
+    # Nothing waits for the Mac's build: its runners are often unavailable, and
+    # checks-linux evaluates its configuration instead.
+    warnings = []
     details = []
 
     try:
@@ -139,14 +142,17 @@ def report(env, api=github_api):
         problem = f"{kind}: {job['name']}"
         if steps:
             problem += f" ({', '.join(steps)})"
-        problems.append(problem)
+        mac = job["name"].split(" / ")[-1] == "mac"
+        (warnings if mac else problems).append(problem)
         job_url = job.get("html_url") or f"{url}/job/{job['id']}"
         lines = [f"### {problem}", "", f"[Job logs]({job_url}) · conclusion: `{job['conclusion']}`",
                  f"Runner: `{job.get('runner_name') or 'not allocated'}`; labels: `{', '.join(job.get('labels', []))}`."]
         for step in job.get("steps", []):
             if step["conclusion"] == "failure":
                 lines.append(f"- [{step['name']}]({job_url}#step:{step['number']}:1)")
-        if kind == "Runner allocation failure":
+        if kind == "Runner allocation failure" and mac:
+            lines.extend(["", "The Mac was not built; nothing waited for it. Rerun the job to build it."])
+        elif kind == "Runner allocation failure":
             lines.extend(["", "No build ran on this job; the update is not validated. Rerun the affected job manually."])
         if notes:
             lines.extend(["", fenced(clean_log("\n".join(notes))[:12000])])
@@ -202,8 +208,8 @@ def report(env, api=github_api):
     tested = commit or env.get("BASE") or env.get("GITHUB_SHA", "unknown")
     lines = ["## Nightly update", "", outcome, "", f"[Run {run}, attempt {attempt}]({url}/attempts/{attempt})",
              f"Tested commit: `{tested}`; base: `{env.get('BASE', 'unknown')}`."]
-    if problems:
-        lines.extend(["", *(f"- **{problem}**" for problem in problems)])
+    if problems or warnings:
+        lines.extend(["", *(f"- **{problem}**" for problem in problems), *(f"- {warning}" for warning in warnings)])
     if commit and main != "success":
         lines.extend(["", "The unmerged commit is in the `update` artifact for seven days. In a clean checkout:", "",
                       fenced(f"gh run download {run} --repo {repo} --name update --dir /path/to/nightly-update\n"
@@ -211,16 +217,21 @@ def report(env, api=github_api):
     lines.extend(["", *details])
     if env.get("SUMMARY"):
         lines.extend(["", "### Attempted updates", "", fenced(env["SUMMARY"])])
-    return "\n".join(lines) + "\n", problems
+    return "\n".join(lines) + "\n", problems, warnings
+
+
+def annotation(text):
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
 def main():
-    text, problems = report(os.environ)
+    text, problems, warnings = report(os.environ)
     with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a") as summary:
         summary.write(text)
+    for warning in warnings:
+        print(f"::warning::{annotation(warning)}")
     for problem in problems:
-        escaped = problem.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-        print(f"::error::{escaped}")
+        print(f"::error::{annotation(problem)}")
     return bool(problems)
 
 
