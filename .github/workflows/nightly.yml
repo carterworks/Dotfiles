@@ -96,6 +96,20 @@ jobs:
     with:
       base: ${{ needs.update.outputs.base }}
       commit: ${{ needs.update.outputs.commit }}
+      part: linux
+
+  # Nothing waits for it but the report (fleet.yml says why).
+  mac:
+    needs: update
+    if: needs.update.outputs.commit
+    uses: ./.github/workflows/fleet.yml
+    # As for build.
+    permissions:
+      contents: write
+    with:
+      base: ${{ needs.update.outputs.base }}
+      commit: ${{ needs.update.outputs.commit }}
+      part: mac
 
   promote:
     needs: [update, build]
@@ -137,7 +151,7 @@ jobs:
         run: .github/advance-release "$COMMIT"
 
   report:
-    needs: [update, build, promote]
+    needs: [update, build, mac, promote]
     if: always()
     runs-on: ubuntu-latest
     permissions:
