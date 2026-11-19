@@ -536,12 +536,14 @@ in
     accounts = with config.dotfiles.fnox.secrets; {
       alex.passwordFile = COPYPARTY_ALEX_PASSWORD.path;
       haley.passwordFile = COPYPARTY_HALEY_PASSWORD.path;
+      taylor.passwordFile = COPYPARTY_TAYLOR_PASSWORD.path;
       carter.passwordFile = COPYPARTY_CARTER_PASSWORD.path;
     };
     groups = {
       family = [
         "haley"
         "alex"
+        "taylor"
       ];
       admins = [ "carter" ];
     };
@@ -585,6 +587,12 @@ in
   };
   dotfiles.fnox.secrets.COPYPARTY_HALEY_PASSWORD = {
     path = "/run/secrets/copyparty/haley_password";
+    group = "apps";
+    mode = "0640";
+    requiredBy = [ "copyparty.service" ];
+  };
+  dotfiles.fnox.secrets.COPYPARTY_TAYLOR_PASSWORD = {
+    path = "/run/secrets/copyparty/taylor_password";
     group = "apps";
     mode = "0640";
     requiredBy = [ "copyparty.service" ];
