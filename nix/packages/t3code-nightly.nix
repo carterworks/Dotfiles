@@ -5,7 +5,7 @@
 
 let
   pname = "t3code-nightly";
-  version = "0.1.11-nightly.20261118.4890";
+  version = "0.1.11-nightly.20261119.4941";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   appName = "T3 Code (Nightly)";
@@ -17,14 +17,14 @@ let
   platformPackages = {
     aarch64-darwin = {
       asset = "T3-Code-${version}-arm64.zip";
-      hash = "sha256-mWeZpgmiWRAuNlirLkU4fXFyD9UN3ToNNIDWoI4fZ80=";
+      hash = "sha256-/uiWrMDsrqizCB4AmPNXoq0MyXUD+Jrjc+RlYUSk7+U=";
     };
     # Upstream dropped the version from the AppImage name starting with
     # 0.1.10-nightly.20261113.4656; the updater only rewrites the version in
     # the tag, so this name must stay literal.
     x86_64-linux = {
       asset = "T3-Code-Nightly-x86_64.AppImage";
-      hash = "sha256-1CUyIG9kCLGEQ1kLb9uRFvlbBuEszwA2UtPV79T/SGg=";
+      hash = "sha256-x0dWLJ8EJW3XD0iDIEMluh1CRnJrLYXiU6MDe5FoM5s=";
     };
   };
 

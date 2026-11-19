@@ -47,7 +47,7 @@
     # Pinned to the release nix/packages/klad.nix builds; ./update bumps both
     # together.
     klad = {
-      url = "github:klad-app/klad/v0.2.0";
+      url = "github:klad-app/klad/v0.3.0";
       flake = false;
     };
     # Held at the rev the standalone eltoro repo ran, so ./update leaves it

@@ -6,7 +6,7 @@
 
 let
   pname = "klad";
-  version = "0.2.0";
+  version = "0.3.0";
   inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux system;
 
   # skia-bindings' build script downloads a prebuilt Skia, which the sandbox
