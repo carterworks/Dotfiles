@@ -24,6 +24,7 @@ in
   fonts.packages = [ pkgs.nerd-fonts.iosevka ];
 
   environment.systemPackages = with pkgs; [
+    ardia
     bambu-studio
     bibata-cursors
     discord
