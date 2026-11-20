@@ -231,6 +231,43 @@ github_api repos/o/r/releases
         self.assertEqual(result.stdout.strip(), "Authorization: Bearer secret-token")
 
 
+class GitHubReleaseDiscoveryTests(unittest.TestCase):
+    def discover(self, releases, **info):
+        return bash('''
+github_api() {
+  [[ "$1" == "repos/owner/repo/releases?per_page=100" ]] || return 1
+  printf '%s' "$RELEASES"
+}
+latest_version "$UPDATE_INFO"
+''', RELEASES=json.dumps(releases), UPDATE_INFO=json.dumps({
+            "source": "github-release", "owner": "owner", "repo": "repo",
+            "tagPrefix": "v", "channel": "nightly", **info,
+        }))
+
+    def release(self, version, *assets):
+        return {
+            "tag_name": f"v{version}", "draft": False, "prerelease": True,
+            "assets": [{"name": name} for name in assets],
+        }
+
+    def test_skips_releases_missing_a_required_asset(self):
+        result = self.discover([
+            self.release("1.0.0-nightly.3", "App-1.0.0-nightly.3.zip"),
+            self.release("1.0.0-nightly.2", "App-1.0.0-nightly.2.AppImage"),
+            self.release("1.0.0-nightly.1", "App-1.0.0-nightly.1.zip", "App-1.0.0-nightly.1.AppImage"),
+        ], requiredAssets=["\\.zip$", "\\.AppImage$"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "1.0.0-nightly.1")
+
+    def test_without_required_assets_takes_the_newest(self):
+        result = self.discover([
+            self.release("1.0.0-nightly.3"),
+            self.release("1.0.0-nightly.2", "App.zip"),
+        ])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "1.0.0-nightly.3")
+
+
 class BambuStudioUpdateTests(unittest.TestCase):
     def asset_url(self, names):
         package = (ROOT / "nix/packages/bambu-studio.nix").read_text()
