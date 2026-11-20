@@ -156,13 +156,15 @@ print(version + "-" + build)
       # release may belong to another product (tagPrefix tells them apart), and
       # /releases/latest skips prereleases. Prerelease trains select a SemVer
       # channel; includePrereleases accepts releases upstream merely flags as
-      # prereleases.
-      local owner repo prefix channel prereleases pattern
+      # prereleases. requiredAssets skips releases that lack a build some
+      # platform needs, so a partial nightly is not an update.
+      local owner repo prefix channel prereleases pattern required
       owner="$(jq -r '.owner' <<<"${update_info}")"
       repo="$(jq -r '.repo' <<<"${update_info}")"
       prefix="$(jq -r '.tagPrefix // ""' <<<"${update_info}")"
       channel="$(jq -r '.channel // ""' <<<"${update_info}")"
       prereleases="$(jq -r '.includePrereleases // false' <<<"${update_info}")"
+      required="$(jq -c '.requiredAssets // []' <<<"${update_info}")"
       pattern=""
       if [[ -n "${channel}" ]]; then
         # The channel is interpolated into a regex below; keep it a SemVer
@@ -178,10 +180,12 @@ print(version + "-" + build)
         prereleases=true
       fi
       github_api "repos/${owner}/${repo}/releases?per_page=100" \
-        | jq -er --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" '
+        | jq -er --arg prefix "${prefix}" --arg pattern "${pattern}" --argjson prereleases "${prereleases}" \
+          --argjson required "${required}" '
             [
               .[]
               | select((.draft | not) and ($prereleases or (.prerelease | not)))
+              | select([.assets[]?.name] as $names | all($required[]; . as $r | any($names[]; test($r))))
               | .tag_name
               | select(startswith($prefix))
               | .[($prefix | length):]
