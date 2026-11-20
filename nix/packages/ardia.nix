@@ -72,11 +72,13 @@ if pkgs.stdenv.hostPlatform.isDarwin then
     dontFixup = true;
 
     # Upstream names the bundle Netnyahoo.app; the signature does not cover
-    # the bundle's own name.
+    # the bundle's own name. Since 0.2.47-nightly.9 the zip also carries
+    # AppleDouble `._*` entries, which only ditto folds back into attributes;
+    # extracted as files they break the bundle's seal.
     installPhase = ''
       runHook preInstall
 
-      unzip -q "$src" -d unpacked
+      unzip -q "$src" -d unpacked -x '*/._*'
       mkdir -p "$out/Applications" "$out/bin"
       mv unpacked/*.app "$out/Applications/Ardia.app"
       makeWrapper "$out/Applications/Ardia.app/Contents/MacOS/Ardia" "$out/bin/ardia"
