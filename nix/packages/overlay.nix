@@ -34,6 +34,7 @@ in
   vorssaint = localPackage ./vorssaint.nix;
 }
 // prev.lib.optionalAttrs isLinux {
+  ardia = localPackage ./ardia.nix;
   bambu-studio = localPackage ./bambu-studio.nix;
   ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
 }
