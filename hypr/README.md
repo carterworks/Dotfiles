@@ -34,7 +34,7 @@ UWSM-managed Hyprland session. No locker or idle-locking service is added.
 | Super+Shift+Return | Ghostty |
 | Super+Shift+F | Dolphin |
 | Super+Shift+M | Spotify |
-| Super+Shift+B | Zen |
+| Super+Shift+B | Ardia |
 | Alt+Space (hold) | Dictation (Hex) |
 | Ctrl+Space | Vicinae |
 | Super+F | Toggle floating |
@@ -94,6 +94,7 @@ The same selection configures:
 | Obsidian | Pinned upstream Everforest theme, in light mode |
 | Zellij | Built-in `everforest-light` |
 | Delta | Light-mode diffs using the terminal palette |
+| Ardia | Generated theme file from the palette; each profile's backdrop colour is set in Ardia |
 
 These are existing application ports, not pixel-identical generated themes.
 Zed's theme is installed locally, so theme extension updates cannot change the

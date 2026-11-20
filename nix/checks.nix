@@ -145,6 +145,9 @@ in
               zellij = home.xdg.configFile."zellij/config.kdl".source;
               telegram =
                 home.xdg.configFile."desktop-theme/telegram/${home.dotfiles.desktopTheme.name}.tdesktop-theme".source;
+              ardiaConfig = home.xdg.configFile."ardia/config/config.json".source;
+              ardiaTheme =
+                home.xdg.configFile."ardia/config/themes/${home.dotfiles.desktopTheme.name}.json".source;
             };
           }
         );

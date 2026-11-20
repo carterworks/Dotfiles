@@ -17,6 +17,57 @@ let
     inherit (cfg) name;
   };
   kdeScheme = pkgs.writeText "${cfg.name}.colors" toolkit.kde;
+  # Linux keeps the folder inside Chromium's user data dir; macOS does not.
+  ardiaConfigDir = if pkgs.stdenv.hostPlatform.isDarwin then "ardia" else "ardia/config";
+  # The window backdrop behind the sidebar is each profile's own colour, which
+  # a theme file cannot set.
+  ardiaRoles = with colors; {
+    card = surface;
+    panel = surface;
+    popoverFill = surface;
+    toastFill = surface;
+    tooltipFill = surface;
+    ntpBarSolid = surface;
+    control = surface;
+    field = surface;
+    tabSelected = surface;
+    pinnedSelectedFill = surface;
+    tabHover = hover;
+    rowHover = hover;
+    commandBarHover = hover;
+    toolbarHover = hover;
+    controlHover = hover;
+    progressTrack = hover;
+    tabPressed = pressed;
+    toolbarPressed = pressed;
+    controlPressed = pressed;
+    rowSelected = selection;
+    commandBarSelected = selection;
+    selection = selection;
+    panelBorder = border;
+    popoverBorder = border;
+    controlBorder = border;
+    fieldBorder = border;
+    tooltipRing = border;
+    textPrimary = text;
+    textTab = text;
+    tabSelectedText = text;
+    tooltipText = text;
+    mark = text;
+    textSecondary = muted;
+    icon = muted;
+    placeholder = muted;
+    chipText = muted;
+    accent = focus;
+    formAccent = focus;
+    goButton = focus;
+    formAccentPressed = link;
+    goButtonHover = link;
+    goButtonPressed = link;
+    destructive = negative;
+    inherit warning;
+    success = positive;
+  };
   telegramPalette = pkgs.writeText "colors.tdesktop-theme" (
     lib.concatStringsSep "\n" (
       lib.mapAttrsToList (key: color: "${key}: ${color};") {
@@ -337,6 +388,14 @@ in
         "zed/themes/desktop-theme.json".source = pkgs.fetchurl theme.apps.zed.source;
         "desktop-theme/obsidian.json".source = obsidianSettings;
         "desktop-theme/obsidian".source = obsidianTheme;
+        # Ardia only reads these; profiles and browsing data stay per machine.
+        "${ardiaConfigDir}/config.json".text = builtins.toJSON {
+          theme = cfg.name;
+          settings.appearance = theme.appearance;
+        };
+        "${ardiaConfigDir}/themes/${cfg.name}.json".text = builtins.toJSON {
+          ${theme.appearance} = ardiaRoles;
+        };
       };
 
       home.file = lib.listToAttrs (
