@@ -1,8 +1,8 @@
 - Practice red/green TDD when a test harness exists (skip for throwaway/POC work).
 - Never install packages imperatively (no Homebrew, pip, or global npm). Run Python through `uv` (`uv run python …`, or `uv run --with <pkg> python …`), run one-off missing CLIs via `nix shell nixpkgs#<pkg> --command …` (or `uvx` / `pnpm dlx`), and use `podman` instead of `docker`. If a project needs tools consistently, declare them in a Nix dev flake, a `uv` Python project, or a `pnpm` project.
 - Default to `pnpm` / `pnpm dlx` over `npm` / `npx` unless a repo's lockfile uses another package manager.
-- Save durable project instructions in the repo's `AGENTS.md` (with `CLAUDE.md` symlinked to `AGENTS.md`) and skills, never in Claude's private auto-memory.
+- Save durable project instructions in the repo's `AGENTS.md` (use an `@AGENTS.md` import or `CLAUDE.md` symlink only where needed) and skills, never in Claude's private auto-memory.
 - Use `gh` / `gh api` (not `webfetch`) for GitHub API or raw file reads.
-- Never run raw `pkill -f "<pattern>"` (it kills its own shell with exit 144); kill a saved PID or bracket the first char (`pkill -f "[p]attern"`).
+- Never run raw `pkill -f "<pattern>"` (it can match its own wrapper shell and kill itself); prefer killing a saved PID, or bracket the first char (`pkill -f "[p]attern"`) as a fallback.
 - In `zsh`, quote URLs and glob characters (`?`, `*`, `[…]`) and never assign to the read-only variable `status`.
 - Default to no comments; only comment to explain *why* (gotchas, constraints, workarounds), never *what*.
