@@ -14,6 +14,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Rex's Linux server: restore it once there is preview access (Discord `#alpha-registration`) by reverting "rex: remove the gated Linux server module and package", "update: remove the private Rex server flake refresh" and "docs: trim the Rex guide to the macOS client".
 - [ ] `opencode/idle-compaction/`: revisit background summary preparation when OpenCode's plugin API can prepare and hold a summary without applying it; leave the global `experimental.background_compaction` flag unchanged.
 - [ ] `nix/packages/ardia.nix`: move to stable (drop `channel` and `requiredAssets`) once a stable Ardia release ships the Linux AppImage. Until then both machines follow nightlies, and `./update` skips any nightly that lacks the Linux or Mac build.
+- [ ] `nix/hosts/carters-macbook-pro/default.nix`: remove the `chmod -R u+w` `postActivation` hook for `Ardia.app/Contents/Resources/Plugins` once upstream Ardia's `PluginPrograms.payloadDigest` stops depending on the owner write bit (`0o200`).
 
 ## Follow-up work
 
