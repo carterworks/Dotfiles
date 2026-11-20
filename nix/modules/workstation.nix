@@ -14,12 +14,15 @@
     astro-language-server
     ast-grep
     bash-language-server
+    bc
     bun
     codex
+    dnsutils
     docker-language-server
     dust
     fastfetch
     ffmpeg
+    file
     fish-lsp
     git-crypt
     gnupg
@@ -29,6 +32,7 @@
     hunk
     hyperfine
     klad
+    lsof
     markdown-oxide
     nodejs_24
     neovim
@@ -50,6 +54,7 @@
     taplo
     tmux
     typescript-language-server
+    unzip
     vscode-css-languageserver
     vscode-json-languageserver
     uv
