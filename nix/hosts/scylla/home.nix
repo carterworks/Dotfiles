@@ -259,7 +259,7 @@ in
       trap 'rm -f "$tmp"' EXIT
       if [ -f "$settings_file" ]; then
         ${pkgs.jq}/bin/jq -s --slurpfile settings ${claudeSettingsFile} \
-          'if length == 0 then {} elif length == 1 and (.[0] | type == "object") then .[0] else error("expected a single JSON object") end | if .attribution == false then . else . * $settings[0] end' \
+          'if length == 0 then {} elif length == 1 and (.[0] | type == "object") then .[0] else error("expected a single JSON object") end | if .attribution == false then . elif .includeCoAuthoredBy == false and .attribution == null then . + { attribution: { commit: "", pr: "" } } else . * $settings[0] end' \
           "$settings_file" >"$tmp"
       else
         ${pkgs.jq}/bin/jq -n --slurpfile settings ${claudeSettingsFile} \
