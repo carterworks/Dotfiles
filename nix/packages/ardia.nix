@@ -108,11 +108,13 @@ else
       passthru
       ;
 
+    # Ardia's settings install its control CLI as ~/.local/bin/ardia, which
+    # shadows the browser on PATH and cannot launch it.
     extraInstallCommands = ''
       install -Dm644 ${contents}/share/icons/hicolor/256x256/apps/ardia.png \
         $out/share/icons/hicolor/256x256/apps/ardia.png
       install -Dm644 ${contents}/ardia.desktop $out/share/applications/ardia.desktop
       substituteInPlace $out/share/applications/ardia.desktop \
-        --replace-fail 'Exec=AppRun' 'Exec=ardia'
+        --replace-fail 'Exec=AppRun' "Exec=$out/bin/ardia"
     '';
   }
