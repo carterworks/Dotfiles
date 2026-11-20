@@ -28,7 +28,9 @@ let
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
 
   claudeSettings = {
-    includeCoAuthoredBy = false;
+    attribution = {
+      commit = "";
+    };
   };
   claudeSettingsFile = pkgs.writeText "claude-settings.json" (builtins.toJSON claudeSettings);
 
@@ -241,20 +243,31 @@ in
   # Claude Code mutates ~/.claude/settings.json at runtime; merge our entries
   # instead of replacing the file.
   home.activation.claudeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    set -eu
-    settings_dir=${lib.escapeShellArg "${home}/.claude"}
-    settings_file="$settings_dir/settings.json"
-    mkdir -p "$settings_dir"
-    tmp="$(mktemp "$settings_file.XXXXXX")"
-    if [ -f "$settings_file" ]; then
-      ${pkgs.jq}/bin/jq --slurpfile settings ${claudeSettingsFile} \
-        '. + $settings[0]' "$settings_file" >"$tmp"
-    else
-      ${pkgs.jq}/bin/jq -n --slurpfile settings ${claudeSettingsFile} \
-        '$settings[0]' >"$tmp"
-    fi
-    chmod 600 "$tmp"
-    mv "$tmp" "$settings_file"
+    (
+      set -eu
+      if [ -n "''${DRY_RUN:-}" ]; then
+        exit 0
+      fi
+      settings_dir=${lib.escapeShellArg "${home}/.claude"}
+      settings_file="$settings_dir/settings.json"
+      if [ -L "$settings_file" ] || { [ -e "$settings_file" ] && [ ! -f "$settings_file" ]; }; then
+        echo "claudeSettings: refusing to overwrite non-regular $settings_file" >&2
+        exit 1
+      fi
+      mkdir -p "$settings_dir"
+      tmp="$(mktemp "$settings_file.XXXXXX")"
+      trap 'rm -f "$tmp"' EXIT
+      if [ -f "$settings_file" ]; then
+        ${pkgs.jq}/bin/jq -s --slurpfile settings ${claudeSettingsFile} \
+          'if length == 0 then {} elif length == 1 and (.[0] | type == "object") then .[0] else error("expected a single JSON object") end | if .attribution == false then . else . * $settings[0] end' \
+          "$settings_file" >"$tmp"
+      else
+        ${pkgs.jq}/bin/jq -n --slurpfile settings ${claudeSettingsFile} \
+          '$settings[0]' >"$tmp"
+      fi
+      chmod 600 "$tmp"
+      mv -T -- "$tmp" "$settings_file"
+    )
   '';
 
   programs.mangohud = {
