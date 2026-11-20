@@ -27,6 +27,11 @@ let
   };
   claudeMcpServersFile = pkgs.writeText "claude-mcp-servers.json" (builtins.toJSON claudeMcpServers);
 
+  claudeSettings = {
+    includeCoAuthoredBy = false;
+  };
+  claudeSettingsFile = pkgs.writeText "claude-settings.json" (builtins.toJSON claudeSettings);
+
   inherit (config.lib.dotfiles) link linkEach;
   kdeConfigFiles = [
     "arkrc"
@@ -115,7 +120,7 @@ in
     // linkEach ".config/quickshell" "quickshell"
     // lib.genAttrs' kdeConfigFiles (file: lib.nameValuePair ".config/${file}" (link "kde/${file}"))
     // {
-      ".claude/CLAUDE.md".source = ../../../agents/AGENTS.md;
+      ".claude/CLAUDE.md" = link "agents/AGENTS.md";
       ".config/quickshell/wallpaper.jpg" = link "assets/wallpapers/01-miasma.jpg";
       ".config/vicinae/settings.json" = link "vicinae-config.jsonc";
       ".local/share/color-schemes/CosmicDark.colors" =
@@ -231,6 +236,25 @@ in
     fi
     chmod 600 "$tmp"
     mv "$tmp" "$config_file"
+  '';
+
+  # Claude Code mutates ~/.claude/settings.json at runtime; merge our entries
+  # instead of replacing the file.
+  home.activation.claudeSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    set -eu
+    settings_dir=${lib.escapeShellArg "${home}/.claude"}
+    settings_file="$settings_dir/settings.json"
+    mkdir -p "$settings_dir"
+    tmp="$(mktemp "$settings_file.XXXXXX")"
+    if [ -f "$settings_file" ]; then
+      ${pkgs.jq}/bin/jq --slurpfile settings ${claudeSettingsFile} \
+        '. + $settings[0]' "$settings_file" >"$tmp"
+    else
+      ${pkgs.jq}/bin/jq -n --slurpfile settings ${claudeSettingsFile} \
+        '$settings[0]' >"$tmp"
+    fi
+    chmod 600 "$tmp"
+    mv "$tmp" "$settings_file"
   '';
 
   programs.mangohud = {
