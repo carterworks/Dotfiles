@@ -153,4 +153,13 @@ in
     enableKeyMapping = true;
     remapCapsLockToEscape = true;
   };
+
+  # Ardia's built-in plugin digest hashes `st_mode & 0o755` (including u+w),
+  # which nix-darwin's `rsync --chmod=-w` strips; restore u+w on the bundled
+  # plugins so Settings › Plugins can install the CLI.
+  system.activationScripts.postActivation.text = ''
+    if [ -d "/Applications/Nix Apps/Ardia.app/Contents/Resources/Plugins" ]; then
+      chmod -R u+w "/Applications/Nix Apps/Ardia.app/Contents/Resources/Plugins"
+    fi
+  '';
 }
