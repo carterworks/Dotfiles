@@ -1,5 +1,6 @@
 import configparser
 import json
+import re
 from pathlib import Path
 import sys
 import tomllib
@@ -71,4 +72,14 @@ obsidian = read_json(files["obsidianSettings"])
 assert obsidian["appearance"]["cssTheme"] == read_json(files["obsidianManifest"])["name"]
 assert ".theme-light" in Path(files["obsidianCss"]).read_text()
 assert read_json(files["audit"])["vaults"] == obsidian["vaults"], "Audit resolves vaults against the working directory"
+
+ardia_config = read_json(files["ardiaConfig"])
+assert ardia_config["settings"]["appearance"] == mode, "Ardia would draw the theme's roles in the other appearance"
+ardia = read_json(files["ardiaTheme"])
+assert re.fullmatch(r"[a-z0-9][a-z0-9_-]*", ardia_config["theme"]), "Ardia ignores theme names outside this pattern"
+assert set(ardia) == {mode}, "Ardia theme sets roles for an appearance it never shows"
+roles = ardia[mode]
+assert (roles["panel"], roles["textPrimary"], roles["accent"]) == (colors["surface"], colors["text"], colors["focus"])
+for role, value in roles.items():
+    assert re.fullmatch(r"#[0-9a-fA-F]{6}", value), (role, value)
 print("Desktop theme configuration checks passed")
