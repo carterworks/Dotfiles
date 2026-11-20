@@ -3,7 +3,7 @@ local mod = "SUPER"
 hl.bind(mod .. " + SHIFT + Return", hl.dsp.exec_cmd("uwsm app -- ghostty"))
 hl.bind(mod .. " + SHIFT + F", hl.dsp.exec_cmd("uwsm app -- dolphin"))
 hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("uwsm app -- spotify"))
-hl.bind(mod .. " + SHIFT + B", hl.dsp.exec_cmd("uwsm app -- zen-beta"))
+hl.bind(mod .. " + SHIFT + B", hl.dsp.exec_cmd("uwsm app -- ardia.desktop"))
 -- Hex's GlobalShortcuts portal gives the app press and release. Driving its CLI
 -- commands instead lost the release: a stop that arrived before the start was
 -- dropped, leaving the recording pill up until another stop. The bind name is
