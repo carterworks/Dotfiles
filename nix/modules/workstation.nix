@@ -9,6 +9,7 @@
 
   environment.systemPackages = with pkgs; [
     agent-browser
+    ardia
     aria2
     astro-language-server
     ast-grep

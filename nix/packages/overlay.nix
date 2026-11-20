@@ -20,6 +20,7 @@ in
   hermes-agent = inputs.hermes-agent.packages.${system}.default;
   zen-browser = inputs.zen-browser.packages.${system}.beta;
   # nixpkgs' fnox fails to build, so it is never cached. See TODO.md.
+  ardia = localPackage ./ardia.nix;
   fnox = localPackage ./fnox.nix;
   hex = final.callPackage ./hex.nix { hexSource = inputs.hex; };
   klad = final.callPackage ./klad.nix { kladSource = inputs.klad; };
@@ -34,7 +35,6 @@ in
   vorssaint = localPackage ./vorssaint.nix;
 }
 // prev.lib.optionalAttrs isLinux {
-  ardia = localPackage ./ardia.nix;
   bambu-studio = localPackage ./bambu-studio.nix;
   ship-of-harkinian = localPackage ./ship-of-harkinian.nix;
 }

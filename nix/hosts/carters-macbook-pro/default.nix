@@ -104,6 +104,11 @@ in
   system.defaults = {
     # Hex runs from the read-only Nix store; ./update bumps it instead.
     CustomUserPreferences."anomaly.hex".DisableUpdates = true;
+    # Likewise for Ardia, which Sparkle would otherwise try to replace.
+    CustomUserPreferences."com.ardia.browser" = {
+      SUEnableAutomaticChecks = false;
+      SUAutomaticallyUpdate = false;
+    };
     CustomUserPreferences."com.superlogical.rex" = {
       "Workspace.terminalFontPointSize" = 14.0;
       "Workspace.terminalStartupCommand" = lib.getExe pkgs.fish;

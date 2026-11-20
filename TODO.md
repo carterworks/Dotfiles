@@ -13,7 +13,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `nix/packages/hex.nix`: remove the PipeWire client override (`module.rt = false`) once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME`; with the stock config the kernel kills Hex (`status=9/KILL`) as soon as it records or plays a sound.
 - [ ] Rex's Linux server: restore it once there is preview access (Discord `#alpha-registration`) by reverting "rex: remove the gated Linux server module and package", "update: remove the private Rex server flake refresh" and "docs: trim the Rex guide to the macOS client".
 - [ ] `opencode/idle-compaction/`: revisit background summary preparation when OpenCode's plugin API can prepare and hold a summary without applying it; leave the global `experimental.background_compaction` flag unchanged.
-- [ ] `nix/packages/ardia.nix`: drop `channel = "nightly"` once a stable Ardia release ships the Linux AppImage. Until then, `./update` reports a failed Ardia update whenever the newest nightly has no Linux build, and leaves it at the last one that did.
+- [ ] `nix/packages/ardia.nix`: move to stable (drop `channel` and `requiredAssets`) once a stable Ardia release ships the Linux AppImage. Until then both machines follow nightlies, and `./update` skips any nightly that lacks the Linux or Mac build.
 
 ## Follow-up work
 
