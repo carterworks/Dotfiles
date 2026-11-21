@@ -51,6 +51,7 @@ in
   };
 
   home.packages = [
+    pkgs.carapace
     pkgs.inter
     pkgs.iosevka-bin
   ];
@@ -275,6 +276,152 @@ in
       if set -q REX_BIN_DIR; and test -n "$REX_BIN_DIR"
           fish_add_path --path --prepend --move "$REX_BIN_DIR"
       end
+    '';
+  };
+
+  # zsh/zshrc.zsh sets these up itself: a cached compinit, and starship, atuin,
+  # zoxide and direnv from cached init scripts. Home Manager's integrations
+  # would rerun each tool's init on every start, and fzf's would take Tab.
+  programs.starship.enableZshIntegration = false;
+  programs.atuin.enableZshIntegration = false;
+  programs.zoxide.enableZshIntegration = false;
+  programs.direnv.enableZshIntegration = false;
+  programs.fzf.enableZshIntegration = false;
+
+  programs.zsh = {
+    enableCompletion = false;
+    history = {
+      size = 20000;
+      save = 20000;
+      ignoreDups = true;
+      ignoreAllDups = true;
+      ignoreSpace = true;
+      saveNoDups = true;
+      share = true;
+    };
+    envExtra = ''
+      path=(~/.local/bin $path)
+      [[ -d ~/.lmstudio/bin ]] && path+=(~/.lmstudio/bin)
+    '';
+    initContent = ''
+      ZSH_PLUGIN_AUTOSUGGESTIONS=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+      ZSH_PLUGIN_COMPLETIONS=${pkgs.zsh-completions}/share/zsh/site-functions
+      ZSH_PLUGIN_FAST_SYNTAX=${pkgs.zsh-fast-syntax-highlighting}/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+      ZSH_PLUGIN_FZF_TAB=${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
+      source ${lib.escapeShellArg "${checkout}/zsh/zshrc.zsh"}
+
+      _zff_cache_source fnox ${lib.getExe' pkgs.fnox "fnox"} ${lib.getExe' pkgs.fnox "fnox"} activate zsh
+      [[ -x /opt/homebrew/bin/brew ]] && _zff_cache_source brew /opt/homebrew/bin/brew /opt/homebrew/bin/brew shellenv zsh
+
+      if (( $+commands[hx] )); then
+        export EDITOR=hx
+      elif (( $+commands[helix] )); then
+        export EDITOR=helix
+        alias hx=helix
+      else
+        for editor in nvim vim vi micro nano; do
+          (( $+commands[$editor] )) && { export EDITOR=$editor; break; }
+        done
+        unset editor
+      fi
+
+      mkcd() {
+        if (( $# != 1 )); then
+          print -u2 'Usage: mkcd <directory>'
+          return 2
+        fi
+        command mkdir -p -- "$1" && cd -- "$1"
+      }
+
+      # Runs a coding agent in a new Herdr tab, starting the Herdr server if needed,
+      # with sleep inhibited while it runs.
+      __herdr_agent_tab() {
+        local -a agent_command=(${lib.escapeShellArgs agentInhibitor} "$@")
+        if [[ -n ''${HERDR_ENV-} ]]; then
+          command "''${agent_command[@]}"
+          return
+        fi
+
+        local -a herdr_args=(--session default)
+        local workspace_json workspace_status error_code attempt
+        workspace_json=$(command herdr $herdr_args workspace list 2>&1)
+        workspace_status=$?
+        if (( workspace_status != 0 )); then
+          error_code=$(print -r -- "$workspace_json" | ${lib.getExe pkgs.jq} -r '.error.code // empty')
+          if [[ $error_code != server_not_running ]]; then
+            print -ru2 -- "$workspace_json"
+            return $workspace_status
+          fi
+          command herdr $herdr_args server </dev/null >/dev/null 2>&1 &!
+          for attempt in {1..100}; do
+            workspace_json=$(command herdr $herdr_args workspace list 2>&1)
+            workspace_status=$?
+            (( workspace_status == 0 )) && break
+            sleep 0.05
+          done
+          if (( workspace_status != 0 )); then
+            print -ru2 -- "$workspace_json"
+            return $workspace_status
+          fi
+        fi
+
+        local workspace_id tab_json pane_id
+        workspace_id=$(print -r -- "$workspace_json" | ${lib.getExe pkgs.jq} -er '.result.workspaces[] | select(.focused) | .workspace_id') || return
+        tab_json=$(command herdr $herdr_args tab create --workspace "$workspace_id" --cwd "$PWD" --focus) || return
+        pane_id=$(print -r -- "$tab_json" | ${lib.getExe pkgs.jq} -er '.result.root_pane.pane_id') || return
+        command herdr $herdr_args pane run "$pane_id" "''${(j: :)''${(@q-)agent_command}}" || return
+        command herdr session attach default
+      }
+
+      __oc_copy_osc52() {
+        local payload
+        if [[ -w /dev/tty ]] && payload=$(print -rn -- "$1" | command base64 | command tr -d '\n'); then
+          printf '\e]52;c;%s\a' "$payload" >/dev/tty && return 0
+        fi
+        print -u2 'oc: OSC 52 clipboard copy is unavailable; password was not copied'
+        return 1
+      }
+
+      # Prints the one "  Password <value>" line's value from opencode2 pair output.
+      __oc_pair_password() {
+        local line
+        local -a found
+        for line in "''${(@f)1}"; do
+          [[ $line =~ '^  Password[[:space:]]+(.+)$' ]] && found+=("$match[1]")
+        done
+        (( $#found == 1 )) && print -r -- "$found[1]"
+      }
+
+      oc() {
+        if [[ ''${1-} == pair ]]; then
+          local output_file pair_status password
+          output_file=$(command mktemp) || return
+          command opencode2 pair | command tee "$output_file"
+          pair_status=''${pipestatus[1]}
+          local pair_output=$(<"$output_file")
+          command rm -f -- "$output_file"
+          (( pair_status == 0 )) || return $pair_status
+          if ! password=$(__oc_pair_password "$pair_output"); then
+            print -u2 'oc: could not find the password in opencode2 pair output'
+            return 1
+          fi
+          __oc_copy_osc52 "$password"
+          return
+        fi
+        __herdr_agent_tab opencode2 "$@"
+      }
+      _zff_completes_as[oc]=opencode2
+
+      ocpw() {
+        local pair_output password
+        pair_output=$(command opencode2 pair) || return
+        if ! password=$(__oc_pair_password "$pair_output"); then
+          print -u2 'ocpw: could not find the password in opencode2 pair output'
+          return 1
+        fi
+        print -r -- "$password"
+        __oc_copy_osc52 "$password"
+      }
     '';
   };
 

@@ -1,0 +1,72 @@
+#!/usr/bin/env -S zsh -f
+# Starts zsh with zsh/zshrc.zsh without installing it: plugins come from nixpkgs,
+# and history, caches and the Atuin export stay in zsh/dev/. The tests in
+# tests/zsh/ drive this. Usage: zsh/try [--refresh] [--sync] [--warmup] [zsh args]
+set -euo pipefail
+
+root="${${(%):-%x}:A:h}"
+zdotdir="$root/dev"
+cache_dir="$zdotdir/.cache"
+paths_cache="$cache_dir/nix-paths.env"
+mkdir -p -- "$cache_dir"
+
+force_refresh=0
+force_sync=0
+warmup_only=0
+while (( $# > 0 )); do
+  case "$1" in
+    --refresh) force_refresh=1; shift ;;
+    --sync) force_sync=1; shift ;;
+    --warmup) warmup_only=1; shift ;;
+    --) shift; break ;;
+    *) break ;;
+  esac
+done
+
+_paths_valid() {
+  [[ -n "${ZSH_CARAPACE_BIN:-}" && -x "$ZSH_CARAPACE_BIN" ]] \
+    && [[ -n "${ZSH_PLUGIN_AUTOSUGGESTIONS:-}" && -r "$ZSH_PLUGIN_AUTOSUGGESTIONS" ]] \
+    && [[ -n "${ZSH_PLUGIN_COMPLETIONS:-}" && -d "$ZSH_PLUGIN_COMPLETIONS" ]] \
+    && [[ -n "${ZSH_PLUGIN_FAST_SYNTAX:-}" && -r "$ZSH_PLUGIN_FAST_SYNTAX" ]] \
+    && [[ -n "${ZSH_PLUGIN_FZF_TAB:-}" && -r "$ZSH_PLUGIN_FZF_TAB" ]]
+}
+
+# Resolving with nix build takes seconds; reuse the last answer while it still exists.
+if (( ! force_refresh )) && ! _paths_valid && [[ -r "$paths_cache" ]]; then
+  source "$paths_cache"
+fi
+
+if (( force_refresh )) || ! _paths_valid; then
+  resolve_pkg() {
+    nix build --no-link --print-out-paths "nixpkgs#$1" 2>/dev/null
+  }
+  export ZSH_CARAPACE_BIN="$(resolve_pkg carapace)/bin/carapace"
+  export ZSH_PLUGIN_AUTOSUGGESTIONS="$(resolve_pkg zsh-autosuggestions)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  export ZSH_PLUGIN_COMPLETIONS="$(resolve_pkg zsh-completions)/share/zsh/site-functions"
+  export ZSH_PLUGIN_FAST_SYNTAX="$(resolve_pkg zsh-fast-syntax-highlighting)/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
+  export ZSH_PLUGIN_FZF_TAB="$(resolve_pkg zsh-fzf-tab)/share/fzf-tab/fzf-tab.plugin.zsh"
+
+  cat >| "$paths_cache" <<EOF
+export ZSH_CARAPACE_BIN=${(qq)ZSH_CARAPACE_BIN}
+export ZSH_PLUGIN_AUTOSUGGESTIONS=${(qq)ZSH_PLUGIN_AUTOSUGGESTIONS}
+export ZSH_PLUGIN_COMPLETIONS=${(qq)ZSH_PLUGIN_COMPLETIONS}
+export ZSH_PLUGIN_FAST_SYNTAX=${(qq)ZSH_PLUGIN_FAST_SYNTAX}
+export ZSH_PLUGIN_FZF_TAB=${(qq)ZSH_PLUGIN_FZF_TAB}
+EOF
+fi
+
+export ZDOTDIR="$zdotdir"
+export ZSH_FISH_FEEL_CACHE="${ZSH_FISH_FEEL_CACHE:-$cache_dir}"
+export ZSH_FISH_FEEL_HISTFILE="${ZSH_FISH_FEEL_HISTFILE:-$zdotdir/.zsh_history}"
+export ZSH_FISH_FEEL_ATUIN_HIST="${ZSH_FISH_FEEL_ATUIN_HIST:-$cache_dir/atuin-history.zsh}"
+
+if (( force_sync )) || [[ ! -s "$ZSH_FISH_FEEL_ATUIN_HIST" ]]; then
+  "$root/sync-atuin-history" "$ZSH_FISH_FEEL_ATUIN_HIST"
+fi
+
+if (( warmup_only )); then
+  ZSH_FISH_FEEL_NO_DEFER=1 ZSH_FISH_FEEL_SKIP_EXIT_SYNC=1 zsh -i -c 'exit'
+  exit 0
+fi
+
+exec zsh "$@"
