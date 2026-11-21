@@ -16,11 +16,15 @@ in
       url = "http://127.0.0.1:2283";
       apiKeyFile = "/run/secrets/tv-screensaver/immich-api-key";
     };
-    settings.sources.albums = [
-      "3af0b920-fe46-4fb1-ad04-363fc29fc306"
-      "2d6014f4-25d7-4606-8895-49ad1c82c3a5"
-      "0e16b2c8-075b-4cc0-93ff-cb529c9d975a"
-    ];
+    settings.sources = {
+      # Worth Saving
+      albums = [ "a0de98ad-36a8-4e7f-9ebc-a8cd6c27b0fa" ];
+      # Arianne and Victoria
+      people = [
+        "8032d83a-4f2b-4456-a45a-b171db6bf00c"
+        "26d56cea-1b3b-415e-97b7-8af5e25425e8"
+      ];
+    };
     # Fallback for when the TV's Tailscale is down: an exception to serving
     # apps only through Tailscale Serve, open to the TV's address alone.
     lan = {
