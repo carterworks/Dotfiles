@@ -173,6 +173,7 @@ in
     ./podmaker.nix
     ./media-apps.nix
     ./sso.nix
+    ./tv-screensaver.nix
   ];
 
   home-manager.users.carter = ./home.nix;
