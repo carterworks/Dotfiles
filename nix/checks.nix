@@ -100,7 +100,7 @@ let
         python3 ${source}/.github/test-report.py
         touch "$out"
       '';
-      # zsh/zshrc.zsh loads with the real plugins and registers carapace.
+      # zsh/zshrc.zsh loads with the real plugins and registers its completions.
       # The interactive behavior (picker, suggestions, Fish parity) needs a terminal,
       # Fish and Atuin, so tests/zsh/ covers that on a workstation instead.
       zsh =
@@ -113,7 +113,7 @@ let
           }
           ''
             for file in ${source}/zsh/zshrc.zsh ${source}/zsh/try ${source}/zsh/fish-env-to-zsh \
-              ${source}/zsh/sync-atuin-history ${source}/tests/zsh/*.zsh; do
+              ${source}/zsh/sync-atuin-history ${source}/zsh/completions/_* ${source}/tests/zsh/*.zsh; do
               zsh -n "$file"
             done
             export HOME=$TMPDIR ZSH_FISH_FEEL_SKIP_EXIT_SYNC=1 ZSH_FISH_FEEL_NO_DIRENV=1
@@ -123,7 +123,13 @@ let
             export ZSH_PLUGIN_FZF_TAB=${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
             zsh -f -c '
               source ${source}/zsh/zshrc.zsh || exit 1
-              [[ $_comps[git] == _carapace_completer ]] || { print -u2 "carapace did not load"; exit 1 }
+              (( $+_comps[git] )) || { print -u2 "carapace did not load"; exit 1 }
+              for file in ${source}/zsh/completions/_*; do
+                read -r first < $file
+                for name in ''${=first#\#compdef }; do
+                  [[ $_comps[$name] == ''${file:t} ]] || { print -u2 "$name completes with $_comps[$name], not ''${file:t}"; exit 1 }
+                done
+              done
             '
             touch "$out"
           '';

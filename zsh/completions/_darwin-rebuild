@@ -1,0 +1,47 @@
+#compdef darwin-rebuild
+# From darwin-rebuild's usage text (showSyntax).
+local -a actions=(
+  'switch:build, activate and make the new system the default'
+  'activate:activate the current system'
+  'build:build the new system without activating it'
+  'check:build and run activation checks'
+  'edit:open the configuration in $EDITOR'
+  'changelog:show changes to nix-darwin options'
+)
+local curcontext=$curcontext state line
+_arguments -C -s \
+  '(- *)--help[show usage]' \
+  '1: :->action' \
+  '--list-generations[list system generations]' \
+  '(-p --profile-name)'{-p,--profile-name}'[use a named system profile]:profile name' \
+  '--rollback[switch to the previous generation]' \
+  '(-G --switch-generation)'{-G,--switch-generation}'[switch to a generation]:generation' \
+  '*'{-v,--verbose}'[more verbose output]' \
+  '-Q[no build output]' \
+  '(-j --max-jobs)'{-j,--max-jobs}'[parallel build jobs]:jobs' \
+  '--cores[cores per build job]:cores' \
+  '--dry-run[show what would be built]' \
+  '(-k --keep-going)'{-k,--keep-going}'[keep going after a build failure]' \
+  '(-K --keep-failed)'{-K,--keep-failed}'[keep failed build directories]' \
+  '--fallback[build from source when substitution fails]' \
+  '--show-trace[show evaluation traces]' \
+  '(-L --print-build-logs)'{-L,--print-build-logs}'[print full build logs]' \
+  '--impure[allow impure evaluation]' \
+  '*-I[add a path to the Nix search path]:path:_files -/' \
+  '*--option[set a Nix option]:name: :value' \
+  '*--arg[pass an argument]:name: :Nix expression' \
+  '*--argstr[pass a string argument]:name: :string' \
+  '(--flake)--no-flake[build from darwin-configuration.nix]' \
+  '(--no-flake)--flake[flake reference (path#configuration)]:flake:_files -/' \
+  '--commit-lock-file[commit flake.lock changes]' \
+  '--recreate-lock-file[recreate flake.lock]' \
+  '--no-update-lock-file[do not update flake.lock]' \
+  '--no-write-lock-file[do not write flake.lock]' \
+  '*--override-input[override a flake input]:input: :flake reference' \
+  '*--update-input[update a flake input]:input' \
+  '--no-registries[do not use flake registries]' \
+  '--offline[do not use the network]' \
+  '--refresh[refetch cached flakes]' \
+  '--substituters[binary caches to use]:substituters' \
+  '--log-format[log format]:format:(raw internal-json bar bar-with-logs)'
+[[ $state == action ]] && _describe -t actions 'darwin-rebuild action' actions

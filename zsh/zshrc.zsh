@@ -20,6 +20,8 @@ for profile in ${(z)NIX_PROFILES}; do
 done
 
 [[ -n "${ZSH_PLUGIN_COMPLETIONS:-}" && -d "$ZSH_PLUGIN_COMPLETIONS" ]] && fpath=("$ZSH_PLUGIN_COMPLETIONS" $fpath)
+# Hand-written completions for programs nothing else completes.
+fpath=("$_zff_root/completions" $fpath)
 
 # Nix store binaries have normalized epoch mtimes, so key cached init scripts by
 # resolved realpath + exact arguments rather than file mtime. Publish atomically
@@ -257,6 +259,14 @@ _zff_load_carapace() {
     export CARAPACE_MATCH=1
     # Carapace is the explicit provider for git, npm, pnpm, uv (including pyproject.toml scripts), rg, gh, etc.
     _zff_cache_source carapace "$(command -v carapace)" carapace _carapace zsh
+    # Carapace claims some commands it can't complete (bunx); the hand-written
+    # completions exist only for those, so they win.
+    local file first
+    for file in "$_zff_root"/completions/_*(N); do
+      read -r first < "$file"
+      autoload -Uz "${file:t}"
+      compdef "${file:t}" ${=first#\#compdef }
+    done
     functions -c _carapace_completer _zff_carapace_completer
     _carapace_completer() {
       _zff_carapace_completer "$@"
@@ -307,7 +317,7 @@ _zff_complete_as() {
   (( CURRENT += $#replacement - 1 ))
   _normal
 }
-typeset -gA _zff_completes_as=(pnpx 'pnpm dlx' npx 'npm exec')
+typeset -gA _zff_completes_as=(pnpx 'pnpm dlx' npx 'npm exec' bundler bundle)
 _zff_load_completes_as() {
   setopt localoptions extendedglob
   local file name line target
