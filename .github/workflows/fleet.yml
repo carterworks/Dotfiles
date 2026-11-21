@@ -87,6 +87,20 @@ jobs:
         run: |
           git fetch -q "$RUNNER_TEMP/update.bundle"
           git checkout -q --detach "$COMMIT"
+      # The TV screensaver flake input is a private repository. Nix clones it
+      # over SSH as the runner user, with a read-only deploy key on that repo.
+      - name: Let Nix fetch the private flake input
+        env:
+          DEPLOY_KEY: ${{ secrets.TV_SCREENSAVER_DEPLOY_KEY }}
+        run: |
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::warning title=No deploy key::TV_SCREENSAVER_DEPLOY_KEY is not set, so the tv-screensaver input cannot be fetched."
+            exit 0
+          fi
+          install -d -m 0700 ~/.ssh
+          (umask 077; printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/tv-screensaver-deploy)
+          printf 'Host github.com\n  IdentityFile ~/.ssh/tv-screensaver-deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
       # Nix's installer fetches its tarball once, without retrying, and a
       # runner's network occasionally drops that download.
       - name: Install Nix

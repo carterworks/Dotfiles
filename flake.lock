@@ -632,6 +632,7 @@
         "nixpkgs": "nixpkgs_4",
         "numtide-llm-agents": "numtide-llm-agents",
         "systems": "systems",
+        "tv-screensaver": "tv-screensaver",
         "zen-browser": "zen-browser"
       }
     },
@@ -666,6 +667,26 @@
         "owner": "numtide",
         "repo": "treefmt-nix",
         "type": "github"
+      }
+    },
+    "tv-screensaver": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795300446,
+        "narHash": "sha256-R5Z/F6+yaDoEYzWvXhbXg/nRotoF/HfvQgcybb7MGMc=",
+        "ref": "refs/heads/main",
+        "rev": "1b7cd7793533ad94ce8681bed5340cd7ac8ca2db",
+        "revCount": 36,
+        "type": "git",
+        "url": "ssh://git@github.com/carterworks/sony-tv-hacking"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/carterworks/sony-tv-hacking"
       }
     },
     "uv2nix": {
