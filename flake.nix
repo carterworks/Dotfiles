@@ -60,6 +60,12 @@
       inputs.home-manager.follows = "home-manager";
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
+    # Private: CI and prostagma fetch it with read-only deploy keys (see
+    # nix/hosts/prostagma/tv-screensaver.nix).
+    tv-screensaver = {
+      url = "git+ssh://git@github.com/carterworks/sony-tv-hacking";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
