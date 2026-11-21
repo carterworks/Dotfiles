@@ -16,6 +16,11 @@ in
       url = "http://127.0.0.1:2283";
       apiKeyFile = "/run/secrets/tv-screensaver/immich-api-key";
     };
+    # Weather, forecast and sunrise/sunset for the overlay.
+    homeAssistant = {
+      url = "http://homeassistant:8123";
+      tokenFile = "/run/secrets/tv-screensaver/hass-token";
+    };
     settings.sources = {
       # Worth Saving
       albums = [ "a0de98ad-36a8-4e7f-9ebc-a8cd6c27b0fa" ];
@@ -38,6 +43,15 @@ in
   # that file, so the unit changes only when it does.
   dotfiles.fnox.secrets.TV_SCREENSAVER_IMMICH_API_KEY = {
     path = "/run/secrets/tv-screensaver/immich-api-key";
+    file = builtins.path {
+      path = "${inputs.tv-screensaver}/fnox.toml";
+      name = "tv-screensaver-fnox.toml";
+    };
+    requiredBy = [ "tv-screensaver.service" ];
+  };
+
+  dotfiles.fnox.secrets.TV_SCREENSAVER_HASS_TOKEN = {
+    path = "/run/secrets/tv-screensaver/hass-token";
     file = builtins.path {
       path = "${inputs.tv-screensaver}/fnox.toml";
       name = "tv-screensaver-fnox.toml";
