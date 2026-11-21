@@ -56,6 +56,7 @@ def fixture_workspace(tmp_path_factory: pytest.TempPathFactory) -> Path:
     )
     (ws / "hello.py").write_text('print("hello")\n')
     (ws / "README.md").write_text("# Fixture\n")
+    (ws / "sales.csv").write_text("region,total\nwest,3\n")
 
     subprocess.run(["git", "add", "."], cwd=ws, check=True, capture_output=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=ws, check=True, capture_output=True)
@@ -508,6 +509,43 @@ def test_file_completion_is_case_insensitive_and_substring_like_fish(
 def test_fish_completions_fill_gaps_zsh_cannot_complete(
     launcher_ready: Path, fixture_workspace: Path, typed: str, expected: str
 ) -> None:
+    async def _run() -> None:
+        zsh = await _open_zsh(launcher_ready, fixture_workspace)
+        try:
+            await asyncio.sleep(0.4)
+            await zsh.type(typed)
+            await zsh.press("Tab")
+            await zsh.get_by_text(expected).expect(timeout=6000)
+        finally:
+            await zsh.close_quiet()
+
+    asyncio.run(_run())
+
+
+@pytest.mark.parametrize(
+    ("typed", "expected"),
+    [
+        ("cheat gi", "git"),  # cheat.sh topics are command names
+        ("cheat :", ":list"),  # and cheat.sh's own pages
+        ("csv ", "sales.csv"),
+        ("fisher ", "install"),
+        ("pp --o", "--output"),
+        ("notifyd -", "-log_file"),
+        ("fff-mcp --no-", "--no-watch"),
+        ("darwin-rebuild ", "switch"),
+        ("darwin-rebuild switch --", "--flake"),
+        ("nub ", "install"),
+        ("nub run ", "lint:fix"),  # package.json scripts
+        ("bunx --", "--no-install"),
+        ("ardia ", "browse"),
+        ("ardia browse sn", "snapshot"),  # completes as agent-browser
+        ("agent-browser scr", "screenshot"),
+        ("agent-browser get ", "title"),
+        ("agent-browser --head", "--headed"),
+        ("bundler ", "install"),  # completes as bundle
+    ],
+)
+def test_handwritten_completions(launcher_ready: Path, fixture_workspace: Path, typed: str, expected: str) -> None:
     async def _run() -> None:
         zsh = await _open_zsh(launcher_ready, fixture_workspace)
         try:

@@ -1,0 +1,25 @@
+#compdef fisher
+# bin/fisher, Fish's plugin manager. Installed plugins are listed one per line in
+# fish_plugins; update and remove take those.
+local plugins_file="${XDG_CONFIG_HOME:-$HOME/.config}/fish/fish_plugins"
+local -a commands=(
+  'install:install plugins (owner/repo, a URL or a local path)'
+  'update:update the given plugins, or all of them'
+  'remove:remove installed plugins'
+  'list:list installed plugins matching a regex'
+)
+local curcontext=$curcontext state line
+_arguments -C \
+  '(- *)'{-v,--version}'[print the version]' \
+  '(- *)'{-h,--help}'[print help]' \
+  '1: :->command' \
+  '*:: :->args'
+case $state in
+  command) _describe -t commands 'fisher command' commands ;;
+  args)
+    case $words[1] in
+      update|remove)
+        [[ -r $plugins_file ]] && _wanted plugins expl 'installed plugin' compadd -- ${(f)"$(<$plugins_file)"} ;;
+      install) _files -/ ;;
+    esac ;;
+esac
