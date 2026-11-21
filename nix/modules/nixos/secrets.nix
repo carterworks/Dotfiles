@@ -32,6 +32,12 @@ in
           options = {
             # No dot-leading components, so no "..", and nothing outside /run/secrets.
             path = lib.mkOption { type = lib.types.strMatching "/run/secrets(/[^/.][^/]*)+"; };
+            file = lib.mkOption {
+              type = lib.types.path;
+              default = cfg.file;
+              defaultText = lib.literalExpression "config.dotfiles.fnox.file";
+              description = "fnox config holding this secret, for one that lives with another flake's code.";
+            };
             owner = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -77,7 +83,7 @@ in
         install -d -m 0700 -o root -g root ${lib.escapeShellArgs (directories secret.path)}
         tmp=$(mktemp ${lib.escapeShellArg "${secret.path}.XXXXXX"})
         trap 'rm -f "$tmp"' EXIT
-        fnox --no-daemon --non-interactive --if-missing error -c ${cfg.file} get ${lib.escapeShellArg name} \
+        fnox --no-daemon --non-interactive --if-missing error -c ${secret.file} get ${lib.escapeShellArg name} \
           | base64 -d > "$tmp"
         chown ${lib.escapeShellArg "${secret.owner}:${secret.group}"} "$tmp"
         chmod ${secret.mode} "$tmp"
