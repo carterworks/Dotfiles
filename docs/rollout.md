@@ -136,6 +136,14 @@ Fish ([Zsh](zsh.md)). On the Mac and on scylla:
 3. Run `herdr server reload-config` so new panes pick up `default_shell`;
    panes already open keep Fish.
 
+## 9. TV screensaver
+
+1. In the Tailscale admin console, approve the `svc:tv-screensaver` Service and
+   grant it to `living-room-tv`. Until then the TV reaches the renderer only
+   through its LAN fallback (`192.168.4.29:8790`, open to the TV's address
+   alone). The app and its scripts live in the private `sony-tv-hacking`
+   repository.
+
 ## Confirm the end state
 
 - From scylla, `./drift` lists scylla, prostagma and eltoro as `in sync` with
