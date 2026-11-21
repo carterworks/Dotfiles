@@ -1,0 +1,46 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+# Export Atuin history into a dedicated read-only import file (never touching Zsh's
+# live $HISTFILE) so Zsh imports it via `fc -R` without racing HIST_FCNTL_LOCK.
+outfile="${1:-${ZSH_FISH_FEEL_ATUIN_HIST:-${ZDOTDIR:-$HOME}/.cache/atuin-history.zsh}}"
+limit="${2:-5000}"
+
+if ! command -v atuin >/dev/null 2>&1; then
+  exit 0
+fi
+
+mkdir -p -- "${outfile:h}"
+tmpfile="$(mktemp "${outfile}.XXXXXX")"
+trap 'rm -f -- "$tmpfile"' EXIT
+
+session_id="${ATUIN_SESSION:-$(atuin uuid)}"
+
+typeset -a atuin_records=()
+local rec=""
+while IFS= read -r -d '' rec; do
+  rec="${rec//$'\r'/}"
+  [[ -n "${rec//[[:space:]]/}" ]] && atuin_records+=("$rec")
+done < <(ATUIN_SESSION="$session_id" atuin history list --cmd-only --print0 2>/dev/null || true)
+
+typeset -a rev_unique=()
+typeset -A seen=()
+local i
+for (( i = ${#atuin_records[@]}; i >= 1; i-- )); do
+  rec="${atuin_records[i]}"
+  if [[ -z "${seen[$rec]:-}" ]]; then
+    seen[$rec]=1
+    rev_unique+=("$rec")
+    (( ${#rev_unique[@]} >= limit )) && break
+  fi
+done
+
+local nl=$'\n'
+for (( i = ${#rev_unique[@]}; i >= 1; i-- )); do
+  rec="${rev_unique[i]}"
+  print -r -- "${rec//$nl/\\$nl}"
+done > "$tmpfile"
+
+if [[ -s "$tmpfile" ]]; then
+  mv -f -- "$tmpfile" "$outfile"
+fi
