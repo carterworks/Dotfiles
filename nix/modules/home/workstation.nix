@@ -287,6 +287,7 @@ in
   programs.zoxide.enableZshIntegration = false;
   programs.direnv.enableZshIntegration = false;
   programs.fzf.enableZshIntegration = false;
+  programs.zellij.settings.default_shell = "zsh";
 
   programs.zsh = {
     enableCompletion = false;
@@ -589,7 +590,7 @@ in
         font_family = "Iosevka Term";
         font_size = 16;
         shell = {
-          program = "fish";
+          program = "zsh";
         };
       };
       title_bar = {
@@ -657,7 +658,7 @@ in
     enable = true;
     package = if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty;
     settings = {
-      command = lib.getExe pkgs.fish;
+      command = lib.getExe config.programs.zsh.package;
       shell-integration-features = "ssh-terminfo,ssh-env";
     };
   };

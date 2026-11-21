@@ -51,7 +51,6 @@
   programs.zellij = {
     enable = true;
     settings = {
-      default_shell = "fish";
       default_mode = "locked";
       show_startup_tips = false;
       show_release_notes = false;

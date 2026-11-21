@@ -118,7 +118,7 @@ in
     };
     CustomUserPreferences."com.superlogical.rex" = {
       "Workspace.terminalFontPointSize" = 14.0;
-      "Workspace.terminalStartupCommand" = lib.getExe pkgs.fish;
+      "Workspace.terminalStartupCommand" = lib.getExe pkgs.zsh;
     };
     dock = {
       autohide = true;

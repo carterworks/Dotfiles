@@ -15,6 +15,9 @@
   programs.zellij = {
     attachExistingSession = true;
     enableFishIntegration = true;
-    settings.theme = "solarized_light";
+    settings = {
+      default_shell = "fish";
+      theme = "solarized_light";
+    };
   };
 }
