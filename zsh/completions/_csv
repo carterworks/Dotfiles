@@ -1,0 +1,3 @@
+#compdef csv
+# bin/csv lays out one comma-separated file as a table in less.
+_arguments '1:CSV file:_files -g "*.(csv|tsv)(-.)"'

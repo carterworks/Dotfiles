@@ -1,0 +1,24 @@
+#compdef bunx
+# From bunx --help: options, then a package (local node_modules/.bin binaries
+# offered first), then the package's own arguments.
+local curcontext=$curcontext state line
+_arguments -C -s \
+  '--bun[run with Bun instead of Node.js]' \
+  '(-p --package)'{-p,--package}'[package to install when its binary has a different name]:package' \
+  '--no-install[skip installation when not already installed]' \
+  '--cwd[working directory]:directory:_files -/' \
+  '*--env-file[load environment variables from a file]:env file:_files' \
+  '--minimum-release-age[only install packages at least this old]:seconds' \
+  '--registry[install from this registry]:URL' \
+  '(--ca --cafile)--ca[trust this CA certificate]:certificate' \
+  '(--ca --cafile)--cafile[trust the CA certificate in a file]:file:_files' \
+  '(--ignore-scripts)--trust[run lifecycle scripts of the package and its dependencies]' \
+  '(--trust)--ignore-scripts[run no lifecycle scripts]' \
+  '(--silent)--verbose[verbose installation output]' \
+  '(--verbose)--silent[no installation output]' \
+  '1: :->package' \
+  '*::package arguments:_normal'
+if [[ $state == package ]]; then
+  local -a bins=(./node_modules/.bin/*(N-*:t))
+  (( $#bins )) && _wanted binaries expl 'node_modules binary' compadd -a bins
+fi

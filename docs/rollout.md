@@ -123,6 +123,19 @@ remains:
    `/root/reindex`, and the unreferenced store paths, which a garbage
    collection removes.
 
+## 8. Zsh
+
+Terminals, Zed, Zellij, Herdr, Rex and the agent daemons start zsh instead of
+Fish ([Zsh](zsh.md)). On the Mac and on scylla:
+
+1. Run `./install`, then open a new Ghostty window: the prompt is zsh
+   (`echo $ZSH_VERSION` prints a version) and Tab opens the picker.
+2. Mac: confirm the agent daemons came back, as in stage 6 step 3, and now
+   start through zsh: `launchctl print gui/$(id -u)/org.nix-community.home.opencode2`
+   lists `zsh` under `arguments`.
+3. Run `herdr server reload-config` so new panes pick up `default_shell`;
+   panes already open keep Fish.
+
 ## Confirm the end state
 
 - From scylla, `./drift` lists scylla, prostagma and eltoro as `in sync` with

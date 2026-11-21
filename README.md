@@ -129,6 +129,7 @@ must match a flake host.
 - [El Toro](docs/eltoro.md): onboarding, settings, the egress fence
 - [Monitoring](docs/monitoring.md): the Beszel hub on prostagma and its agents
 - [Rex](docs/rex.md): the macOS client
+- [Zsh](docs/zsh.md): the workstation shell, and which programs start it
 - [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,
   Hex
 

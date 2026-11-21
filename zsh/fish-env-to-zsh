@@ -1,0 +1,143 @@
+#!/usr/bin/env -S zsh -f
+# Prints zsh code that carries over the interactive Fish environment: its theme
+# (syntax highlighting, autosuggestion, selection, and completion-pager colors) and
+# its completion search path, so zsh can ask Fish for completions it lacks.
+set -euo pipefail
+setopt extended_glob
+
+typeset -A fish
+typeset -a complete_path
+while IFS=$'\t' read -r name value; do
+  if [[ $name == fish_complete_path ]]; then
+    complete_path+=("$value")
+  else
+    fish[$name]=$value
+  fi
+done < <(fish -i -c '
+  for v in (set -n | string match -r "^fish_(?:pager_)?color_.*"); printf "%s\t%s\n" $v "$$v"; end
+  for p in $fish_complete_path; printf "fish_complete_path\t%s\n" $p; end' 2>/dev/null)
+
+(( ${#fish} )) || exit 1
+
+typeset -A named=(black 0 red 1 green 2 yellow 3 blue 4 magenta 5 cyan 6 white 7
+  brblack 8 brred 9 brgreen 10 bryellow 11 brblue 12 brmagenta 13 brcyan 14 brwhite 15)
+
+color() {
+  local c="${1#\#}"
+  if [[ $c == [[:xdigit:]](#c6) ]]; then
+    print -r -- "#$c"
+  elif [[ $c == [[:xdigit:]](#c3) ]]; then
+    print -r -- "#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}"
+  elif [[ -n ${named[$c]:-} ]]; then
+    print -r -- "${named[$c]}"
+  fi
+}
+
+# Fish's own fallbacks for variables a theme leaves unset.
+spec_words() {
+  local v
+  for v in "$@"; do
+    [[ -n ${fish[fish_color_$v]:-} ]] && { print -r -- "${fish[fish_color_$v]}"; return; }
+  done
+}
+
+# Fish spec ("414858 --bold --background=d8dee9") -> zsh highlight ("fg=#414858,bold,bg=#d8dee9").
+zsh_style() {
+  local -a words=(${=1}) out=()
+  local w fg="" bg="" c
+  local -i i=1
+  while (( i <= $#words )); do
+    w=$words[i]
+    case $w in
+      --bold|-o) out+=bold ;;
+      --underline*|-u) out+=underline ;;
+      --italics|-i) out+=italic ;;
+      --dim|-d) out+=faint ;;
+      --reverse|-r) out+=standout ;;
+      --background=*) c=$(color "${w#--background=}"); [[ -z $bg && -n $c ]] && bg=$c ;;
+      -b) (( i++ )); c=$(color "${words[i]:-}"); [[ -z $bg && -n $c ]] && bg=$c ;;
+      -*) ;;
+      *) c=$(color "$w"); [[ -z $fg && -n $c ]] && fg=$c ;;
+    esac
+    (( i++ ))
+  done
+  [[ -n $fg ]] && out=("fg=$fg" $out)
+  [[ -n $bg ]] && out+=("bg=$bg")
+  print -r -- "${(j:,:)out:-none}"
+}
+
+style() { zsh_style "$(spec_words "$@")"; }
+# Fish draws valid paths as a parameter with valid_path layered on top.
+path_style() {
+  local -a parts=(${(s:,:)$(style param normal)} ${(s:,:)$(style valid_path)})
+  parts=(${parts:#none})
+  print -r -- "${(j:,:)parts:-none}"
+}
+
+typeset -A fsh=(
+  default param unknown-token error
+  reserved-word "keyword command" subcommand param
+  alias command suffix-alias command global-alias command builtin command function command
+  command command precommand command hashed-command command
+  single-sq-bracket "keyword command" double-sq-bracket "keyword command" double-paren "keyword command"
+  commandseparator end
+  redirection redirection here-string-tri redirection exec-descriptor redirection
+  here-string-text quote here-string-var operator
+  comment comment
+  correct-subtle param incorrect-subtle error subtle-separator param
+  globbing operator globbing-ext operator history-expansion operator
+  paired-bracket match bracket-level-1 normal bracket-level-2 normal bracket-level-3 normal
+  single-hyphen-option "option param" double-hyphen-option "option param"
+  back-quoted-argument param
+  single-quoted-argument quote double-quoted-argument quote dollar-quoted-argument quote
+  back-dollar-quoted-argument escape back-or-dollar-double-quoted-argument escape
+  variable operator assign param assign-array-bracket operator
+  mathvar operator mathnum param matherr error
+  for-loop-variable param for-loop-number param for-loop-operator operator for-loop-separator end
+  case-input param case-parentheses "keyword command" case-condition param
+  optarg-string param optarg-number param
+)
+
+print -r -- "# Generated from the interactive Fish environment by fish-env-to-zsh."
+print -r -- "typeset -ga _zff_fish_complete_path=(${(j: :)${(@qq)complete_path}})"
+print -r -- "typeset -gA FAST_HIGHLIGHT_STYLES"
+local key
+for key in ${(ko)fsh}; do
+  print -r -- "FAST_HIGHLIGHT_STYLES[$key]=${(qq)$(style ${=fsh[$key]})}"
+done
+local p=$(path_style)
+for key in path path-to-dir path_pathseparator path-to-dir_pathseparator; do
+  print -r -- "FAST_HIGHLIGHT_STYLES[$key]=${(qq)p}"
+done
+
+print -r -- "ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE=${(qq)$(style autosuggestion)}"
+print -r -- "zle_highlight=(default:${(q)$(style normal)} region:${(q)$(style selection)} isearch:${(q)$(style search_match)} special:${(q)$(style escape)} paste:none suffix:none)"
+
+pager() { zsh_style "${fish[fish_pager_color_$1]:-}"; }
+part() {  # part <fg|bg> <zsh style>
+  local s=",$2,"
+  [[ $s == *,$1=* ]] || return 0
+  s=${s#*,$1=}
+  print -r -- "${s%%,*}"
+}
+bold() { [[ ",$1," == *,bold,* ]] && print -r -- ":bold" || true; }
+
+local sel=$(part bg "$(pager selected_background)")
+local fg=$(part fg "$(pager completion)") fgs=$(part fg "$(pager selected_completion)")
+local pre=$(pager prefix) pres=$(pager selected_prefix) prog=$(pager progress)
+local desc=$(part fg "$(pager description)")
+local -a fzf=(
+  bg:-1 gutter:-1 ${sel:+bg+:$sel}
+  ${fg:+fg:$fg} ${fgs:+fg+:$fgs} ${fgs:+pointer:$fgs} ${fgs:+marker:$fgs}
+  "hl:$(part fg "$pre")$(bold "$pre")" "hl+:$(part fg "$pres")$(bold "$pres")"
+  ${${:-$(part fg "$prog")}:+info:$(part fg "$prog")}
+  input-bg:-1 "query:$(part fg "$(style param normal)")"
+)
+print -r -- "_zff_fzf_colors=${(qq)${(j:,:)fzf}}"
+
+if [[ $desc == \#* ]]; then
+  local r=$(( 16#${desc[2,3]} )) g=$(( 16#${desc[4,5]} )) b=$(( 16#${desc[6,7]} ))
+  print -r -- "_zff_desc_sgr=\$'\\e[38;2;${r};${g};${b}m'"
+elif [[ -n $desc ]]; then
+  print -r -- "_zff_desc_sgr=\$'\\e[38;5;${desc}m'"
+fi

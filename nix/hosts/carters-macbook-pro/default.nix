@@ -93,7 +93,14 @@ in
     ];
   };
 
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    # zsh/zshrc.zsh runs a cached compinit; these would add an uncached one, plus
+    # bashcompinit and a prompt it replaces, to every interactive zsh (~150 ms).
+    enableCompletion = false;
+    enableBashCompletion = false;
+    promptInit = "";
+  };
   programs.fish.enable = true;
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -111,7 +118,7 @@ in
     };
     CustomUserPreferences."com.superlogical.rex" = {
       "Workspace.terminalFontPointSize" = 14.0;
-      "Workspace.terminalStartupCommand" = lib.getExe pkgs.fish;
+      "Workspace.terminalStartupCommand" = lib.getExe pkgs.zsh;
     };
     dock = {
       autohide = true;
