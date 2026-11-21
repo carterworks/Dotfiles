@@ -36,7 +36,7 @@ Git. Without the private manifest, Rex update discovery is skipped, while
 the other packages continue normally. Builds need only the cached installer,
 not the manifest.
 
-New local terminals launch Fish using the same Nix executable as Ghostty,
+New local terminals launch zsh using the same Nix executable as Ghostty,
 without changing the account's login shell. This is managed in
 `nix/hosts/carters-macbook-pro/default.nix` through Rex's macOS preference
 `Workspace.terminalStartupCommand`, not through `init.lua`. It applies to
