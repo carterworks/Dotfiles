@@ -50,6 +50,11 @@ module, `nix/modules/nixos/secrets.nix`.
   ```
 
   and points the service at `config.dotfiles.fnox.secrets.EXAMPLE_TOKEN.path`.
+  A secret that belongs to another flake's project can stay in that project's
+  own fnox store, encrypted to the same provider recipients: set `file` to it.
+  Copy it with `builtins.path` so the units change only when that file does,
+  not on every commit to the other repository. The `secrets-encrypted` check
+  covers only this tree.
   Each secret gets a `fnox-secret-<KEY>.service` oneshot that runs as root,
   before the units in `requiredBy`, which require it. The unit:
   - resets `/run/secrets` and every directory down to the file to 0700 root,
