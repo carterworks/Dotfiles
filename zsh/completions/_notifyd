@@ -1,0 +1,6 @@
+#compdef notifyd
+# From notifyd(8); launchd starts it, so running it by hand is for debugging.
+_arguments \
+  '-d[log debugging messages to the log file]' \
+  '-log_file[log to this file instead of /var/log/notifyd.log]:log file:_files' \
+  '-shm_pages[shared memory pages for passive notification (0 disables)]:pages'

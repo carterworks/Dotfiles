@@ -1,0 +1,14 @@
+#compdef cheat
+# bin/cheat prints the cheat.sh sheet for a topic: a command name, or one of
+# cheat.sh's own pages.
+local -a pages=(
+  '\:help:how to use cheat.sh'
+  '\:list:every topic'
+  '\:intro:introduction to cheat.sh'
+  '\:learn:learn a programming language'
+  '\:random:a random cheat sheet'
+)
+_arguments '1: :->topic'
+[[ $state == topic ]] && _alternative \
+  'pages:cheat.sh page:{_describe -t pages "cheat.sh page" pages}' \
+  'commands:command:_command_names -e'

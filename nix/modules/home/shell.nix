@@ -6,7 +6,6 @@
   programs.direnv = {
     enable = true;
     enableFishIntegration = true;
-    enableZshIntegration = true;
   };
   programs.fish.enable = true;
   programs.zsh.enable = true;
@@ -52,7 +51,6 @@
   programs.zellij = {
     enable = true;
     settings = {
-      default_shell = "fish";
       default_mode = "locked";
       show_startup_tips = false;
       show_release_notes = false;

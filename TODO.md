@@ -31,6 +31,9 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `nix/modules/home/workstation.nix`: remove the `~/.lmstudio/bin` PATH entry left over from LM Studio, which scylla no longer installs.
 - [ ] prostagma: report a Postgres collation mismatch before it breaks a deploy, for example in `./drift`. After a glibc bump the next new database fails `postgresql-setup` and takes Immich down ([docs/binary-cache.md](docs/binary-cache.md#postgres-refuses-to-create-the-database)); the VM tests start from a fresh cluster and cannot see it.
 - [ ] `nix/hosts/prostagma/default.nix`: correct the `tailscale-services` comment that says the unit fails until `svc:beszel` is approved; it succeeds. The comment is inside the unit's script, so the edit restarts the unit; make it with the next change to that file.
+- [ ] `zsh/zshrc.zsh`: close the Fish parity gaps the scorecard (`tests/zsh/parity_scorecard.py`) still shows: Alt+Right stopping before `/`, Ctrl+Right accepting a whole argument, Ctrl+W deleting a path component, and `!!` expanding as you type.
+- [ ] `zsh/zshrc.zsh`: port what the Fish plugins in `workstation.nix` add: fzf-fish's key bindings (files, git log, git status, processes, variables) and `done`'s notification when a long command finishes.
+- [ ] `zsh/completions/`: add `_obsidian` once Obsidian's command-line interface is documented; running the binary to find out opens the app.
 ## Awaiting a decision
 
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?

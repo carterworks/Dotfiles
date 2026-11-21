@@ -61,7 +61,7 @@ let
     Install.WantedBy = [ "default.target" ];
   };
 
-  # LaunchAgents do not inherit a login shell's PATH, so start through fish's
+  # LaunchAgents do not inherit a login shell's PATH, so start through zsh's
   # login init to pick up the path nix-darwin computes instead of baking one in.
   mkLaunchdAgent = name: executable: args: {
     enable = true;
@@ -69,9 +69,9 @@ let
     config = {
       LimitLoadToSessionType = "Aqua";
       ProgramArguments = [
-        "${pkgs.fish}/bin/fish"
+        "${pkgs.zsh}/bin/zsh"
         "--login"
-        "--command"
+        "-c"
         "exec ${lib.escapeShellArgs ([ executable ] ++ args)}"
       ];
       WorkingDirectory = home;

@@ -1,0 +1,37 @@
+#compdef pp
+# PAR::Packer's pp, which macOS ships without a man page. Options follow the
+# OPTIONS table in PAR/Packer.pm.
+_arguments -s \
+  '*'{-a,--addfile=}'[add a file or directory to the package]:file:_files' \
+  '*'{-A,--addlist=}'[add the files listed in a file]:list file:_files' \
+  '(-B --bundle)'{-B,--bundle}'[bundle core modules]' \
+  '(-C --clean)'{-C,--clean}'[clean up temporary files]' \
+  '(-c --compile)'{-c,--compile}'[compile the code to find dependencies]' \
+  '(--cd --cachedeps)'{--cd=,--cachedeps=}'[cache detected dependencies in a file]:cache file:_files' \
+  '(-d --dependent)'{-d,--dependent}'[do not include libperl]' \
+  '(-e --eval -E --evalfeature)'{-e,--eval=}'[package a one-liner]:perl code' \
+  '(-e --eval -E --evalfeature)'{-E,--evalfeature=}'[package a one-liner with new syntax features]:perl code' \
+  '(-x --execute)'{-x,--execute}'[run the code to find dependencies]' \
+  '--xargs=[arguments for --execute]:arguments' \
+  '*'{-X,--exclude=}'[exclude a module]:module' \
+  '*'{-f,--filter=}'[input filter for scripts]:PAR::Filter' \
+  '(-g --gui)'{-g,--gui}'[no console window]' \
+  '*'{-I,--lib=}'[add a directory to @INC]:directory:_files -/' \
+  '*'{-l,--link=}'[add a shared library]:library:_files' \
+  '(-L --log)'{-L,--log=}'[log packaging to a file]:log file:_files' \
+  '*'{-F,--modfilter=}'[input filter for modules]:PAR::Filter' \
+  '*'{-M,--module=,--add=}'[include a module]:module' \
+  '(-m --multiarch)'{-m,--multiarch}'[build a PAR file for several architectures]' \
+  '(-n --noscan)'{-n,--noscan}'[skip static scanning]' \
+  '(-o --output)'{-o,--output=}'[output file]:output file:_files' \
+  '(-p --par -P --perlscript)'{-p,--par}'[generate a PAR file]' \
+  '(-p --par -P --perlscript)'{-P,--perlscript}'[generate a perl script]' \
+  '(-r --run)'{-r,--run}'[run the resulting executable]' \
+  '--reusable[produce a reusable executable]' \
+  '(-S --save)'{-S,--save}'[keep intermediate PAR files]' \
+  '(-s --sign)'{-s,--sign}'[sign PAR files]' \
+  '(-T --tempcache)'{-T,--tempcache=}'[temp cache name]:name' \
+  '(-u --unicode)'{-u,--unicode}'[include Unicode support]' \
+  '(-v --verbose)'{-v,--verbose=}'[verbosity level]:level:(1 2 3)' \
+  '(-z --compress)'{-z,--compress=}'[compression level]:level:(0 1 2 3 4 5 6 7 8 9)' \
+  '*:perl script:_files -g "*.(pl|pm)(-.)"'

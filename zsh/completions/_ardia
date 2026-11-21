@@ -1,0 +1,52 @@
+#compdef ardia
+# From ardia --help. `ardia browse` takes agent-browser's commands.
+local -a commands=(
+  'browse:drive the browser with agent-browser commands'
+  'notes:read and write notes'
+  'computer:operate native Mac apps through cua-driver'
+  'pinned:list favorites and pinned tabs'
+  'history:list recent history'
+  'skills:print or install the ardia agent skill'
+  'scripts:write, test and install userscripts'
+  'config:read, write and check config.json'
+  'theme:make, pick, edit and check themes'
+  'run:run one of the commands ardia commands lists'
+  'commands:list the commands ardia run can run'
+  'windows:list windows and their tabs'
+  'events:print events as they happen'
+  'on:run a program for each event'
+  'hooks:run hooks from hooks.json'
+  'tabs:list and organize tabs'
+  'groups:list and organize tab groups'
+  'apply:apply several tab and group operations at once'
+  'call:send a method to the control socket'
+  'methods:list the methods ardia call can send'
+  'plugins:install, list and manage plugins'
+  'feedback:report a problem or idea'
+  "star:star the Ardia repo on GitHub"
+)
+local -a shared=(
+  '--port[plain DevTools server on 127.0.0.1:N]:port'
+  '--ws[browser WebSocket URL]:URL'
+  '--data-dir[Ardia data directory]:directory:_files -/'
+  '--timeout[timeout in seconds]:seconds'
+  '--json[JSON output]'
+)
+local curcontext=$curcontext state line
+_arguments -C \
+  '(- *)'{-h,--help}'[show help]' \
+  '(- *)--version[show the version]' \
+  '(- *)--skill[print the agent skill]' \
+  $shared \
+  '1: :->command' \
+  '*:: :->args'
+case $state in
+  command) _describe -t commands 'ardia command' commands ;;
+  args)
+    if [[ $words[1] == browse ]]; then
+      words[1]=agent-browser
+      _normal
+    else
+      _arguments $shared '(- *)'{-h,--help}'[show help]'
+    fi ;;
+esac

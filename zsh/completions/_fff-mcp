@@ -1,0 +1,22 @@
+#compdef fff-mcp
+# From fff-mcp --help.
+local -a bool=(true false)
+_arguments -s \
+  '--frecency-db=[frecency database]:database:_files' \
+  '--history-db=[query history database]:database:_files' \
+  '--log-file=[per-session log file path hint]:log file:_files' \
+  '--log-level=[log level]:level:(trace debug info warn error)' \
+  '--no-update-check[skip the update check on startup]' \
+  '(--content-indexing)--no-warmup[skip the mmap warmup after the initial scan]' \
+  '(--content-indexing)--no-content-indexing[skip the content index (slower grep, less RAM)]' \
+  '(--no-content-indexing)--content-indexing[build the content index even with --no-warmup]' \
+  '--no-watch[scan once; do not watch for changes]' \
+  '--max-cached-files=[files whose content stays in memory (0 disables)]:count' \
+  '--follow-symlinks[follow symlinks while scanning and watching]' \
+  '--enable-home-scan=-[allow indexing the home directory]::enable:(true false)' \
+  '--enable-root-scan=-[allow indexing the filesystem root]::enable:(true false)' \
+  '--healthcheck[print diagnostics and exit]' \
+  '--idle-timeout-secs=[exit after this long unused]:seconds' \
+  '(- *)'{-h,--help}'[print help]' \
+  '(- *)'{-V,--version}'[print the version]' \
+  '1::directory to index:_files -/'

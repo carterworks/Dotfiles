@@ -1,0 +1,110 @@
+#compdef nub
+# From nub --help. A first argument that is not a command is a file to run.
+local -a commands=(
+  'run:run a package.json script'
+  'exec:run a node_modules/.bin binary'
+  'dlx:fetch and run a package binary'
+  'x:fetch and run a package binary'
+  'watch:run a file in watch mode'
+  'init:scaffold a new project'
+  'install:install from package.json and the lockfile'
+  'i:install from package.json and the lockfile'
+  'ci:clean, strict install from the lockfile'
+  'add:add dependencies'
+  'a:add dependencies'
+  'remove:remove dependencies'
+  'rm:remove dependencies'
+  'update:update within range'
+  'up:update within range'
+  'import:generate a lockfile from another package manager'
+  'dedupe:remove duplicated packages'
+  'prune:remove extraneous packages'
+  'rebuild:rebuild native modules'
+  'rb:rebuild native modules'
+  'link:link a local package'
+  'ln:link a local package'
+  'unlink:unlink a local package'
+  'patch:start a package patch'
+  'patch-commit:commit a package patch'
+  'patch-remove:remove a package patch'
+  'approve-builds:approve build scripts'
+  'ignored-builds:list packages with blocked build scripts'
+  'list:list dependencies'
+  'ls:list dependencies'
+  'why:explain why a package is installed'
+  'outdated:list outdated dependencies'
+  'audit:audit dependencies'
+  'licenses:list dependency licenses'
+  'view:show package metadata'
+  'search:search the registry'
+  'bin:print the binaries directory'
+  'root:print the node_modules directory'
+  'query:query dependencies'
+  'check:check dependencies'
+  'sbom:generate an SBOM'
+  'publish:publish the package'
+  'pack:pack the package'
+  'version:bump the version'
+  'dist-tag:manage dist-tags'
+  'login:log in to the registry'
+  'logout:log out of the registry'
+  'whoami:show the registry user'
+  'owner:manage package owners'
+  'token:manage registry tokens'
+  'compile:build a standalone executable'
+  'node:manage Node versions'
+  'pm:manage the package manager'
+  'upgrade:upgrade nub'
+  'store:manage the store'
+  'cache:manage the store'
+  'config:manage configuration'
+  'get:read configuration'
+  'set:write configuration'
+  'help:help for a command'
+)
+
+_nub_scripts() {
+  local -a scripts
+  [[ -r package.json ]] && (( $+commands[jq] )) || return 1
+  scripts=(${(f)"$(command jq -r '.scripts // {} | to_entries[] | "\(.key | gsub(":"; "\\:")):\(.value)"' package.json 2>/dev/null)"})
+  _describe -t scripts 'package.json script' scripts
+}
+
+_nub_bins() {
+  local -a bins=(./node_modules/.bin/*(N-*:t))
+  _wanted binaries expl 'node_modules binary' compadd -a bins
+}
+
+local curcontext=$curcontext state line
+_arguments -C -s \
+  '--cwd[run as if started in a directory]:directory:_files -/' \
+  '(-s --silent --verbose)'{-s,--silent}"[suppress nub's non-error output]" \
+  '(-s --silent)*--verbose[more log output]' \
+  '(--no-color)--color=-[color mode]::when:(auto always never)' \
+  '(--color)--no-color[disable color]' \
+  '*--env-file[load environment variables from a file]:env file:_files' \
+  '*--env-file-if-exists[load environment variables from a file if present]:env file:_files' \
+  '--no-env-file[load no env files]' \
+  '--node[run on plain Node]' \
+  '(-e --eval -p)'{-e,--eval}'[evaluate code]:code' \
+  '(-e --eval)-p[evaluate and print code]:code' \
+  '(- *)'{-v,--version}'[print the version]' \
+  '(- *)'{-h,--help}'[print help]' \
+  '1: :->first' \
+  '*:: :->args'
+
+case $state in
+  first)
+    _alternative \
+      'commands:command:{_describe -t commands "nub command" commands}' \
+      'files:file to run:_files' ;;
+  args)
+    case $words[1] in
+      # Scripts come from package.json exactly as for `npm run`, which carapace completes.
+      run) words=(npm "${(@)words}"); (( CURRENT++ )); _normal ;;
+      exec) (( CURRENT == 2 )) && _nub_bins ;;
+      watch) _files ;;
+      help) (( CURRENT == 2 )) && _describe -t commands 'nub command' commands ;;
+      *) _files ;;
+    esac ;;
+esac
