@@ -676,11 +676,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795308129,
-        "narHash": "sha256-DDEIe6JOTkkSjIBkGqO4MGY43icCv1oXQbaBXK5iejs=",
+        "lastModified": 1795309319,
+        "narHash": "sha256-T6kszFMqD5Z0GT9ajTWep3kaUVdt8IJ82F4afoJ32Bc=",
         "ref": "refs/heads/main",
-        "rev": "5a489e9563f43effe19ecda9c7d26b75c1f22783",
-        "revCount": 78,
+        "rev": "1267e712cfa6ff790de1fed1a29da40217324a04",
+        "revCount": 105,
         "type": "git",
         "url": "ssh://git@github.com/carterworks/sony-tv-hacking"
       },
