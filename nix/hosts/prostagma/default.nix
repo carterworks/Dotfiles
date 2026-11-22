@@ -9,6 +9,7 @@
 
 let
   copypartyPort = 3210;
+  immichPort = 2283;
 
   inherit (fleet) adminSshKey tailnetDomain;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
@@ -223,6 +224,9 @@ in
   networking.hostName = "prostagma";
   networking.firewall.allowedTCPPorts = [
     copypartyPort
+    # Immich, temporarily reachable on the LAN for the Mac (see the listener in
+    # services.immich below and the watch item in TODO.md).
+    immichPort
   ];
 
   # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
@@ -342,7 +346,7 @@ in
       "$tailscale" serve reset
       "$tailscale" serve --bg --https=443 http://127.0.0.1:80
       "$tailscale" serve --service=svc:jellyfin --https=443 http://127.0.0.1:8096
-      "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:2283
+      "$tailscale" serve --service=svc:immich --https=443 http://127.0.0.1:${toString immichPort}
       # These are gated: Caddy on 127.0.0.1:80 performs the Authelia
       # forward-auth check and then proxies to the application's own loopback
       # port. Pointing Serve at the application directly would bypass the
@@ -397,10 +401,13 @@ in
 
   services.immich = {
     enable = true;
-    # Reached through Tailscale Serve on loopback, so keep the listener off
-    # every other interface: a LAN- or tailnet-reachable port would bypass any
-    # authentication layer placed in front of the proxy.
-    host = "127.0.0.1";
+    # Normally loopback-only, with Tailscale Serve as the sole ingress: a LAN-
+    # or tailnet-reachable port would bypass any authentication layer placed in
+    # front of the proxy. Temporarily bound to every interface so the Mac can
+    # reach it over the LAN while it is off the tailnet; revert this and the
+    # firewall allowance when the Mac is back on the tailnet (TODO.md).
+    host = "0.0.0.0";
+    port = immichPort;
     mediaLocation = "/mnt/truenas/immich";
     group = "apps";
     accelerationDevices = [ "/dev/dri/renderD128" ];
