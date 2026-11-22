@@ -23,6 +23,9 @@ in
       url = "http://homeassistant:8123";
       tokenFile = "/run/secrets/tv-screensaver/hass-token";
     };
+    # The admin page's Start, Next, Back and Stop go through this Home Assistant remote;
+    # the admin login list itself lives in the private repository.
+    settings.control.remoteEntity = "remote.living_room_tv";
     settings.sources = {
       # Worth Saving
       albums = [ "a0de98ad-36a8-4e7f-9ebc-a8cd6c27b0fa" ];
