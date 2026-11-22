@@ -12,6 +12,8 @@ in
   services.tv-screensaver = {
     enable = true;
     inherit port;
+    # Read-only access to Immich's CLIP vectors and faces, to put similar photos together.
+    database.enable = true;
     immich = {
       url = "http://127.0.0.1:2283";
       apiKeyFile = "/run/secrets/tv-screensaver/immich-api-key";
