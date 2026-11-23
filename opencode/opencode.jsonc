@@ -8,6 +8,9 @@
     "provider": "exa"
   },
   "disabled_providers": [],
+  "plugins": [
+    "./complaints-box"
+  ],
   "mcp": {
     "servers": {
       "fff": {
