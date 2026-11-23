@@ -66,6 +66,7 @@ in
       ".npmrc" = link "npm/npmrc";
       ".config/opencode/opencode.jsonc" = link "opencode/opencode.jsonc";
       ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
+      ".config/opencode/complaints-box" = link "opencode/complaints-box";
       ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
       ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
     };
@@ -680,6 +681,7 @@ in
       ".worktrees/"
       ".osgrep/"
       ".scout/"
+      ".opencode/complaints-box.jsonl"
     ];
 
     includes = [
