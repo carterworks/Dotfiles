@@ -133,8 +133,6 @@ Fish ([Zsh](zsh.md)). On the Mac and on scylla:
 2. Mac: confirm the agent daemons came back, as in stage 6 step 3, and now
    start through zsh: `launchctl print gui/$(id -u)/org.nix-community.home.opencode2`
    lists `zsh` under `arguments`.
-3. Run `herdr server reload-config` so new panes pick up `default_shell`;
-   panes already open keep Fish.
 
 ## 9. TV screensaver
 
@@ -146,24 +144,17 @@ Fish ([Zsh](zsh.md)). On the Mac and on scylla:
 
 ## 10. Agent skills
 
-1. On scylla, run `./install`, then `animations-dev-sync`
-   ([Agent skills](agent-skills.md#animationsdev)). The first `./install`
-   removes the links the old skill-sync script made in `~/.claude/skills`.
-2. Check `/skills` in Claude Code and OpenCode on scylla: each skill is
-   listed once, including `mp-code-review` and the animations.dev skills.
-   OpenCode logs `duplicate skill name` for any skill left in
-   `~/.agents/skills` or `~/.config/opencode/skills`.
-3. On scylla, remove the copies installed before this change:
-   `rm -r ~/.agents/skills/{animate,animation-accessibility,animation-performance,animation-vocabulary,css-animations,debug-animation,find-animation-opportunities,gesture-ui,improve-animations,motion-brief,motion-react,pick-ui-library,review-animations,scroll-animations}`.
-   `web-animation-design`, which animations.dev no longer provides, is
-   still there; delete it too if you no longer use it.
-4. For the Mac: create an age key there (`age-keygen -o ~/.config/fnox/age.txt`),
-   add its public key to `[providers.workstations]` in `secrets/fnox.toml`,
-   re-encrypt the token
-   (`sfnox get ANIMATIONS_DEV_TOKEN | sfnox set ANIMATIONS_DEV_TOKEN -p workstations >/dev/null`,
-   with the shell from [Secrets](secrets.md#before-any-command)), commit, then
-   run `./install` and `animations-dev-sync` on the Mac. Until then the Mac
-   links the animations.dev skills to an empty state folder.
+1. On scylla and the Mac, run `./install`. Activation removes the old
+   skill-sync links in `~/.claude/skills`, fetches the `animations.dev` skills
+   into `~/.local/state/agent-skills/animations-dev/current/`, and removes the
+   legacy `animations.dev` copies from `~/.agents/skills/`
+   ([Agent skills](agent-skills.md#animationsdev)).
+2. Check `/skills` in Claude Code and OpenCode: each skill is listed once,
+   including `mp-code-review` and the animations.dev skills. OpenCode logs
+   `duplicate skill name` for any skill left in `~/.agents/skills` or
+   `~/.config/opencode/skills`. On scylla, `web-animation-design` (which
+   animations.dev no longer provides) may still be in `~/.agents/skills`;
+   delete it if you no longer use it.
 
 ## Confirm the end state
 

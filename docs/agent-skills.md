@@ -47,23 +47,21 @@ the rewrite no longer matches, the build fails.
 ## animations.dev
 
 The skills are paid content and the repository is public, so they never go
-into Git, the Nix store or the binary cache. Fetch or refresh them on a
-workstation with:
+into Git, the Nix store or the binary cache. Home Manager's activation syncs
+them into `~/.local/state/agent-skills/animations-dev/current/` automatically
+during `./install`.
 
-```sh
-animations-dev-sync
-```
-
-It decrypts `ANIMATIONS_DEV_TOKEN` (fnox provider `workstations`) with
-`~/.config/fnox/age.txt` and pipes it to the fetcher's stdin, so it never
+Activation decrypts `ANIMATIONS_DEV_TOKEN` (fnox provider `workstations`) using
+`~/.config/fnox/age.txt` on Linux or the macOS Keychain (`fnox` / `age-key`) on
+macOS, and pipes it to `agents/animations-dev/sync.py` on stdin so it never
 appears on the screen or in a command line. The fetcher calls
 `https://animations.dev/api/install` and never follows a redirect. It rejects
-skill and file names that are not plain names, and it writes to the state folder.
+skill and file names that are not plain names, and it writes atomically to the
+state folder. If the machine is offline or has no key, activation warns and
+keeps any existing copy.
 
-When the content changed since the last fetch, it shows a diff and asks before
-replacing the installed copy. With no terminal it refuses unless given `--yes`.
-It fails if the account no longer provides a skill the module links, and lists
-skills the account has that the module does not link. Add those to
+It fails the sync if the account no longer provides a skill the module links,
+and lists skills the account has that the module does not link. Add those to
 `animationsDev.skills` in `nix/modules/home/agent-skills.nix`.
 
 Upstream's installer, `npx @animationsdev/install --token=…`, sends the token
