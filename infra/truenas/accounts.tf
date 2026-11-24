@@ -3,11 +3,11 @@ locals {
   # import. The GIDs are the contract with prostagma (nix/hosts/prostagma).
   groups = {
     truenas_admin = { id = 109, gid = 950 }
-    humans        = { id = 110, gid = 3000, smb = true }
+    humans        = { id = 110, gid = var.fleet.nasIds.humans, smb = true }
     admins        = { id = 111, gid = 3001, sudo_commands = ["ALL"] }
     homeassistant = { id = 112, gid = 3002 }
     proxmox       = { id = 115, gid = 3003 }
-    media         = { id = 116, gid = 3004 }
+    media         = { id = 116, gid = var.fleet.nasIds.media }
   }
 
   users = {
@@ -143,5 +143,17 @@ check "admin_group_members" {
   assert {
     condition     = toset(data.truenas_group.admins.users) == toset([truenas_user.this["carter"].id])
     error_message = "admins (sudo ALL) has members other than carter."
+  }
+}
+
+# apps is a TrueNAS builtin group, so it is checked rather than managed.
+data "truenas_group" "apps" {
+  name = "apps"
+}
+
+check "apps_gid_matches_prostagma" {
+  assert {
+    condition     = data.truenas_group.apps.gid == var.fleet.nasIds.apps
+    error_message = "TrueNAS's apps group no longer has the GID prostagma's services run as (fleet.nasIds.apps)."
   }
 }

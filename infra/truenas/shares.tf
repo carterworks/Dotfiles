@@ -1,7 +1,6 @@
 locals {
-  # Prostagma is the only NFS client; its DHCP address is also assumed by
-  # nix/hosts/prostagma/tv-screensaver.nix.
-  nfs_clients = ["192.168.4.29/32"]
+  # Prostagma is the only NFS client.
+  nfs_clients = ["${var.fleet.lan.prostagma}/32"]
 
   # Keys are export paths; `id` is the middleware's row ID, used only to import.
   # Prostagma mounts these (nix/hosts/prostagma/default.nix, fileSystems).

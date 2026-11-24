@@ -4,8 +4,11 @@ The TrueNAS VM on Proxmox (tailnet name `truenas`, LAN `192.168.5.252`, the
 HDDs passed through) is managed with OpenTofu from `infra/truenas/`, using the
 official provider
 [`truenas/truenas`](https://github.com/truenas/terraform-provider-truenas).
-Prostagma mounts its NFS exports and scylla mounts its SMB shares; both sides
-depend on the IDs in `infra/truenas/accounts.tf` and `acls.tf`.
+Prostagma mounts its NFS exports and scylla mounts its SMB shares. The IDs
+and addresses both sides depend on live in `nix/lib/fleet.nix` (`lan` and
+`nasIds`); prostagma imports them, and the wrapper passes them to OpenTofu as
+`var.fleet`. A check warns if TrueNAS's builtin `apps` group stops having
+prostagma's `apps` GID.
 
 ## Run it
 
