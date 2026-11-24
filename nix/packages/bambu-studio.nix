@@ -4,8 +4,8 @@
 }:
 
 let
-  version = "02.09.01.70";
-  assetName = "BambuStudio_ubu24-v02.09.01.70-20261103183404.AppImage";
+  version = "02.09.02.62";
+  assetName = "BambuStudio_ubu24-v02.09.02.62-20261124164959.AppImage";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # The Ubuntu AppImage has better compatibility than the Fedora build on NixOS.
@@ -14,7 +14,7 @@ let
     repo = "BambuStudio";
     asset = assetName;
     inherit version;
-    hash = "sha256-Zo2rsb5Tx1gYnta8iZNShd6l4K9GIWVGsbr9aILpr/A=";
+    hash = "sha256-AanSUXnfZJXss9QCYoIysxoQz/H4mR8FKYg4Ot9oDuo=";
   };
 
   bambu-studio = pkgs.appimageTools.wrapType2 rec {
