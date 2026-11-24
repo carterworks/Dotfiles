@@ -24,6 +24,7 @@ in
   fnox = localPackage ./fnox.nix;
   hex = final.callPackage ./hex.nix { hexSource = inputs.hex; };
   klad = final.callPackage ./klad.nix { kladSource = inputs.klad; };
+  modern-web-guidance = localPackage ./modern-web-guidance.nix;
   nub = localPackage ./nub.nix;
   # Upstream publishes self-contained nightly builds, so these wrap them instead
   # of using llm-agents' source builds.
