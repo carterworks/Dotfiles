@@ -24,11 +24,14 @@ in
   fnox = localPackage ./fnox.nix;
   hex = final.callPackage ./hex.nix { hexSource = inputs.hex; };
   klad = final.callPackage ./klad.nix { kladSource = inputs.klad; };
+  mattpocock-skills = final.callPackage ./mattpocock-skills.nix { inherit inputs; };
+  modern-web-guidance = localPackage ./modern-web-guidance.nix;
   nub = localPackage ./nub.nix;
   # Upstream publishes self-contained nightly builds, so these wrap them instead
   # of using llm-agents' source builds.
   t3code-cli = localPackage ./t3code-cli.nix;
   t3code-nightly = localPackage ./t3code-nightly.nix;
+  tstack-skills = final.callPackage ./tstack-skills.nix { inherit inputs; };
 }
 // prev.lib.optionalAttrs isDarwin {
   rex-client = localPackage ./rex-client.nix;

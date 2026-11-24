@@ -144,6 +144,27 @@ Fish ([Zsh](zsh.md)). On the Mac and on scylla:
    alone). The app and its scripts live in the private `sony-tv-hacking`
    repository.
 
+## 10. Agent skills
+
+1. On scylla, run `./install`, then `animations-dev-sync`
+   ([Agent skills](agent-skills.md#animationsdev)). The first `./install`
+   removes the links the old skill-sync script made in `~/.claude/skills`.
+2. Check `/skills` in Claude Code and OpenCode on scylla: each skill is
+   listed once, including `mp-code-review` and the animations.dev skills.
+   OpenCode logs `duplicate skill name` for any skill left in
+   `~/.agents/skills` or `~/.config/opencode/skills`.
+3. On scylla, remove the copies installed before this change:
+   `rm -r ~/.agents/skills/{animate,animation-accessibility,animation-performance,animation-vocabulary,css-animations,debug-animation,find-animation-opportunities,gesture-ui,improve-animations,motion-brief,motion-react,pick-ui-library,review-animations,scroll-animations}`.
+   `web-animation-design`, which animations.dev no longer provides, is
+   still there; delete it too if you no longer use it.
+4. For the Mac: create an age key there (`age-keygen -o ~/.config/fnox/age.txt`),
+   add its public key to `[providers.workstations]` in `secrets/fnox.toml`,
+   re-encrypt the token
+   (`sfnox get ANIMATIONS_DEV_TOKEN | sfnox set ANIMATIONS_DEV_TOKEN -p workstations >/dev/null`,
+   with the shell from [Secrets](secrets.md#before-any-command)), commit, then
+   run `./install` and `animations-dev-sync` on the Mac. Until then the Mac
+   links the animations.dev skills to an empty state folder.
+
 ## Confirm the end state
 
 - From scylla, `./drift` lists scylla, prostagma and eltoro as `in sync` with

@@ -41,6 +41,7 @@ in
 {
   imports = [
     ./agent-daemons.nix
+    ./agent-skills.nix
     ./desktop-theme
     ./shell.nix
   ];
@@ -58,18 +59,14 @@ in
 
   lib.dotfiles = { inherit link linkEach; };
 
-  home.file =
-    linkEach ".agents/skills" "agents/skills/personal"
-    // linkEach ".agents/skills" "agents/skills/generated"
-    // linkEach ".local/bin" "bin"
-    // {
-      ".npmrc" = link "npm/npmrc";
-      ".config/opencode/opencode.jsonc" = link "opencode/opencode.jsonc";
-      ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
-      ".config/opencode/complaints-box" = link "opencode/complaints-box";
-      ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
-      ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
-    };
+  home.file = linkEach ".local/bin" "bin" // {
+    ".npmrc" = link "npm/npmrc";
+    ".config/opencode/opencode.jsonc" = link "opencode/opencode.jsonc";
+    ".config/opencode/idle-compaction" = link "opencode/idle-compaction";
+    ".config/opencode/complaints-box" = link "opencode/complaints-box";
+    ".config/opencode/AGENTS.md" = link "agents/AGENTS.md";
+    ".copilot/copilot-instructions.md" = link "agents/AGENTS.md";
+  };
 
   # Keep work-only MCP entries out of the checkout when Copilot edits its config.
   home.activation.copilotMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -440,7 +437,6 @@ in
   home.sessionVariables = {
     CODEHOME = "${config.home.homeDirectory}/Projects/code";
     WORKTREEHOME = "${config.home.homeDirectory}/Projects/code/worktrees";
-    COPILOT_SKILLS_DIRS = "${config.home.homeDirectory}/.claude/skills/synced,${config.home.homeDirectory}/.config/opencode/skills";
   };
 
   programs.gh = {
