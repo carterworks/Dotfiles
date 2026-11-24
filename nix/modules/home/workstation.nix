@@ -681,7 +681,6 @@ in
       ".worktrees/"
       ".osgrep/"
       ".scout/"
-      ".opencode/complaints-box.jsonl"
     ];
 
     includes = [
