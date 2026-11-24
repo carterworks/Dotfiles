@@ -20,19 +20,27 @@ infra/truenas/tofu apply     # only after reading the whole plan
 `./drift` also plans TrueNAS, read-only, and reports it as `in sync`,
 `drifted` (with the plan's summary) or `plan failed`. It compares the server
 with this checkout's configuration, not with `release`, because TrueNAS is
-applied from scylla. Either of the last two makes `./drift` exit 1, and until
-the API key exists it asks for the password first. `TRUENAS_TOFU` overrides
-the wrapper's path, which the tests use.
+applied from scylla. Either of the last two makes `./drift` exit 1.
+`TRUENAS_TOFU` overrides the wrapper's path, which the tests use.
 
 The wrapper decrypts its secrets from fnox into its own environment and runs
-OpenTofu from the flake's nixpkgs. Until `TRUENAS_TOFU_API_KEY` exists, it
-prompts for carter's TrueNAS password on every run instead.
+OpenTofu from the flake's nixpkgs. Without `TRUENAS_TOFU_API_KEY` in the
+store, it prompts for carter's TrueNAS password instead.
 
 | fnox key (admin) | Used for |
 |---|---|
 | `TRUENAS_TOFU_STATE_PASSPHRASE` | Encrypting the state and plan files |
 | `TRUENAS_CONNECTIVITY_CHECK_URL` | The healthchecks.io URL in the connectivity cron job |
-| `TRUENAS_TOFU_API_KEY` | Logging in to TrueNAS (not created yet) |
+| `TRUENAS_TOFU_API_KEY` | Logging in to TrueNAS: the API key `opentofu`, owned by carter |
+
+The key is not managed by OpenTofu. To rotate it, create a new one into fnox
+without displaying it, then revoke the old one (in the web interface under
+**Credentials → API Keys**, or with `midclt call api_key.delete <id>`):
+
+```bash
+ssh truenas 'midclt call api_key.create "{\"name\":\"opentofu\",\"username\":\"carter\"}"' |
+  jq -j .key | base64 -w0 | sfnox set TRUENAS_TOFU_API_KEY -p admin >/dev/null
+```
 
 The provider connects to `wss://truenas.<tailnet>/api/current` with TLS
 verification off, because TrueNAS still serves its self-signed `localhost`
