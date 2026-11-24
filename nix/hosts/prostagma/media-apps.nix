@@ -1,5 +1,6 @@
 {
   config,
+  fleet,
   lib,
   pkgs,
   ...
@@ -16,8 +17,8 @@ let
   torrentDataMountSource = config.fileSystems."/mnt/truenas/vm-data".device;
   qbittorrentEnvFile = "/run/secrets/qbittorrent-vpn.env";
 
-  uid = "568";
-  gid = "568";
+  uid = toString fleet.nasIds.apps;
+  gid = toString fleet.nasIds.apps;
 
   appEnvironment = {
     GID = gid;
@@ -35,7 +36,7 @@ let
   appExtraOptions = [
     "--pull=missing"
     "--user=${uid}:${gid}"
-    "--group-add=3004"
+    "--group-add=${toString fleet.nasIds.media}"
     "--cap-drop=ALL"
     "--security-opt=no-new-privileges=true"
   ];
@@ -260,7 +261,8 @@ in
         "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
         "${sharedDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
       ];
-      extraOptions = appExtraOptions ++ [ "--group-add=3000" ] ++ dockerNetworkOptions;
+      extraOptions =
+        appExtraOptions ++ [ "--group-add=${toString fleet.nasIds.humans}" ] ++ dockerNetworkOptions;
     };
   };
 

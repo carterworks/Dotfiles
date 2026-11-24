@@ -39,7 +39,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `zsh/zshrc.zsh`: port what the Fish plugins in `workstation.nix` add: fzf-fish's key bindings (files, git log, git status, processes, variables) and `done`'s notification when a long command finishes.
 - [ ] `zsh/completions/`: add `_obsidian` once Obsidian's command-line interface is documented; running the binary to find out opens the app.
 - [x] `infra/truenas/`: create a TrueNAS API key for OpenTofu and store it as `TRUENAS_TOFU_API_KEY` in fnox ([docs/truenas.md](docs/truenas.md)).
-- [ ] `infra/truenas/`: generate the shared IDs (apps 568, humans 3000, admins 3001, media 3004) from one Nix value that feeds both the OpenTofu variables and prostagma's `users.*`.
+- [x] `infra/truenas/`: take the IDs and addresses shared with prostagma from one Nix value (`fleet.nasIds`, `fleet.lan` in `nix/lib/fleet.nix`).
 - [ ] `infra/truenas/`: adopt what is still set by hand: the Tailscale app, alert services and mail, network, system and SSH/UPS settings.
 - [x] `infra/truenas/shares.tf`: restrict every NFS export to prostagma.
 - [ ] prostagma: pin its LAN address (`192.168.4.29`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.

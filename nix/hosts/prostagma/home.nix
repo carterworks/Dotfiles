@@ -67,7 +67,7 @@ in
           IdentitiesOnly = true;
         };
         truenas = {
-          HostName = "192.168.5.252";
+          HostName = fleet.lan.truenas;
           User = "carter";
           IdentityFile = "~/.ssh/bitwarden";
           IdentitiesOnly = true;

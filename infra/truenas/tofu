@@ -26,7 +26,8 @@ secret() {
 
 TF_VAR_state_passphrase="$(secret TRUENAS_TOFU_STATE_PASSPHRASE)"
 TF_VAR_connectivity_check_url="$(secret TRUENAS_CONNECTIVITY_CHECK_URL)"
-export TF_VAR_state_passphrase TF_VAR_connectivity_check_url
+TF_VAR_fleet="$(nix eval --json --file "${repo}/nix/lib/fleet.nix" --apply 'f: { inherit (f) lan nasIds; }')"
+export TF_VAR_state_passphrase TF_VAR_connectivity_check_url TF_VAR_fleet
 
 if [[ -z "${TRUENAS_API_KEY:-}" && -z "${TRUENAS_PASSWORD:-}" ]]; then
   # fnox reports an undefined key as an error even with --if-missing ignore,

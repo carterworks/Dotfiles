@@ -28,7 +28,7 @@ locals {
     inherited_only = { FILE_INHERIT = true, DIRECTORY_INHERIT = true, INHERITED = true, INHERIT_ONLY = true }
   }
 
-  # apps (568) is prostagma's service user; humans and admins are TrueNAS's.
+  # apps is prostagma's service user (fleet.nasIds); humans and admins are TrueNAS's.
   media_groups = [
     { who = "builtin_users", perms = "MODIFY" },
     { who = "builtin_administrators", perms = "FULL_CONTROL" },
@@ -72,20 +72,20 @@ locals {
   )
 
   nfs4_acls = {
-    "/mnt/reservoir/media" = { gid = 3004, entries = local.media_acl }
+    "/mnt/reservoir/media" = { gid = var.fleet.nasIds.media, entries = local.media_acl }
 
-    "/mnt/reservoir/media/audiobooks"   = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/comics"       = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/ebooks"       = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/games"        = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/movies"       = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/music"        = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/ripped-discs" = { gid = 3004, entries = local.media_child_acl }
-    "/mnt/reservoir/media/tvshows"      = { gid = 3004, entries = local.media_child_acl }
+    "/mnt/reservoir/media/audiobooks"   = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/comics"       = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/ebooks"       = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/games"        = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/movies"       = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/music"        = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/ripped-discs" = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
+    "/mnt/reservoir/media/tvshows"      = { gid = var.fleet.nasIds.media, entries = local.media_child_acl }
 
-    "/mnt/reservoir/media/photos"         = { gid = 3004, entries = local.media_child_chmod_acl }
-    "/mnt/reservoir/media/photos/immich"  = { gid = 3004, entries = local.media_child_chmod_acl }
-    "/mnt/reservoir/media/youtube-videos" = { gid = 3004, entries = local.media_child_chmod_acl }
+    "/mnt/reservoir/media/photos"         = { gid = var.fleet.nasIds.media, entries = local.media_child_chmod_acl }
+    "/mnt/reservoir/media/photos/immich"  = { gid = var.fleet.nasIds.media, entries = local.media_child_chmod_acl }
+    "/mnt/reservoir/media/youtube-videos" = { gid = var.fleet.nasIds.media, entries = local.media_child_chmod_acl }
 
     "/mnt/reservoir/users" = {
       gid = 0
@@ -102,7 +102,7 @@ locals {
     # Mode 750 owned by root:humans, which keeps carter (and the all-squashed
     # NFS export) from creating entries at the top of the home directory.
     "/mnt/reservoir/users/carter" = {
-      gid = 3000
+      gid = var.fleet.nasIds.humans
       entries = [
         { tag = "owner@", type = "ALLOW", perms = local.mode_perms.rwx_owner, flags = local.ace_flags.noinherit },
         { tag = "group@", type = "ALLOW", perms = local.mode_perms.rx, flags = local.ace_flags.noinherit },
@@ -163,8 +163,8 @@ import {
 
 resource "truenas_filesystem_acl" "vm_data" {
   path = "/mnt/river-rapid/vm-data"
-  uid  = 568
-  gid  = 568
+  uid  = var.fleet.nasIds.apps
+  gid  = var.fleet.nasIds.apps
   entries = jsonencode([
     { tag = "USER_OBJ", default = false, perms = { READ = true, WRITE = true, EXECUTE = true } },
     { tag = "GROUP_OBJ", default = false, perms = { READ = true, WRITE = true, EXECUTE = true } },

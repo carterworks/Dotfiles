@@ -4,6 +4,14 @@ variable "state_passphrase" {
   sensitive   = true
 }
 
+variable "fleet" {
+  description = "Shared values from nix/lib/fleet.nix (lan, nasIds), passed by the wrapper."
+  type = object({
+    lan    = object({ truenas = string, prostagma = string })
+    nasIds = object({ apps = number, humans = number, media = number })
+  })
+}
+
 variable "connectivity_check_url" {
   description = "healthchecks.io ping URL for the connectivity cron job (fnox: TRUENAS_CONNECTIVITY_CHECK_URL)."
   type        = string

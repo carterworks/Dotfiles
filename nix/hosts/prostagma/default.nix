@@ -13,7 +13,7 @@ let
 
   inherit (fleet) adminSshKey tailnetDomain;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
-  truenas = "192.168.5.252";
+  truenas = fleet.lan.truenas;
 
   prostagmaDirectory = pkgs.writeTextDir "index.html" ''
     <!doctype html>
@@ -608,12 +608,12 @@ in
 
   users.groups.video.gid = lib.mkForce 44;
   users.groups.render.gid = lib.mkForce 993;
-  users.groups.apps.gid = lib.mkForce 568;
-  users.groups.media.gid = lib.mkForce 3004;
+  users.groups.apps.gid = lib.mkForce fleet.nasIds.apps;
+  users.groups.media.gid = lib.mkForce fleet.nasIds.media;
 
   users.users.apps = {
     isSystemUser = true;
-    uid = 568;
+    uid = fleet.nasIds.apps;
     group = "apps";
     extraGroups = [
       "video"
