@@ -128,6 +128,8 @@ must match a flake host.
 - [Secrets](docs/secrets.md): encrypted with fnox in `secrets/fnox.toml`
 - [El Toro](docs/eltoro.md): onboarding, settings, the egress fence
 - [Monitoring](docs/monitoring.md): the Beszel hub on prostagma and its agents
+- [TrueNAS](docs/truenas.md): the NAS's shares, ACLs, accounts and tasks, managed
+  with OpenTofu from `infra/truenas/`
 - [Rex](docs/rex.md): the macOS client
 - [Zsh](docs/zsh.md): the workstation shell, and which programs start it
 - [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,

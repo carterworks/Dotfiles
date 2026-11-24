@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Runs OpenTofu for TrueNAS with its secrets decrypted from fnox into the
+# environment of this process only. Usage: infra/truenas/tofu <plan|apply|...>
+#
+# Logs in with TRUENAS_TOFU_API_KEY from fnox when the store has it, otherwise
+# prompts for carter's TrueNAS password.
+
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo="$(cd "${here}/../.." && pwd)"
+
+export FNOX_CONFIG_DIR=/var/empty
+export FNOX_AGE_KEY_FILE="${FNOX_AGE_KEY_FILE:-${HOME}/.config/fnox/age.txt}"
+
+fnox_get() {
+  fnox --no-daemon --non-interactive --if-missing "$2" -c "${repo}/secrets/fnox.toml" get "$1"
+}
+
+secret() {
+  local value
+  value="$(fnox_get "$1" error)" || { printf 'cannot read %s from fnox\n' "$1" >&2; exit 1; }
+  [[ -n "${value}" ]] || { printf 'fnox has an empty value for %s\n' "$1" >&2; exit 1; }
+  printf '%s' "${value}" | base64 -d
+}
+
+TF_VAR_state_passphrase="$(secret TRUENAS_TOFU_STATE_PASSPHRASE)"
+TF_VAR_connectivity_check_url="$(secret TRUENAS_CONNECTIVITY_CHECK_URL)"
+export TF_VAR_state_passphrase TF_VAR_connectivity_check_url
+
+if [[ -z "${TRUENAS_API_KEY:-}" && -z "${TRUENAS_PASSWORD:-}" ]]; then
+  # fnox reports an undefined key as an error even with --if-missing ignore,
+  # so look for the name first and read the value strictly.
+  keys="$(fnox --no-daemon --non-interactive -c "${repo}/secrets/fnox.toml" list --no-color)"
+  if grep -qw TRUENAS_TOFU_API_KEY <<<"${keys}"; then
+    TRUENAS_API_KEY="$(secret TRUENAS_TOFU_API_KEY)"
+    export TRUENAS_API_KEY
+  else
+    read -rsp 'TrueNAS password for carter: ' TRUENAS_PASSWORD </dev/tty
+    printf '\n' >&2
+    export TRUENAS_PASSWORD TRUENAS_USERNAME=carter
+  fi
+fi
+
+exec nix shell --inputs-from "${repo}" nixpkgs#opentofu --command tofu -chdir="${here}" "$@"

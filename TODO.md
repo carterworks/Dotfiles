@@ -4,6 +4,7 @@
 
 Temporary pins and workarounds, each with the condition for removing it.
 
+- [ ] `infra/truenas/versions.tf`: drop `insecure = true` once TrueNAS serves a certificate for its tailnet name; until then TLS is unverified and the provider trusts whichever tailnet device answers as `truenas`.
 - [ ] `nix/packages/fnox.nix` (and its entry in `nix/packages/overlay.nix`): replace with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` as build inputs and `cache.nixos.org` has the build; until then nixpkgs' build fails (`aws-lc-sys` finds no system AWS-LC).
 - [ ] `nix/packages/t3code-cli.nix`: drop `dontStrip = true` once stripping keeps the embedded Node SEA payload; check `t3 --version` and `t3 serve`. On 2026-11-01, patchelf 0.19.2 still truncated the SEA `NOTE` segment.
 - [ ] `nix/hosts/carters-macbook-pro/default.nix`: lift the kubelogin 0.1.9 pin when a newer release keeps the Ethos device-code token instead of prompting on every run; upstream still recommends 0.1.9 for legacy `spn:` logins.
@@ -37,6 +38,13 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `zsh/zshrc.zsh`: close the Fish parity gaps the scorecard (`tests/zsh/parity_scorecard.py`) still shows: Alt+Right stopping before `/`, Ctrl+Right accepting a whole argument, Ctrl+W deleting a path component, and `!!` expanding as you type.
 - [ ] `zsh/zshrc.zsh`: port what the Fish plugins in `workstation.nix` add: fzf-fish's key bindings (files, git log, git status, processes, variables) and `done`'s notification when a long command finishes.
 - [ ] `zsh/completions/`: add `_obsidian` once Obsidian's command-line interface is documented; running the binary to find out opens the app.
+- [ ] `infra/truenas/`: create a TrueNAS API key for OpenTofu and store it as `TRUENAS_TOFU_API_KEY` in fnox, so plans stop prompting for carter's password ([docs/truenas.md](docs/truenas.md)).
+- [ ] `infra/truenas/`: generate the shared IDs (apps 568, humans 3000, admins 3001, media 3004) from one Nix value that feeds both the OpenTofu variables and prostagma's `users.*`.
+- [ ] `infra/truenas/`: adopt what is still set by hand: the Tailscale app, alert services and mail, network, system and SSH/UPS settings.
+- [ ] `infra/truenas/shares.tf`: restrict every NFS export to prostagma; today any LAN or tailnet host with root can mount them read-write.
+- [ ] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/`, since deleting a block bypasses the protection.
+- [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
+- [ ] `infra/truenas/`: make `aclmode` consistent across the media datasets (six are `RESTRICTED`, the rest `PASSTHROUGH`), and give `users/carter` to carter instead of root.
 ## Awaiting a decision
 
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
