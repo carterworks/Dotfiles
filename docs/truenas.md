@@ -17,6 +17,11 @@ infra/truenas/tofu plan
 infra/truenas/tofu apply     # only after reading the whole plan
 ```
 
+`./drift` also plans TrueNAS, read-only, and reports it as `in sync`,
+`drifted` (with the plan's summary) or `plan failed`. It compares the server
+with this checkout's configuration, not with `release`, because TrueNAS is
+applied from scylla.
+
 The wrapper decrypts its secrets from fnox into its own environment and runs
 OpenTofu from the flake's nixpkgs. Until `TRUENAS_TOFU_API_KEY` exists, it
 prompts for carter's TrueNAS password on every run instead.
