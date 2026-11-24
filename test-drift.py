@@ -194,7 +194,7 @@ class DriftTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("drifted", self.line(result, "truenas"))
-        self.assertIn("0 to add, 1 to change, 0 to destroy", self.line(result, "truenas"))
+        self.assertEqual(self.line(result, "truenas").split(None, 2)[2], "0 to add, 1 to change, 0 to destroy.")
         self.assertNotIn("noise", result.stdout)
 
     def test_truenas_plan_failure_is_reported(self):
