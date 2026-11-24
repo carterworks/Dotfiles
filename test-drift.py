@@ -39,32 +39,42 @@ case "$*" in
   *) exit 2 ;;
 esac
 '''
+TOFU = '''#!/bin/sh
+printf '%s\\n' "$*" >> "$STATE/tofu.log"
+cat "$STATE/tofu-output"
+exit "$(cat "$STATE/tofu-exit")"
+'''
 
 
 class DriftTests(unittest.TestCase):
-    def run_drift(self, args=(), running=None, expected=None, env=None):
+    def run_drift(self, args=(), running=None, expected=None, env=None, truenas=(0, "No changes.")):
         with tempfile.TemporaryDirectory() as state:
             state = Path(state)
             bin_dir = state / "bin"
             bin_dir.mkdir()
-            for name, body in (("ssh", SSH), ("nix", NIX)):
+            for name, body in (("ssh", SSH), ("nix", NIX), ("tofu", TOFU)):
                 (bin_dir / name).write_text(body)
                 (bin_dir / name).chmod(0o755)
             for target, (path, activated, *failed) in (running or {}).items():
                 (state / f"running-{target}").write_text(f"{path}\n{activated}\n{failed[0] if failed else 0}\n")
             for host, path in (expected or {}).items():
                 (state / f"expected-{host}").write_text(path)
+            (state / "tofu-exit").write_text(str(truenas[0]))
+            (state / "tofu-output").write_text(truenas[1] + "\n")
             script_env = {
                 **hermetic_env(state, bin_dir),
                 "STATE": str(state),
                 "REVISION": REVISION,
                 "TZ": "UTC",
+                "TRUENAS_TOFU": str(bin_dir / "tofu"),
                 **(env or {}),
             }
             result = run(["bash", str(ROOT / "drift"), *args], script_env, bin_dir)
             result.nix = (state / "nix.log").read_text().splitlines()
             ssh_log = state / "ssh.log"
             result.ssh = ssh_log.read_text().splitlines() if ssh_log.exists() else []
+            tofu_log = state / "tofu.log"
+            result.tofu = tofu_log.read_text().splitlines() if tofu_log.exists() else []
             return result
 
     def line(self, result, host):
@@ -161,6 +171,45 @@ class DriftTests(unittest.TestCase):
             self.assertTrue(call.endswith(
                 "readlink /run/current-system; stat -c %Y /run/current-system; systemctl --failed --no-legend | wc -l"
             ), call)
+
+    def in_sync_hosts(self):
+        return {
+            "running": {
+                "scylla": ("/nix/store/a", 1),
+                "carter@prostagma": ("/nix/store/b", 1),
+                "root@eltoro": ("/nix/store/c", 1),
+            },
+            "expected": {"scylla": "/nix/store/a", "prostagma": "/nix/store/b", "eltoro": "/nix/store/c"},
+        }
+
+    def test_truenas_matching_its_configuration_is_in_sync(self):
+        result = self.run_drift(**self.in_sync_hosts())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("in sync", self.line(result, "truenas"))
+
+    def test_truenas_drift_fails_the_run_and_shows_the_plan_summary(self):
+        result = self.run_drift(
+            **self.in_sync_hosts(),
+            truenas=(2, "noise\nPlan: 0 to add, 1 to change, 0 to destroy.\nmore noise"),
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("drifted", self.line(result, "truenas"))
+        self.assertIn("0 to add, 1 to change, 0 to destroy", self.line(result, "truenas"))
+        self.assertNotIn("noise", result.stdout)
+
+    def test_truenas_plan_failure_is_reported(self):
+        result = self.run_drift(**self.in_sync_hosts(), truenas=(1, "Error: connection refused"))
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("plan failed", self.line(result, "truenas"))
+
+    def test_truenas_is_only_planned_never_applied(self):
+        result = self.run_drift(**self.in_sync_hosts())
+        self.assertEqual(len(result.tofu), 1)
+        args = result.tofu[0].split()
+        self.assertEqual(args[0], "plan")
+        self.assertIn("-detailed-exitcode", args)
+        self.assertIn("-input=false", args)
+        self.assertNotIn("apply", args)
 
 
 if __name__ == "__main__":
