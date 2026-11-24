@@ -50,6 +50,17 @@
       url = "github:klad-app/klad/v0.4.0";
       flake = false;
     };
+    # Agent skills, packaged in nix/packages/agent-skills.nix. tstack has no
+    # releases, so the nightly takes its default branch; mattpocock-skills is
+    # pinned to the release that package names, and ./update bumps both.
+    tstack = {
+      url = "github:t3dotgg/tstack";
+      flake = false;
+    };
+    mattpocock-skills = {
+      url = "github:mattpocock/skills/v1.3.2";
+      flake = false;
+    };
     # Held at the rev the standalone eltoro repo ran, so ./update leaves it
     # alone; see TODO.md. Bump it by editing the rev here, then run
     # `nix flake update hermes-agent`.
