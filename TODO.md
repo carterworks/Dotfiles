@@ -17,6 +17,8 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `nix/hosts/prostagma/default.nix`: Immich is temporarily bound to `0.0.0.0` and allowed through the firewall on `immichPort` for LAN access from the Mac; revert both (and this item) once the Mac is back on the tailnet, since Tailscale Serve should stay the sole ingress.
 - [ ] `nix/hosts/carters-macbook-pro/default.nix`: remove the `chmod -R u+w` `postActivation` hook for `Ardia.app/Contents/Resources/Plugins` once upstream Ardia's `PluginPrograms.payloadDigest` stops depending on the owner write bit (`0o200`).
 
+- [ ] `nix/modules/home/agent-skills.nix`: remove `home.activation.agentSkillsMigration` once scylla and the Mac have each run `./install` with the module, which removes the old skill-sync script's links from `~/.claude/skills`.
+
 ## Follow-up work
 
 - [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.

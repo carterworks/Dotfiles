@@ -92,6 +92,12 @@ let
             python3 -I ${./tests/secrets-encrypted.py} ${source}
             touch "$out"
           '';
+      animations-dev-sync =
+        pkgs.runCommandLocal "animations-dev-sync-check" { nativeBuildInputs = [ pkgs.python3 ]; }
+          ''
+            python3 -I ${source}/agents/animations-dev/test_sync.py
+            touch "$out"
+          '';
       copilot-mcp = pkgs.runCommandLocal "copilot-mcp-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
         python3 ${source}/copilot/test-merge-mcp.py
         touch "$out"
