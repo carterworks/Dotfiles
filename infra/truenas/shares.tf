@@ -1,4 +1,8 @@
 locals {
+  # Prostagma is the only NFS client; its DHCP address is also assumed by
+  # nix/hosts/prostagma/tv-screensaver.nix.
+  nfs_clients = ["192.168.4.29/32"]
+
   # Keys are export paths; `id` is the middleware's row ID, used only to import.
   # Prostagma mounts these (nix/hosts/prostagma/default.nix, fileSystems).
   nfs_shares = {
@@ -46,7 +50,7 @@ resource "truenas_nfs_share" "this" {
   enabled          = true
   ro               = false
   hosts            = []
-  networks         = []
+  networks         = local.nfs_clients
   security         = []
   expose_snapshots = false
   maproot_user     = ""
