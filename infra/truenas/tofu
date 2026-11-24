@@ -36,8 +36,11 @@ if [[ -z "${TRUENAS_API_KEY:-}" && -z "${TRUENAS_PASSWORD:-}" ]]; then
     TRUENAS_API_KEY="$(secret TRUENAS_TOFU_API_KEY)"
     export TRUENAS_API_KEY
   else
-    read -rsp 'TrueNAS password for carter: ' TRUENAS_PASSWORD </dev/tty
-    printf '\n' >&2
+    # The prompt goes to the terminal, so it shows when a caller such as
+    # ./drift captures stderr.
+    printf 'TrueNAS password for carter: ' >/dev/tty
+    read -rs TRUENAS_PASSWORD </dev/tty
+    printf '\n' >/dev/tty
     export TRUENAS_PASSWORD TRUENAS_USERNAME=carter
   fi
 fi
