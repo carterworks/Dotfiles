@@ -33,14 +33,22 @@ store, it prompts for carter's TrueNAS password instead.
 | `TRUENAS_CONNECTIVITY_CHECK_URL` | The healthchecks.io URL in the connectivity cron job |
 | `TRUENAS_TOFU_API_KEY` | Logging in to TrueNAS: the API key `opentofu`, owned by carter |
 
-The key is not managed by OpenTofu. To rotate it, create a new one into fnox
-without displaying it, then revoke the old one (in the web interface under
-**Credentials → API Keys**, or with `midclt call api_key.delete <id>`):
+The key is not managed by OpenTofu. To rotate it, in a shell set up as in
+[Secrets, before any command](secrets.md#before-any-command) (which defines
+`sfnox` and `pipefail`):
 
-```bash
-ssh truenas 'midclt call api_key.create "{\"name\":\"opentofu\",\"username\":\"carter\"}"' |
-  jq -j .key | base64 -w0 | sfnox set TRUENAS_TOFU_API_KEY -p admin >/dev/null
-```
+1. Note the current key's id:
+   `ssh truenas 'midclt call api_key.query "[[\"name\",\"=\",\"opentofu\"]]" "{\"select\":[\"id\"]}"'`
+2. Create a new key straight into fnox, and check its length (about 66 bytes):
+
+   ```bash
+   ssh truenas 'midclt call api_key.create "{\"name\":\"opentofu\",\"username\":\"carter\"}"' |
+     jq -je .key | base64 -w0 | sfnox set TRUENAS_TOFU_API_KEY -p admin >/dev/null
+   sfnox get TRUENAS_TOFU_API_KEY | base64 -d | wc -c
+   ```
+
+3. `infra/truenas/tofu plan` must log in and show no changes.
+4. Only then revoke the old key: `ssh truenas 'midclt call api_key.delete <old id>'`.
 
 The provider connects to `wss://truenas.<tailnet>/api/current` with TLS
 verification off, because TrueNAS still serves its self-signed `localhost`
