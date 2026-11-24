@@ -373,6 +373,9 @@ in
         };
         "herdr/config.toml" = {
           force = true;
+          onChange = ''
+            ${pkgs.herdr}/bin/herdr server reload-config >/dev/null 2>&1 || true
+          '';
           text = builtins.readFile ../../../../herdr/config.toml + ''
 
             [theme]

@@ -47,8 +47,8 @@ let
     tstack = fromPackage pkgs.tstack-skills;
     mattpocock = fromPackage pkgs.mattpocock-skills;
     modern-web-guidance.modern-web-guidance = "${pkgs.modern-web-guidance}/${pkgs.modern-web-guidance.skill}";
-    # Paid content: animations-dev-sync fetches it into the state folder, never
-    # into the repository or the store.
+    # Paid content: activation fetches it into the state folder, never into the
+    # repository or the store.
     animations-dev = lib.genAttrs animationsDev.skills (
       name: outOfStore "${animationsDev.stateDir}/current/${name}"
     );
@@ -63,7 +63,7 @@ let
   owners = lib.zipAttrs (lib.mapAttrsToList (source: lib.mapAttrs (_: _: source)) sources);
   duplicates = lib.filterAttrs (_: from: lib.length from > 1) owners;
 
-  animations-dev-sync = pkgs.writeShellApplication {
+  animationsDevSync = pkgs.writeShellApplication {
     name = "animations-dev-sync";
     runtimeInputs = [
       pkgs.coreutils
@@ -72,8 +72,33 @@ let
     text = ''
       # The repository's store, not a personal global fnox config.
       export FNOX_CONFIG_DIR=/var/empty
-      export FNOX_AGE_KEY_FILE="''${FNOX_AGE_KEY_FILE:-$HOME/.config/fnox/age.txt}"
       export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+
+      tmp_key=""
+      cleanup() {
+        if [ -n "$tmp_key" ]; then
+          rm -f "$tmp_key"
+        fi
+      }
+      trap cleanup EXIT
+
+      key_file="''${FNOX_AGE_KEY_FILE:-$HOME/.config/fnox/age.txt}"
+      if [ ! -r "$key_file" ]; then
+        if [ -x /usr/bin/security ]; then
+          umask 077
+          tmp_key="$(mktemp "''${TMPDIR:-/tmp}/fnox-age-key.XXXXXX")"
+          if /usr/bin/security find-generic-password -s fnox -a age-key -w > "$tmp_key" 2>/dev/null \
+            && [ -s "$tmp_key" ]; then
+            key_file="$tmp_key"
+          else
+            exit 2
+          fi
+        else
+          exit 2
+        fi
+      fi
+
+      export FNOX_AGE_KEY_FILE="$key_file"
       fnox --no-daemon -c ${lib.escapeShellArg "${checkout}/secrets/fnox.toml"} get ANIMATIONS_DEV_TOKEN \
         | base64 -d \
         | ${lib.getExe pkgs.python3} -I ${../../../agents/animations-dev/sync.py} \
@@ -84,6 +109,7 @@ let
               lib.concatLists (lib.mapAttrsToList (old: new: [ "--rename=${old}=${new}" ]) animationsDev.renames)
             )
           } \
+          --yes \
           "$@"
     '';
   };
@@ -121,7 +147,6 @@ in
     ) skills;
 
   home.packages = [
-    animations-dev-sync
     pkgs.modern-web-guidance
   ];
 
@@ -140,8 +165,26 @@ in
   '';
 
   home.activation.animationsDevSkills = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-    if [ ! -d ${lib.escapeShellArg "${animationsDev.stateDir}/current"} ]; then
-      warnEcho "animations.dev skills are not fetched yet; run animations-dev-sync"
+    if [ -z "''${DRY_RUN:-}" ]; then
+      sync_rc=0
+      ${lib.getExe animationsDevSync} || sync_rc=$?
+      if [ "$sync_rc" -eq 2 ]; then
+        warnEcho "animations.dev skills skipped: no age key in ~/.config/fnox/age.txt or macOS Keychain"
+      elif [ "$sync_rc" -ne 0 ]; then
+        warnEcho "animations.dev skills sync failed (offline?); keeping existing copy"
+      fi
+    fi
+    if [ -d ${lib.escapeShellArg "${animationsDev.stateDir}/current"} ]; then
+      for legacy in ${
+        lib.escapeShellArgs (
+          animationsDev.skills ++ (lib.attrNames animationsDev.renames) ++ [ "prototype_1" ]
+        )
+      }; do
+        legacy_dir=${lib.escapeShellArg "${home}/.agents/skills"}/"$legacy"
+        if [ -d "$legacy_dir" ] && [ ! -L "$legacy_dir" ]; then
+          run rm -rf "$legacy_dir"
+        fi
+      done
     fi
   '';
 }
