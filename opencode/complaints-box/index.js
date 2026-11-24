@@ -1,81 +1,57 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import os from "node:os";
-import {
-  RECENCY_REMINDER,
-  SYSTEM_PROMPT,
-  TOOL_DESCRIPTION,
-  buildTriagePrompt,
-} from "./prompts.js";
-import {
-  appendEntry,
-  defaultHarnessPath,
-  findGitRoot,
-  resolveBoxPath,
-} from "./store.js";
+import path from "node:path";
 
-const CATEGORIES = [
-  "tool",
-  "mcp",
-  "skill",
-  "instructions",
-  "environment",
-  "permissions",
-  "codebase",
-  "infra",
-  "other",
-];
+const TOOL_DESCRIPTION =
+  "Office complaints/suggestion box. Call when you hit harness/tooling/doc friction or spot codebase/infra warts worth improving later. Never call for normal user-requested bug/feature work.";
+
+const SYSTEM_PROMPT = `# Complaints box
+Alongside completing the user's request, act as an observant teammate using the \`complaints_box\` tool.
+Call \`complaints_box\` whenever you hit unexpected friction OR spot something outside your requested change that the owner should improve later:
+- Harness or environment friction (tools, MCPs, skills, permissions, scripts, or outdated/conflicting instructions).
+- Codebase or infra rough edges outside your current task (awkward DX, brittle patterns, recurring footguns, slow/clumsy workflows, or architectural warts).
+- Anything else worth flagging for later (use \`category: "other"\`).
+Do NOT call \`complaints_box\` for the normal bug/feature/lint fix the user asked for, or when the task went smoothly with nothing notable.`;
+
+const RECENCY_REMINDER =
+  "<system-reminder>Complaints box check: did anything you just ran or read reveal unexpected harness/tool/doc friction, OR an unrelated codebase/infra rough edge worth improving later? If yes, call `complaints_box` once; if this is just normal user-requested work, ignore this.</system-reminder>";
+
+export function defaultBoxPath() {
+  const stateHome = process.env.XDG_STATE_HOME || path.join(os.homedir(), ".local", "state");
+  return path.join(stateHome, "opencode", "complaints-box.jsonl");
+}
 
 function formatModel(model) {
   if (!model) return undefined;
   if (typeof model === "string") return model;
   if (!model.providerID || !model.id) return undefined;
-  const base = `${model.providerID}/${model.id}`;
-  return model.variant ? `${base}#${model.variant}` : base;
-}
-
-function countUserMessages(messages) {
-  if (!Array.isArray(messages)) return 0;
-  let count = 0;
-  for (const msg of messages) {
-    if (msg?.role === "user") count += 1;
-  }
-  return count;
+  return model.variant ? `${model.providerID}/${model.id}#${model.variant}` : `${model.providerID}/${model.id}`;
 }
 
 export default {
   id: "dotfiles.complaints-box",
   async setup(ctx) {
-    const options = ctx.options ?? {};
-    const harnessPath = options.harnessPath || defaultHarnessPath();
-    const projectDir =
-      ctx.location?.project?.canonical ||
-      (ctx.location?.directory ? findGitRoot(ctx.location.directory) : process.cwd());
-
-    const lastModelBySession = new Map();
-    const userTurnBySession = new Map();
+    const boxPath = ctx.options?.path || defaultBoxPath();
+    const project = ctx.location?.project?.canonical ?? ctx.location?.directory ?? null;
+    const modelBySession = new Map();
+    const turnBySession = new Map();
     const loggedTurnBySession = new Map();
 
     async function resolveModel(sessionID) {
-      if (sessionID && lastModelBySession.has(sessionID)) {
-        return lastModelBySession.get(sessionID);
-      }
-      if (!sessionID || !ctx.session?.get) return "unknown";
+      if (sessionID && modelBySession.has(sessionID)) return modelBySession.get(sessionID);
       try {
-        const session = await ctx.session.get({ sessionID });
+        const session = sessionID && (await ctx.session?.get?.({ sessionID }));
         const formatted = formatModel(session?.model ?? session?.data?.model);
         if (formatted) {
-          lastModelBySession.set(sessionID, formatted);
+          modelBySession.set(sessionID, formatted);
           return formatted;
         }
-      } catch {
-        // Fall through to "unknown" so signing never fails the tool call.
-      }
+      } catch {}
       return "unknown";
     }
 
-    const registrations = [];
-
-    registrations.push(
+    const registrations = [
       await ctx.tool.transform((editor) => {
         editor.add({
           name: "complaints_box",
@@ -86,144 +62,82 @@ export default {
               scope: {
                 type: "string",
                 enum: ["harness", "codebase"],
-                description:
-                  "'harness' for OpenCode/OS/shell/MCP/skills/global setup; 'codebase' for this repository's code, tests, scripts, docs, or infra",
+                description: "'harness' for OpenCode/OS/shell/MCP/skills/global setup; 'codebase' for this repo",
               },
-              summary: {
-                type: "string",
-                description: "Short one-line title of the issue or suggestion",
-              },
-              details: {
-                type: "string",
-                description: "What happened or what you noticed",
-              },
+              summary: { type: "string", description: "Short one-line title" },
+              details: { type: "string", description: "What happened or what you noticed" },
               category: {
                 type: "string",
-                enum: CATEGORIES,
+                enum: ["tool", "mcp", "skill", "instructions", "environment", "permissions", "codebase", "infra", "other"],
                 description: "Optional category (defaults to 'other')",
               },
-              workaround: {
-                type: "string",
-                description: "How you worked around it, if applicable",
-              },
-              suggestion: {
-                type: "string",
-                description: "Concrete improvement idea, if obvious",
-              },
-              severity: {
-                type: "string",
-                enum: ["minor", "annoying", "blocking"],
-                description: "Optional severity",
-              },
+              workaround: { type: "string", description: "How you worked around it, if applicable" },
+              suggestion: { type: "string", description: "Concrete improvement idea, if obvious" },
             },
             required: ["scope", "summary", "details"],
             additionalProperties: false,
           },
           options: { codemode: false },
           execute: async (input, context) => {
-            const sessionID = context?.sessionID;
-            if (sessionID) {
-              loggedTurnBySession.set(
-                sessionID,
-                userTurnBySession.get(sessionID) ?? 0,
-              );
-            }
+            const sessionID = context?.sessionID ?? null;
+            if (sessionID) loggedTurnBySession.set(sessionID, turnBySession.get(sessionID) ?? 0);
             const model = await resolveModel(sessionID);
-            const scope = input.scope === "codebase" ? "codebase" : "harness";
-            const filePath = resolveBoxPath({ scope, projectDir, harnessPath });
             const entry = {
               id: crypto.randomUUID(),
               timestamp: new Date().toISOString(),
-              scope,
-              category: CATEGORIES.includes(input.category) ? input.category : "other",
-              summary: input.summary,
-              details: input.details,
-              ...(input.workaround ? { workaround: input.workaround } : {}),
-              ...(input.suggestion ? { suggestion: input.suggestion } : {}),
-              ...(input.severity ? { severity: input.severity } : {}),
+              category: "other",
+              ...input,
               model,
               agent: context?.agent ?? "unknown",
-              sessionID: sessionID ?? null,
+              sessionID,
+              project,
               cwd: ctx.location?.directory ?? null,
-              project: projectDir,
-              hostname: os.hostname(),
-              opencodeVersion: ctx.app?.version ?? null,
             };
-
-            const result = appendEntry(filePath, entry);
-            if (!result.ok) {
-              return {
-                content: `Could not write to complaints box (${result.error}); continuing.`,
-              };
+            try {
+              fs.mkdirSync(path.dirname(boxPath), { recursive: true });
+              fs.appendFileSync(boxPath, `${JSON.stringify(entry)}\n`, "utf8");
+              return { content: `Dropped in the complaints box (${input.scope}, signed by ${model}).` };
+            } catch (error) {
+              return { content: `Could not write to complaints box (${error?.message ?? error}); continuing.` };
             }
-            return {
-              content: `Dropped in the ${scope} complaints box (signed by ${model}).`,
-            };
           },
         });
       }),
-    );
 
-    registrations.push(
       await ctx.session.hook("context", (event) => {
-        if (event.sessionID && event.model) {
-          const formatted = formatModel(event.model);
-          if (formatted) lastModelBySession.set(event.sessionID, formatted);
-        }
-
+        const formatted = formatModel(event.model);
+        if (event.sessionID && formatted) modelBySession.set(event.sessionID, formatted);
         event.system.push({ type: "text", text: SYSTEM_PROMPT });
 
         const messages = event.messages;
         if (!Array.isArray(messages) || messages.length < 2) return;
 
-        const userTurn = countUserMessages(messages);
-        if (event.sessionID) {
-          userTurnBySession.set(event.sessionID, userTurn);
-        }
+        const turn = messages.filter((m) => m?.role === "user").length;
+        if (event.sessionID) turnBySession.set(event.sessionID, turn);
+        if (event.sessionID && loggedTurnBySession.get(event.sessionID) === turn) return;
 
-        const alreadyLogged =
-          event.sessionID &&
-          loggedTurnBySession.get(event.sessionID) === userTurn;
-        if (alreadyLogged) return;
-
-        const last = messages[messages.length - 1];
-        if (last?.role === "tool") {
-          messages.push({
-            role: "user",
-            content: [{ type: "text", text: RECENCY_REMINDER }],
-          });
+        if (messages[messages.length - 1]?.role === "tool") {
+          messages.push({ role: "user", content: [{ type: "text", text: RECENCY_REMINDER }] });
         }
       }),
-    );
 
-    registrations.push(
       await ctx.command.transform((editor) => {
         editor.add({
           name: "complaints-triage",
-          description: "Review and triage entries in the harness and codebase complaints boxes",
+          description: "Review and triage entries in the complaints box",
           execute: async ({ sessionID, prompt, delivery }) => {
-            const codebasePath = resolveBoxPath({
-              scope: "codebase",
-              projectDir,
-              harnessPath,
-            });
+            const extra = prompt?.text?.trim() ? `\n\nAdditional focus: ${prompt.text.trim()}` : "";
             await ctx.session.prompt({
               ...prompt,
               sessionID,
-              text: buildTriagePrompt({
-                harnessPath,
-                codebasePath,
-                extraText: prompt?.text,
-              }),
               delivery,
+              text: `Review ${boxPath} and help me triage it (current project: ${project ?? "none"}). Group related entries, note which \`model\` signed each one, and propose concrete fixes.${extra}`,
             });
           },
         });
       }),
-    );
+    ];
 
-    return async () => {
-      await Promise.all(registrations.map((reg) => reg.dispose()));
-    };
+    return () => Promise.all(registrations.map((reg) => reg.dispose()));
   },
 };
