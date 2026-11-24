@@ -188,41 +188,6 @@ in
 
   home.packages = [ pkgs.claude-code ];
 
-  # Claude Code only reads ~/.claude/skills, while OpenCode reads the shared
-  # ~/.agents/skills and its legacy ~/.config/opencode/skills.
-  home.activation.claudeSkills = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    set -eu
-    skills_dir=${lib.escapeShellArg "${home}/.claude/skills"}
-    source_dirs=(
-      ${lib.escapeShellArg "${home}/.agents/skills"}
-      ${lib.escapeShellArg "${home}/.config/opencode/skills"}
-    )
-    mkdir -p "$skills_dir"
-    for link in "$skills_dir"/*; do
-      [ -L "$link" ] || continue
-      if [ ! -e "$link" ]; then
-        rm -f "$link"
-        continue
-      fi
-      target="$(readlink "$link")"
-      for source_dir in "''${source_dirs[@]}"; do
-        case "$target" in
-          "$source_dir"/*) rm -f "$link" ;;
-        esac
-      done
-    done
-    for source_dir in "''${source_dirs[@]}"; do
-      [ -d "$source_dir" ] || continue
-      for skill in "$source_dir"/*; do
-        [ -f "$skill/SKILL.md" ] || continue
-        dest="$skills_dir/$(basename "$skill")"
-        if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
-          ln -s "$skill" "$dest"
-        fi
-      done
-    done
-  '';
-
   # Claude Code stores user-scoped MCP servers in ~/.claude.json, which it also
   # mutates at runtime; merge our entries instead of replacing the file.
   home.activation.claudeMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

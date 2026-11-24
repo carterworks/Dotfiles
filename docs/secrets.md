@@ -29,7 +29,10 @@ module, `nix/modules/nixos/secrets.nix`.
   - any other fnox store, age file or age secret key in the tree.
 - Each `[providers.*]` entry is one set of recipients. `admin` is the admin age
   key alone, for records no host reads. `prostagma` is the admin key plus
-  prostagma's SSH host key. A host can decrypt only the providers that list its
+  prostagma's SSH host key. `workstations` is for values your own login reads
+  on a workstation, such as `ANIMATIONS_DEV_TOKEN`; for now it is the admin key
+  alone, and the Mac's age key joins it in stage 10 of
+  [Rollout](rollout.md#10-agent-skills). A host can decrypt only the providers that list its
   key, so eltoro cannot read prostagma's secrets and prostagma's host key cannot
   read eltoro's.
 - `default_provider = "admin"`, because without a provider fnox stores a value

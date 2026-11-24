@@ -5,10 +5,10 @@
 `~/.copilot/copilot-instructions.md` links to `agents/AGENTS.md`. Copilot also
 discovers repository `AGENTS.md` files without additional configuration.
 
-Both OpenCode and Copilot read `~/.agents/skills`. Home Manager sets
-`COPILOT_SKILLS_DIRS` to include `~/.claude/skills/synced` (including nested
-skills) and the legacy `~/.config/opencode/skills`. These remain local; no
-skill copies or work-specific directories are committed here.
+Home Manager links the shared skills into `~/.copilot/skills`
+([Agent skills](agent-skills.md)). Copilot no longer reads `~/.claude`, so
+skills synced from claude.ai into `~/.claude/skills/synced` are not available
+in Copilot. Skills added with Copilot's `/skills add` stay local.
 
 `copilot/mcp-config.json` holds the shared MCP servers. Home Manager merges
 them into `~/.copilot/mcp-config.json`, a regular, owner-only file, instead of
