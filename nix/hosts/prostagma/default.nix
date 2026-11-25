@@ -650,11 +650,16 @@ in
     }
   ];
 
-  users.users.immich.extraGroups = [
-    "video"
-    "render"
-    "media"
-  ];
+  # Immich writes its photos to NFS as this uid, so a reinstall must not hand
+  # it a different one; 996 is what the dynamic allocation chose.
+  users.users.immich = {
+    uid = 996;
+    extraGroups = [
+      "video"
+      "render"
+      "media"
+    ];
+  };
 
   system.stateVersion = "25.11";
 }
