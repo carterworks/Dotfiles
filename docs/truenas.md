@@ -69,7 +69,10 @@ the provider at the LAN address while `insecure = true`.
 - `prevent_destroy` only protects resources whose block is still in the
   configuration. Deleting a whole `resource` block (or `acls.tf`) destroys
   everything it managed; for `truenas_filesystem_acl` that strips those paths'
-  ACLs back to their mode bits.
+  ACLs back to their mode bits. The `truenas-protected` flake check
+  (`nix/tests/truenas-protected.py`) fails when a protected block disappears
+  or loses `prevent_destroy`, and when a new `truenas_*` resource is in
+  neither of its lists.
 - Some in-place changes are destructive too: renaming a dataset moves its
   mountpoint out from under the NFS exports, and lowering a snapshot task's
   lifetime prunes existing snapshots on its next run.
