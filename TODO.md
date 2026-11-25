@@ -26,7 +26,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [x] Purge the KDE state from the public history: rewritten and force-pushed on 2026-11-25 (stage 0 of [docs/rollout.md](docs/rollout.md#0-purge-kde-state-from-the-public-history), steps 1 to 6).
 - [ ] Ask GitHub Support to purge the old KDE commits: cached views, the 32 old pull request refs (dereference, not delete) and garbage collection ([docs/history-rewrite.md](docs/history-rewrite.md#steps) step 10).
 - [x] scylla: move every branch, worktree and `refs/t3/` checkpoint in `~/.config/dotfiles` onto the rewritten history and prune the old objects (`docs/history-rewrite-move-clone.sh`).
-- [ ] The Mac: run `docs/history-rewrite-move-clone.sh` on `~/.config/dotfiles` ([Other copies](docs/history-rewrite.md#other-copies)).
+- [x] The Mac: move `~/.config/dotfiles` onto the rewritten history (`docs/history-rewrite-move-clone.sh`, 2026-11-25).
 - [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. eltoro runs a chain-based generation, so this can be done now.
