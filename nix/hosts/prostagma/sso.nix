@@ -122,7 +122,7 @@ let
 
     # Backrest has no OIDC and no header auth, and its own authentication is
     # disabled in its config, so this gate is its only lock. It can read,
-    # restore over and run hooks against every home directory on TrueNAS, so
+    # read and run hooks against every home directory on TrueNAS, so
     # only admins pass.
     {
       name = "backrest";

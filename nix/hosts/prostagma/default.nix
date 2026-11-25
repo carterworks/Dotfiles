@@ -276,7 +276,20 @@ in
     "${config.systemd.package}/bin/systemd-tmpfiles --clean --exclude-prefix=/mnt/truenas"
   ];
 
-  fileSystems =
+  fileSystems = {
+    # Backrest's read-only view of every home (docs/truenas.md).
+    "/mnt/truenas/private/users" = {
+      device = "${truenas}:/mnt/reservoir/users";
+      fsType = "nfs";
+      options = [
+        "ro"
+        "_netdev"
+        "nofail"
+        "x-systemd.mount-timeout=30s"
+      ];
+    };
+  }
+  //
     lib.mapAttrs
       (_: export: {
         device = "${truenas}:/mnt/${export}";
@@ -296,7 +309,6 @@ in
         "/mnt/truenas/media-direct/audiobooks" = "reservoir/media/audiobooks";
         "/mnt/truenas/syncthing-root/media/games" = "reservoir/media/games";
         "/mnt/truenas/syncthing-root/media/ebooks" = "reservoir/media/ebooks";
-        "/mnt/truenas/private/users" = "reservoir/users";
         "/mnt/truenas/photos" = "reservoir/media/photos";
         "/mnt/truenas/immich" = "reservoir/media/photos/immich";
       };
