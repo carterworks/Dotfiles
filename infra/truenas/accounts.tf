@@ -13,16 +13,16 @@ locals {
 
   users = {
     truenas_admin = {
-      id            = 70
-      uid           = 950
-      full_name     = "Local Administrator"
-      group         = "truenas_admin"
-      builtin_admin = true
-      home          = "/home/truenas_admin"
-      shell         = "/usr/bin/zsh"
-      smb           = false
-      sudo_commands = ["ALL"]
-      sshpubkey     = ""
+      id             = 70
+      uid            = 950
+      full_name      = "Local Administrator"
+      group          = "truenas_admin"
+      builtin_groups = ["builtin_administrators"]
+      home           = "/home/truenas_admin"
+      shell          = "/usr/bin/zsh"
+      smb            = false
+      sudo_commands  = ["ALL"]
+      sshpubkey      = ""
     }
     carter = {
       id            = 71
@@ -49,6 +49,9 @@ locals {
       full_name = "Home Assistant"
       group     = "homeassistant"
       home      = "/mnt/reservoir/users/homeassistant"
+      # Its TrueNAS integration logs in with this user's API key and only
+      # reads.
+      builtin_groups = ["truenas_readonly_administrators"]
     }
     proxmox = {
       id        = 75
@@ -60,17 +63,18 @@ locals {
   }
 
   user_defaults = {
-    groups        = []
-    builtin_admin = false
-    shell         = "/usr/sbin/nologin"
-    smb           = true
-    sudo_commands = []
-    sshpubkey     = ""
+    groups         = []
+    builtin_groups = []
+    shell          = "/usr/sbin/nologin"
+    smb            = true
+    sudo_commands  = []
+    sshpubkey      = ""
   }
 }
 
-data "truenas_group" "builtin_administrators" {
-  name = "builtin_administrators"
+data "truenas_group" "builtin" {
+  for_each = toset(["builtin_administrators", "truenas_readonly_administrators"])
+  name     = each.key
 }
 
 # The resource hides members whose primary group this is; the data source
@@ -116,7 +120,7 @@ resource "truenas_user" "this" {
   group     = truenas_group.this[each.value.group].id
   groups = concat(
     [for g in each.value.groups : truenas_group.this[g].id],
-    each.value.builtin_admin ? [data.truenas_group.builtin_administrators.id] : [],
+    [for g in each.value.builtin_groups : data.truenas_group.builtin[g].id],
   )
   home                   = each.value.home
   shell                  = each.value.shell
@@ -137,7 +141,7 @@ resource "truenas_user" "this" {
 # added to an admin group in the web interface would never show up as drift.
 check "admin_group_members" {
   assert {
-    condition     = toset(data.truenas_group.builtin_administrators.users) == toset([1, truenas_user.this["truenas_admin"].id])
+    condition     = toset(data.truenas_group.builtin["builtin_administrators"].users) == toset([1, truenas_user.this["truenas_admin"].id])
     error_message = "builtin_administrators has members other than root and truenas_admin."
   }
 
