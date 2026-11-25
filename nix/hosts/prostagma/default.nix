@@ -267,6 +267,13 @@ in
     "e /mnt/truenas/immich - - - -"
   ];
 
+  # The clean pass opens every directory those rules name, and root cannot
+  # open the root-squashed NFS paths, so it failed every day.
+  systemd.services.systemd-tmpfiles-clean.serviceConfig.ExecStart = [
+    ""
+    "${config.systemd.package}/bin/systemd-tmpfiles --clean --exclude-prefix=/mnt/truenas"
+  ];
+
   fileSystems =
     lib.mapAttrs
       (_: export: {
