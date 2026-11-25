@@ -13,6 +13,7 @@ in
     codex
     herdr
     hunk
+    opencode-browse
     opencode2
     opencode2-desktop
     openspec

@@ -604,6 +604,13 @@ in
           type = "registry";
         };
       };
+      context_servers.browse = {
+        args = [ "mcp" ];
+        command = "browse";
+        enabled = true;
+        env = { };
+        remote = false;
+      };
       context_servers.fff = {
         args = [ ];
         command = "fff-mcp";

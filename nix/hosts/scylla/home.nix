@@ -10,6 +10,11 @@ let
   home = config.home.homeDirectory;
 
   claudeMcpServers = {
+    browse = {
+      type = "stdio";
+      command = "browse";
+      args = [ "mcp" ];
+    };
     context7 = {
       type = "http";
       url = "https://mcp.context7.com/mcp";
