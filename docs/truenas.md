@@ -141,8 +141,7 @@ Everything TrueNAS lets you configure that this NAS uses, file by file in
   Docker, catalog, audit, 2FA, TrueNAS Connect, TrueCommand, replication and
   resilver settings.
 - `alerts.tf`: mail settings, alert services and the alert policy.
-- `apps.tf`, `vm.tf`: the Tailscale app (version pinned) and the Docker Hub
-  registry, and the `devenv` VM.
+- `apps.tf`: the Tailscale app (version pinned) and the Docker Hub registry.
 
 SSH offers only the `sntrup761x25519` post-quantum key exchange and no weak
 ciphers, so a client needs OpenSSH 9.0 or later (or another client with
