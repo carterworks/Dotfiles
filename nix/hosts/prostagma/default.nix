@@ -13,7 +13,7 @@ let
 
   inherit (fleet) adminSshKey tailnetDomain;
   tunnelId = "56e33628-8005-4027-ae33-b55e7f0bd78b";
-  truenas = "192.168.5.252";
+  truenas = fleet.lan.truenas;
 
   prostagmaDirectory = pkgs.writeTextDir "index.html" ''
     <!doctype html>
@@ -229,7 +229,7 @@ in
     immichPort
   ];
 
-  # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
+  # Most /mnt/truenas exports root-squash root, so tmpfiles must never create,
   # chmod or chown anything there: a single failure makes systemd-tmpfiles
   # exit non-zero, which aborts switch-to-configuration *after* it has already
   # stopped changed units, leaving them stopped.
@@ -249,7 +249,9 @@ in
     "d /mnt/truenas/media-direct 0755 root root -"
     "d /mnt/truenas/syncthing-root 0755 root root -"
     "d /mnt/truenas/syncthing-root/media 0755 root root -"
-    "d /mnt/truenas/syncthing-root/users 0755 root root -"
+    # Only root may pass, so of everything on prostagma only Backrest, which
+    # gets it as a bind mount, reaches the root-mapped users export.
+    "d /mnt/truenas/private 0700 root root -"
     "d /srv/apps/immich-cache 0750 immich apps -"
 
     # NFS-backed paths and the directories inside them: verify only.
@@ -260,14 +262,34 @@ in
     "e /mnt/truenas/media-direct/audiobooks - - - -"
     "e /mnt/truenas/syncthing-root/media/games - - - -"
     "e /mnt/truenas/syncthing-root/media/ebooks - - - -"
-    "d /mnt/truenas/syncthing-root/users/carter - - - -"
+    "e /mnt/truenas/private/users - - - -"
     "e /mnt/truenas/vm-data - - - -"
     "d /mnt/truenas/vm-data/jellyfin - - - -"
     "e /mnt/truenas/photos - - - -"
     "e /mnt/truenas/immich - - - -"
   ];
 
-  fileSystems =
+  # The clean pass opens every directory those rules name, and root cannot
+  # open the root-squashed NFS paths, so it failed every day.
+  systemd.services.systemd-tmpfiles-clean.serviceConfig.ExecStart = [
+    ""
+    "${config.systemd.package}/bin/systemd-tmpfiles --clean --exclude-prefix=/mnt/truenas"
+  ];
+
+  fileSystems = {
+    # Backrest's read-only view of every home (docs/truenas.md).
+    "/mnt/truenas/private/users" = {
+      device = "${truenas}:/mnt/reservoir/users";
+      fsType = "nfs";
+      options = [
+        "ro"
+        "_netdev"
+        "nofail"
+        "x-systemd.mount-timeout=30s"
+      ];
+    };
+  }
+  //
     lib.mapAttrs
       (_: export: {
         device = "${truenas}:/mnt/${export}";
@@ -287,7 +309,6 @@ in
         "/mnt/truenas/media-direct/audiobooks" = "reservoir/media/audiobooks";
         "/mnt/truenas/syncthing-root/media/games" = "reservoir/media/games";
         "/mnt/truenas/syncthing-root/media/ebooks" = "reservoir/media/ebooks";
-        "/mnt/truenas/syncthing-root/users/carter" = "reservoir/users/carter";
         "/mnt/truenas/photos" = "reservoir/media/photos";
         "/mnt/truenas/immich" = "reservoir/media/photos/immich";
       };
@@ -568,17 +589,10 @@ in
       # nothing here can create directories inside it) and no client ever used
       # it. Point a volume at /mnt/truenas/photos instead if the photos export
       # should be served, and provision that directory as the service user.
-      "/users/carter" = {
-        path = "/mnt/truenas/syncthing-root/users/carter";
-        access = {
-          A = [ "carter" ];
-        };
-      };
     };
   };
   systemd.services.copyparty.unitConfig.RequiresMountsFor = [
     "/mnt/truenas/media"
-    "/mnt/truenas/syncthing-root/users/carter"
   ];
   # The service reads these as apps from its own empty root, which is why
   # the owners and modes still matter although /run/secrets is root-only.
@@ -608,12 +622,12 @@ in
 
   users.groups.video.gid = lib.mkForce 44;
   users.groups.render.gid = lib.mkForce 993;
-  users.groups.apps.gid = lib.mkForce 568;
-  users.groups.media.gid = lib.mkForce 3004;
+  users.groups.apps.gid = lib.mkForce fleet.nasIds.apps;
+  users.groups.media.gid = lib.mkForce fleet.nasIds.media;
 
   users.users.apps = {
     isSystemUser = true;
-    uid = 568;
+    uid = fleet.nasIds.apps;
     group = "apps";
     extraGroups = [
       "video"
@@ -643,11 +657,16 @@ in
     }
   ];
 
-  users.users.immich.extraGroups = [
-    "video"
-    "render"
-    "media"
-  ];
+  # Immich writes its photos to NFS as this uid, so a reinstall must not hand
+  # it a different one; 996 is what the dynamic allocation chose.
+  users.users.immich = {
+    uid = 996;
+    extraGroups = [
+      "video"
+      "render"
+      "media"
+    ];
+  };
 
   system.stateVersion = "25.11";
 }

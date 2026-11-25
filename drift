@@ -51,5 +51,26 @@ for host in scylla prostagma eltoro; do
   printf '%-10s %-10s activated %s%s\n' "${host}" "${state}" "${activated}" "${warning}"
 done
 
+# TrueNAS is applied from this checkout, not from the ref, so it is compared
+# with the local configuration and state.
+tofu="${TRUENAS_TOFU:-$(dirname "${BASH_SOURCE[0]}")/infra/truenas/tofu}"
+if plan="$("${tofu}" plan -input=false -no-color -detailed-exitcode 2>&1)"; then
+  result=0
+else
+  result=$?
+fi
+case "${result}" in
+  0) printf '%-10s %s\n' truenas 'in sync' ;;
+  2)
+    summary="$(grep -m1 '^Plan:' <<<"${plan}" || true)"
+    printf '%-10s %-10s %s\n' truenas drifted "${summary#Plan: }"
+    status=1
+    ;;
+  *)
+    printf '%-10s plan failed (run infra/truenas/tofu plan)\n' truenas
+    status=1
+    ;;
+esac
+
 printf '%-10s not checked: not reachable over SSH; run ./install on it\n' mac
 exit "${status}"

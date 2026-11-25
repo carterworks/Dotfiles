@@ -45,7 +45,7 @@ let
         touch "$out"
       '';
       shellcheck = pkgs.runCommandLocal "shellcheck" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-        shellcheck --severity=warning ${source}/drift ${source}/install ${source}/update ${source}/tests/hermes-settings-writable
+        shellcheck --severity=warning ${source}/drift ${source}/install ${source}/update ${source}/tests/hermes-settings-writable ${source}/infra/truenas/tofu
         touch "$out"
       '';
       install =
@@ -90,6 +90,12 @@ let
         pkgs.runCommandLocal "secrets-encrypted-check" { nativeBuildInputs = [ pkgs.python3 ]; }
           ''
             python3 -I ${./tests/secrets-encrypted.py} ${source}
+            touch "$out"
+          '';
+      truenas-protected =
+        pkgs.runCommandLocal "truenas-protected-check" { nativeBuildInputs = [ pkgs.python3 ]; }
+          ''
+            python3 -I ${./tests/truenas-protected.py} ${source}
             touch "$out"
           '';
       animations-dev-sync =

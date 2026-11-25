@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  fleet,
+  inputs,
+  pkgs,
+  ...
+}:
 
 let
   deployKey = "/run/secrets/github/tv-screensaver-deploy-key";
@@ -39,7 +44,7 @@ in
     # apps only through Tailscale Serve, open to the TV's address alone.
     lan = {
       enable = true;
-      address = "192.168.4.29";
+      address = fleet.lan.prostagma;
       allowFrom = [ "192.168.5.227" ];
     };
   };
