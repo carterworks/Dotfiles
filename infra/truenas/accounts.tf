@@ -51,7 +51,7 @@ locals {
       home      = "/mnt/reservoir/users/homeassistant"
       # Its TrueNAS integration logs in with this user's API key and only
       # reads.
-      builtin_groups = ["truenas_readonly_administrators"]
+      builtin_groups = ["builtin_users", "truenas_readonly_administrators"]
     }
     proxmox = {
       id        = 75
@@ -62,9 +62,12 @@ locals {
     }
   }
 
+  # TrueNAS adds every SMB user to builtin_users by itself, but the provider
+  # sends a user's groups as the whole list, so an update that leaves it out
+  # removes it, and with it the way through users/ to the user's home.
   user_defaults = {
     groups         = []
-    builtin_groups = []
+    builtin_groups = ["builtin_users"]
     shell          = "/usr/sbin/nologin"
     smb            = true
     sudo_commands  = []
@@ -73,7 +76,7 @@ locals {
 }
 
 data "truenas_group" "builtin" {
-  for_each = toset(["builtin_administrators", "truenas_readonly_administrators", "truenas_sharing_administrators"])
+  for_each = toset(["builtin_administrators", "builtin_users", "truenas_readonly_administrators", "truenas_sharing_administrators"])
   name     = each.key
 }
 
