@@ -26,11 +26,16 @@ PROTECTED = {
     ("truenas_init_shutdown_script", "enable_linger_carter"),
 }
 
-# Destroying these only forgets them in the state.
+# Destroying these only forgets them in the state, or deletes something that
+# holds no data and is recreated from the configuration.
 UNPROTECTED = {
     ("truenas_service", "this"),
     ("truenas_nfs_config", "this"),
     ("truenas_smb_config", "this"),
+    ("truenas_system_general", "this"),
+    ("truenas_system_advanced", "this"),
+    ("truenas_system_dataset", "this"),
+    ("truenas_ntp_server", "this"),
 }
 
 HEADER = re.compile(r'^resource\s+"([^"]+)"\s+"([^"]+)"\s*\{', re.MULTILINE)
