@@ -21,7 +21,8 @@ locals {
 
     # Backrest backs up and restores every home directory through this one,
     # so every client is mapped to root. Prostagma mounts it inside a
-    # root-only directory, which keeps its other users and containers out.
+    # root-only directory, and its firewall lets only root and the kernel
+    # send NFS (nix/hosts/prostagma/media-apps.nix).
     "/mnt/reservoir/users" = {
       mapall_user  = "root"
       mapall_group = "root"

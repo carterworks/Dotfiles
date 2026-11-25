@@ -229,7 +229,7 @@ in
     immichPort
   ];
 
-  # The /mnt/truenas exports root-squash root, so tmpfiles must never create,
+  # Most /mnt/truenas exports root-squash root, so tmpfiles must never create,
   # chmod or chown anything there: a single failure makes systemd-tmpfiles
   # exit non-zero, which aborts switch-to-configuration *after* it has already
   # stopped changed units, leaving them stopped.
