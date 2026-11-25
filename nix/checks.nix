@@ -266,6 +266,10 @@ in
       activation = eltoro.config.system.activationScripts.hermes-settings.text;
     };
     prostagma = self.nixosConfigurations.prostagma.config.system.build.toplevel;
+    qbittorrent-storage = import ./tests/qbittorrent-storage.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      prostagma = self.nixosConfigurations.prostagma.config;
+    };
     scylla = scylla.config.system.build.toplevel;
   };
 }

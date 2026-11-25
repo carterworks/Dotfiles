@@ -3,6 +3,7 @@
   fleet,
   lib,
   pkgs,
+  utils,
   ...
 }:
 
@@ -10,11 +11,13 @@ let
   appRoot = "/srv/apps";
   mediaRoot = "/mnt/truenas/media-direct";
   sharedDataRoot = "/mnt/truenas/syncthing-root";
-  torrentData = "/mnt/truenas/vm-data/qbittorrent-downloads";
+  torrentMount = "/mnt/truenas/vm-data";
+  torrentMountUnit = "${utils.escapeSystemdPath torrentMount}.mount";
+  torrentData = "${torrentMount}/qbittorrent-downloads";
   torrentConfig = "${appRoot}/qbittorrent-vpn/config";
   # Units that use the torrent payload fail closed when it is missing or backed
   # by anything other than this export.
-  torrentDataMountSource = config.fileSystems."/mnt/truenas/vm-data".device;
+  torrentDataMountSource = config.fileSystems.${torrentMount}.device;
   qbittorrentEnvFile = "/run/secrets/qbittorrent-vpn.env";
 
   uid = toString fleet.nasIds.apps;
@@ -375,12 +378,20 @@ in
       '';
     };
 
-    "docker-qbittorrent-vpn" = mkAppService [
-      torrentConfig
-      torrentData
-      qbittorrentEnvFile
-      "/dev/net/tun"
-    ];
+    # Bound to the torrent mount rather than policed by the space guard: it
+    # stops when the export is really unmounted and starts again when the
+    # export comes back. A slow NFS server only makes the hard mount block.
+    "docker-qbittorrent-vpn" =
+      mkAppService [
+        torrentConfig
+        torrentData
+        qbittorrentEnvFile
+        "/dev/net/tun"
+      ]
+      // {
+        bindsTo = [ torrentMountUnit ];
+        wantedBy = [ torrentMountUnit ];
+      };
 
     prostagma-qbittorrent-space-guard = {
       description = "Stop qBittorrent before Prostagma storage is exhausted";
@@ -393,26 +404,30 @@ in
         set -u
 
         docker=${lib.getExe pkgs.docker}
-        findmnt=${lib.getExe' pkgs.util-linux "findmnt"}
         stat=${lib.getExe' pkgs.coreutils "stat"}
         systemctl=${lib.getExe' pkgs.systemd "systemctl"}
         timeout=${lib.getExe' pkgs.coreutils "timeout"}
         warn_bytes=$((30 * 1024 * 1024 * 1024))
         stop_bytes=$((20 * 1024 * 1024 * 1024))
         must_stop=0
+        probe_failed=0
 
+        # Only a measured shortage stops qBittorrent. A probe that fails or
+        # times out says nothing about free space (an NFS stall does this), and
+        # a lost mount is handled by the unit's BindsTo on the mount. A failed
+        # probe still fails this unit, so lost space protection is visible.
         check_path() {
           path=$1
           label=$2
 
           if ! blocks=$("$timeout" -k 2 10 "$stat" -f -c %a "$path"); then
             echo "$label storage probe failed at $path" >&2
-            must_stop=1
+            probe_failed=1
             return
           fi
           if ! block_size=$("$timeout" -k 2 10 "$stat" -f -c %S "$path"); then
             echo "$label block-size probe failed at $path" >&2
-            must_stop=1
+            probe_failed=1
             return
           fi
 
@@ -426,30 +441,6 @@ in
         }
 
         check_path ${appRoot} application
-
-        actual_source=unknown
-        actual_fstype=unknown
-        if ! actual_source=$("$timeout" -k 2 10 "$findmnt" -n -o SOURCE -T ${torrentData}); then
-          echo "Torrent payload mount source probe failed at ${torrentData}" >&2
-          must_stop=1
-        elif [ "$actual_source" != ${torrentDataMountSource} ]; then
-          echo "Torrent payload mount mismatch: got $actual_source, expected ${torrentDataMountSource}" >&2
-          must_stop=1
-        fi
-
-        if ! actual_fstype=$("$timeout" -k 2 10 "$findmnt" -n -o FSTYPE -T ${torrentData}); then
-          echo "Torrent payload filesystem probe failed at ${torrentData}" >&2
-          must_stop=1
-        else
-          case "$actual_fstype" in
-            nfs|nfs4) ;;
-            *)
-              echo "Torrent payload filesystem mismatch: got $actual_fstype, expected NFS" >&2
-              must_stop=1
-              ;;
-          esac
-        fi
-
         check_path ${torrentData} torrent
 
         if [ "$must_stop" -eq 1 ]; then
@@ -463,6 +454,8 @@ in
           fi
           "$systemctl" --no-block stop docker-qbittorrent-vpn.service
         fi
+
+        exit "$probe_failed"
       '';
     };
 
