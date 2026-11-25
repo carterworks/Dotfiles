@@ -42,7 +42,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [x] `infra/truenas/`: take the IDs and addresses shared with prostagma from one Nix value (`fleet.nasIds`, `fleet.lan` in `nix/lib/fleet.nix`).
 - [ ] `infra/truenas/`: adopt what is still set by hand: the Tailscale app, alert services and mail, network, system and SSH/UPS settings.
 - [x] `infra/truenas/shares.tf`: restrict every NFS export to prostagma.
-- [ ] prostagma: pin its LAN address (`192.168.4.29`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
+- [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [ ] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/`, since deleting a block bypasses the protection.
 - [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
 - [ ] `infra/truenas/`: make `aclmode` consistent across the media datasets (six are `RESTRICTED`, the rest `PASSTHROUGH`), and give `users/carter` to carter instead of root.
