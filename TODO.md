@@ -47,9 +47,9 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
 - [x] `infra/truenas/datasets.tf`: make `aclmode` consistent (`PASSTHROUGH`) across the media datasets.
 - [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
+- [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
 ## Awaiting a decision
 
-- [ ] Give Home Assistant its own TrueNAS user and key with only the access it needs? Its two API keys (`homeassistant`, `home-assistant`) belong to carter, so a compromised Home Assistant Green is a full NAS administrator.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
