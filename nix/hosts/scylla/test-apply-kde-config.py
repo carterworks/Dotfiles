@@ -79,6 +79,13 @@ class ApplyKdeConfig(unittest.TestCase):
             "[kwin]\nKrohnkiteFocusPrev=Meta+\\\\,,none,Krohnkite: Focus Previous\nName[$e]=a=b\n",
         )
 
+    def test_merge_treats_option_flags_as_the_same_key_but_locales_as_different(self):
+        source = self.source("arkrc", "[General]\nPath=$HOME/a\nName[de]=Neu\n")
+        live = self.config / "arkrc"
+        live.write_text("[General]\nPath[$e]=$HOME/old\nName=Old\n")
+        self.run_script("merge", source, live)
+        self.assertEqual(live.read_text(), "[General]\nPath=$HOME/a\nName=Old\nName[de]=Neu\n")
+
     def test_merge_leaves_an_unchanged_file_alone(self):
         source = self.source("kscreenlockerrc", "[Daemon]\nAutolock=false\n")
         live = self.config / "kscreenlockerrc"

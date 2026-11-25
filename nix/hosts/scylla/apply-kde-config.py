@@ -1,7 +1,13 @@
 import os
+import re
 from pathlib import Path
 import sys
 import tempfile
+
+
+def key_of(line):
+    # [$e], [$i] and [$d] are option flags on the same key; [de] is a locale and a key of its own.
+    return re.sub(r"\[\$[a-z]+\]", "", line.split("=", 1)[0]).strip()
 
 
 def read_groups(text):
@@ -19,7 +25,7 @@ def read_groups(text):
             continue
         if group is None:
             raise ValueError(f"key outside a group: {stripped}")
-        key = stripped.split("=", 1)[0].strip()
+        key = key_of(stripped)
         if group not in groups:
             groups[group] = {}
             order.append(group)
@@ -43,7 +49,7 @@ def merge_text(current, source):
         if "=" not in stripped or stripped.startswith("#"):
             continue
         last_key[group] = index
-        key = stripped.split("=", 1)[0].strip()
+        key = key_of(stripped)
         if key in wanted.get(group, {}):
             lines[index] = wanted[group][key]
             seen.add((group, key))
