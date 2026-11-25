@@ -27,6 +27,7 @@ PROTECTED = {
     ("truenas_alert_service", "snmp_trap"),
     ("truenas_alert_service", "email"),
     ("truenas_network_interface", "enp6s18"),
+    ("truenas_app", "tailscale"),
 }
 
 # Destroying these only forgets them in the state, or deletes something that
@@ -43,6 +44,7 @@ UNPROTECTED = {
     ("truenas_ftp_config", "this"),
     ("truenas_mail", "this"),
     ("truenas_alert_policy", "this"),
+    ("truenas_app_registry", "docker_hub"),
     ("truenas_resilver_config", "this"),
     ("truenas_replication_config", "this"),
     ("truenas_truecommand_config", "this"),

@@ -23,3 +23,16 @@ variable "snmp_community" {
   type        = string
   sensitive   = true
 }
+
+variable "dockerhub_username" {
+  description = "Docker Hub login for the app registry (fnox: TRUENAS_DOCKERHUB_USERNAME)."
+  type        = string
+  sensitive   = true
+}
+
+variable "dockerhub_password" {
+  description = "Docker Hub password for the app registry (fnox: TRUENAS_DOCKERHUB_PASSWORD)."
+  type        = string
+  sensitive   = true
+  ephemeral   = true
+}
