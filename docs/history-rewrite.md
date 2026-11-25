@@ -29,7 +29,7 @@ Nothing outside `kde/` changes. Tested on a mirror of GitHub on 2026-11-25,
 with `kde-minimal-config` on `main` (`c25cee2`) and two unpushed branches
 stacked on it:
 
-- 570 of 1,452 commits rewritten (the counts grow as branches move); no
+- 571 of 1,453 commits rewritten (the counts grow as branches move); no
   commit dropped, so every branch keeps its commit count; first changed
   commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`; 32 pull request heads
   changed.
@@ -148,20 +148,38 @@ Run these on scylla, in bash, in a new empty directory such as
    Rulesets**. Check there and under **Settings → Branches** for any other
    rule that blocks force pushes.
 
-4. **Rewrite a fresh mirror.** First, in `~/.config/dotfiles`, make sure
-   every unpushed branch you want to keep sits on the current history:
-   `kde-minimal-config` on `origin/main`, and each branch stacked on it
-   (`immich-backup` and `qbittorrent-mount-binding` on 2026-11-25) on
-   `kde-minimal-config`'s current tip. Both were made from an older tip,
-   `63e1f11`, before `kde-minimal-config` moved onto `main`. One rebase of the
-   top branch moves both. First check that only the stack's own three commits
-   sit above that tip:
+4. **Rewrite a fresh mirror.** First stop every agent session that works on
+   `kde-minimal-config` or a branch stacked on it, so nothing moves them
+   during the rewrite. Then, in `~/.config/dotfiles`, make sure every
+   unpushed branch you want to keep sits on the current history:
+   `kde-minimal-config` on `origin/main`, and each branch stacked on it on
+   `kde-minimal-config`'s current tip. On 2026-11-25 the stack was
+   `immich-backup` with `qbittorrent-mount-binding` on top, both checked out in
+   worktrees and both made from an older tip, `63e1f11`, before
+   `kde-minimal-config` moved onto `main`. List any branch stacked since in
+   `stacked` below.
+
+   One rebase of the top branch moves both, run in its own worktree, with the
+   other branch's worktree detached: `--update-refs` skips a branch checked
+   out in another worktree. Each worktree must have no uncommitted changes.
+   First check that only the stack's own three commits sit above `63e1f11`:
 
    ```bash
+   cd ~/.config/dotfiles
+   wt() { git worktree list --porcelain | awk -v b="branch refs/heads/$1" '/^worktree /{w=substr($0, 10)} $0 == b {print w}'; }
+   immich=$(wt immich-backup) qbit=$(wt qbittorrent-mount-binding)
    git log --oneline 63e1f11..qbittorrent-mount-binding
-   git rebase --update-refs --onto kde-minimal-config 63e1f11 qbittorrent-mount-binding
+   git -C "$immich" switch --detach
+   git -C "$qbit" rebase --update-refs --onto kde-minimal-config 63e1f11 qbittorrent-mount-binding
+   git -C "$immich" switch immich-backup
+   git merge-base --is-ancestor kde-minimal-config immich-backup && echo "stack rebased"
    ```
 
+   Rebase once. If you repeat this step, skip the rebase while that last
+   check still prints `stack rebased`; `63e1f11` is the wrong base from then
+   on. If `kde-minimal-config` gains a commit afterwards, rebase the stack
+   from its previous tip instead (`git reflog kde-minimal-config` lists it):
+   `git -C "$qbit" rebase --update-refs --onto kde-minimal-config <previous-tip> qbittorrent-mount-binding`.
    `git merge-base` does not find that tip once `kde-minimal-config` has been
    rebased: it finds the older commit both started from, and the rebase would
    replay the KDE commits too and conflict.
@@ -180,6 +198,7 @@ Run these on scylla, in bash, in a new empty directory such as
    git merge-base --is-ancestor main kde-minimal-config || echo "rebase kde-minimal-config onto main first"
    for b in $stacked; do
      git merge-base --is-ancestor kde-minimal-config "$b" || echo "rebase $b onto kde-minimal-config first"
+     git ls-remote --exit-code --heads origin "$b" >/dev/null && echo "$b is on GitHub: take it out of stacked"
    done
    nix shell nixpkgs#git-filter-repo --command \
      git filter-repo --sensitive-data-removal --force --file-info-callback ../kde-history.py \
@@ -187,7 +206,10 @@ Run these on scylla, in bash, in a new empty directory such as
    ```
 
    If any check prints, fix that branch in the checkout and start this step
-   again.
+   again. A stacked branch already on GitHub must not be in `stacked`: the
+   rewrite carries it and step 7 force-pushes it like any other branch,
+   whereas step 6 would delete it from the mirror and step 7 then from
+   GitHub.
 
 5. **Verify.** Each search must print nothing. Use the names of the private
    documents, the NAS folder they sit in, and the screenshot's name, which you
@@ -290,8 +312,11 @@ discard and re-clone.
   in one: moving the checkout breaks every worktree. Then
   move the directory aside, `git clone git@github.com:carterworks/Dotfiles.git
   ~/.config/dotfiles`, copy the saved files back, bring back the stacked
-  branches with `git fetch ~/history-rewrite/stacked.bundle
-  'refs/heads/*:refs/heads/*'`, and run `./install` from
+  branches with `git fetch --no-prune ~/history-rewrite/stacked.bundle
+  immich-backup:immich-backup
+  qbittorrent-mount-binding:qbittorrent-mount-binding` (name each branch:
+  with `fetch.prune` set, as in your Git config, a `refs/heads/*` refspec
+  deletes `main`), re-create the worktrees you need, and run `./install` from
   `kde-minimal-config`, or from `main` once the KDE pull request is merged. The
   first run warns `does not link into a Home Manager generation` for each KDE
   file that step 1 copied; that is expected. Delete the old directory when

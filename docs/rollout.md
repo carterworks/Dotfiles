@@ -57,18 +57,20 @@ commands.
    requests' commit counts (step 2).
 3. Disable the `release: no rewrite` ruleset (step 3). **No return** from step
    7 on: the old history is gone from GitHub's branches.
-4. Rebase the unpushed branches stacked on `kde-minimal-config` onto its
-   current tip, rewrite a fresh mirror with all of them fetched into it,
-   verify it, and set the stacked branches aside in a bundle (steps 4 to 6).
+4. Stop the agent sessions on `kde-minimal-config` and the branches stacked
+   on it, rebase those unpushed branches onto its current tip, rewrite a
+   fresh mirror with all of them fetched into it, verify it, and set the
+   stacked branches aside in a bundle (steps 4 to 6).
 5. Force-push every branch, then re-enable the ruleset and both workflows
    and run Fleet on `main` (steps 7 and 8).
 6. Confirm the open pull requests show the commits and diffs they had, then
    open the KDE pull request against `main` (step 9).
 7. Ask GitHub Support to purge cached views and dereference the old pull
    request refs (step 10).
-8. Re-clone `~/.config/dotfiles` on scylla and the Mac, fetch the stacked
-   branches back from the bundle, and run `./install`, on scylla from
-   `kde-minimal-config` until its pull request is merged
+8. Re-clone `~/.config/dotfiles` on scylla and the Mac and run `./install`.
+   On scylla only, first fetch the stacked branches back from the bundle,
+   which lives there, and run `./install` from `kde-minimal-config` until its
+   pull request is merged
    ([Other copies](history-rewrite.md#other-copies)). prostagma and eltoro
    need nothing: their systems from the rewritten `release` are the same store
    paths.
