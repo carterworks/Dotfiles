@@ -28,9 +28,10 @@ from every branch on GitHub. The ordered steps are stage 0 of
 Nothing outside `kde/` changes. Tested on a mirror of GitHub on 2026-11-25,
 with `kde-minimal-config` on top of `main` (`5f9857f`):
 
-- 557 of 1,439 commits rewritten; no commit dropped, so every branch keeps its
-  commit count; first changed commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`;
-  31 pull request heads changed.
+- 560 of 1,442 commits rewritten (the counts grow as branches move); no
+  commit dropped, so every branch keeps its commit count; first changed
+  commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`; 31 pull request heads
+  changed.
 - Every branch's tip differs from the original only in `kde/`, and
   `kde-minimal-config`'s tip tree is identical to the original.
 - Pull requests #30, #31 and #12 keep the same commits and the same diff
