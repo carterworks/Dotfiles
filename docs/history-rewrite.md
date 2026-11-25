@@ -7,7 +7,7 @@ Spectacle's last screenshot path, Ark's last extraction folder, and device
 identifiers (monitor EDIDs, the Bluetooth adapter's address, disk IDs, the
 NAS's tailnet address and a LAN host). It got there because `kde/` was linked
 into `~/.config` and KDE wrote through the links ([KDE](kde.md)). Every branch
-and the refs of pull requests #2 to #32 reach it.
+and the refs of pull requests #2 to #33 reach it.
 
 The branch `kde-minimal-config` stops the leak. This runbook removes the data
 from every branch on GitHub. The ordered steps are stage 0 of
@@ -108,9 +108,9 @@ Run these on scylla, in bash, in a new empty directory such as
    outside Git.
 
    From here on, run `./install` on scylla only from a branch that contains
-   `kde-minimal-config`. Every other branch, including `truenas-opentofu`
-   (PR #30), which `~/.config/dotfiles` has checked out, still links `kde/`
-   into `~/.config`: Home Manager would rename the copies to `*.hm-backup`,
+   `kde-minimal-config`. Every other branch, including `main` and
+   `truenas-drop-users-carter-export` (PR #33), which `~/.config/dotfiles`
+   has checked out, still links `kde/` into `~/.config`: Home Manager would rename the copies to `*.hm-backup`,
    link the files again, and KDE would write recent files into the checkout
    for the next `git add -A` to commit. Rebase such a branch onto the new
    `main` first.
@@ -146,20 +146,25 @@ Run these on scylla, in bash, in a new empty directory such as
    rule that blocks force pushes.
 
 4. **Rewrite a fresh mirror.** Bring in `kde-minimal-config` from the checkout,
-   which makes the mirror no longer fresh, hence `--force`:
+   which makes the mirror no longer fresh, hence `--force`. Its base is
+   `truenas-drop-users-carter-export` while PR #33 is open, and `main` once
+   #33 is merged; set `base` to match. Fetch any other unpushed branch you want
+   to keep the same way, so the rewrite carries it over instead of leaving it
+   on the old history:
 
    ```bash
    git clone --mirror git@github.com:carterworks/Dotfiles.git dotfiles.git
    cd dotfiles.git
    git fetch ~/.config/dotfiles kde-minimal-config:refs/heads/kde-minimal-config
-   git merge-base --is-ancestor main kde-minimal-config || echo "rebase kde-minimal-config onto main first"
+   base=truenas-drop-users-carter-export
+   git merge-base --is-ancestor "$base" kde-minimal-config || echo "rebase kde-minimal-config onto $base first"
    nix shell nixpkgs#git-filter-repo --command \
      git filter-repo --sensitive-data-removal --force --file-info-callback ../kde-history.py \
      | tee ../filter-repo.log
    ```
 
-   If `main` moved since `kde-minimal-config` was made, rebase the branch onto
-   `origin/main` in the checkout, then start this step again.
+   If the base moved since `kde-minimal-config` was rebased, rebase the branch
+   onto it in the checkout, then start this step again.
 
 5. **Verify.** Each search must print nothing. Use the names of the private
    documents, the NAS folder they sit in, and the screenshot's name, which you
@@ -175,17 +180,11 @@ Run these on scylla, in bash, in a new empty directory such as
    git log --all --oneline -- kde/kwinoutputconfig.json kde/spectaclerc kde/bluedevilglobalrc
    ```
 
-6. **Put the fix on `main`**, once you have reviewed `kde-minimal-config`:
-
-   ```bash
-   git update-ref refs/heads/main refs/heads/kde-minimal-config
-   git branch -D kde-minimal-config
-   ```
-
-   To review it as a pull request instead, skip this step, push the branch in
-   step 7, open the pull request afterwards (its diff no longer shows the
-   data), and do not run `./install` on scylla until it is merged: `main` would
-   link `kde/` into `~/.config` again.
+6. **Leave the fix as its own branch.** Step 7 pushes `kde-minimal-config`
+   with every other branch, and step 9 opens its pull request, stacked on #33
+   while #33 is open. Its pull request must not exist before the rewrite: its
+   diff would show the deleted lines that hold the data. Until it is merged,
+   do not run `./install` on scylla from `main`.
 
 7. **Force-push every branch.** `--mirror` also deletes any branch on GitHub
    that the mirror lacks; nothing should, since the mirror was cloned in step
@@ -215,10 +214,18 @@ Run these on scylla, in bash, in a new empty directory such as
    missing, re-create it with the command in [CI](ci.md#what-you-set-up-once)
    step 3.
 
-9. **Check the open pull requests.** Each should show the same number of
-   commits as in `pr-commits-before.txt`, and the same diff. PR #30
-   (`truenas-opentofu`) had 41 commits on 2026-11-25. Review comments on lines
-   of old commits may show as outdated.
+9. **Check the open pull requests, then open the fix's.** Each open pull
+   request should show the same number of commits as in
+   `pr-commits-before.txt`, and the same diff; review comments on lines of old
+   commits may show as outdated. Then open the KDE pull request on the same
+   base as in step 4, and check that its diff holds none of the data:
+
+   ```bash
+   gh pr create --base "$base" --head kde-minimal-config --fill-first
+   gh pr diff kde-minimal-config | grep -c -E '^-.*(Recent Files\]|DirHistory|edidIdentifier|File[0-9]+\[)'
+   ```
+
+   The count of deleted lines holding any of these must be `0`.
 
 10. **Ask GitHub Support to purge the cached data** at
     <https://support.github.com>, choosing the sensitive-data removal request.
@@ -250,7 +257,8 @@ discard and re-clone.
   HEAD > <file>` and its untracked files), and stop any agent session working
   in one: moving the checkout breaks every worktree. Then
   move the directory aside, `git clone git@github.com:carterworks/Dotfiles.git
-  ~/.config/dotfiles`, copy the saved files back, and run `./install`. The
+  ~/.config/dotfiles`, copy the saved files back, and run `./install` from
+  `kde-minimal-config`, or from `main` once the KDE pull request is merged. The
   first run warns `does not link into a Home Manager generation` for each KDE
   file that step 1 copied; that is expected. Delete the old directory when
   done. It also held the worktrees under `~/Projects/code/worktrees/dotfiles/`
