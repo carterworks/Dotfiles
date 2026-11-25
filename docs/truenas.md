@@ -130,7 +130,5 @@ Not yet managed, and still set in the web interface: SMB share-level ACLs, the
 Tailscale app, the `devenv` VM, alert services and mail, network, system and
 SSH/UPS settings, certificates, and pool topology.
 
-The configuration records the server as it was at adoption, inconsistencies
-included: the snapshot task's excludes name
-datasets that no longer exist. Fix those as reviewed changes, not in the web
-interface.
+Change TrueNAS here as reviewed commits, not in the web interface; `./drift`
+shows anything changed there.
