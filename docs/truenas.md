@@ -137,6 +137,9 @@ prostagma these keep everything but Backrest out
   connect to it, and Authelia lets only `admins` through Caddy. Caddy's admin
   API, which could route around Authelia, is limited to Caddy and root too.
 
+Root on prostagma, and anything equivalent to it, can still reach the homes:
+`beszel-agent` holds the Docker socket, and carter is in `wheel`.
+
 To restore, open Backrest, browse a snapshot, restore the files into
 Backrest's own storage and download them from the restore's entry; then copy
 them into place, for example through the `users` share from scylla.

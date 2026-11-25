@@ -48,7 +48,7 @@ let
   dockerNetwork = "prostagma-media";
   dockerSubnet = "172.30.0.0/24";
   lanNetwork = "192.168.4.0/22";
-  # rpcbind, NFS and NFSv3's mountd.
+  # rpcbind and NFS. TrueNAS's mountd has no fixed port, and NFS needs 2049.
   nfsPorts = "111,2049";
   backrestPort = 9898;
   caddyAdminPort = 2019;
@@ -331,8 +331,12 @@ in
       "backrest/cache"
       "backrest/tmp"
     ]
-    # Backrest ran as apps until it got its own uid.
-    ++ [ "Z ${appRoot}/backrest - backrest backrest -" ];
+    # Backrest ran as apps until it got its own uid. Restores land in its
+    # storage with their original modes, so no other local user may enter.
+    ++ [
+      "d ${appRoot}/backrest 0700 backrest backrest -"
+      "Z ${appRoot}/backrest - backrest backrest -"
+    ];
 
   users.users.backrest = {
     isSystemUser = true;

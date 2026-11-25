@@ -55,6 +55,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Proxmox: back up VM 101 with `vzdump` into TrueNAS's `users/proxmox/dump`, which Backrest copies off-site; its disk `users/proxmox/images/101/vm-101-disk-0.qcow2` is excluded from Backrest because a running disk copied as a file is not consistent.
 ## Awaiting a decision
 
+- [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
