@@ -26,16 +26,17 @@ from every branch on GitHub. The ordered steps are stage 0 of
   (`<separator>` blocks) from `kde/local-share/user-places.xbel`.
 
 Nothing outside `kde/` changes. Tested on a mirror of GitHub on 2026-11-25,
-with `kde-minimal-config` on top of `main` (`5f9857f`):
+with `kde-minimal-config` stacked on PR #33 (`c365c85`):
 
-- 560 of 1,442 commits rewritten (the counts grow as branches move); no
+- 566 of 1,448 commits rewritten (the counts grow as branches move); no
   commit dropped, so every branch keeps its commit count; first changed
-  commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`; 31 pull request heads
+  commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`; 32 pull request heads
   changed.
 - Every branch's tip differs from the original only in `kde/`, and
   `kde-minimal-config`'s tip tree is identical to the original.
-- Pull requests #30, #31 and #12 keep the same commits and the same diff
-  against `main`.
+- Pull requests #31, #12 and #33 keep the same diff against `main`. The KDE
+  branch's diff against #33 deletes 16 lines that hold the data before the
+  rewrite and none after it, so its pull request is safe to open then.
 - prostagma's and eltoro's system closures from the rewritten `release` are
   the same store paths as from the original, so their nightly upgrade has
   nothing to build or switch.
@@ -231,7 +232,7 @@ Run these on scylla, in bash, in a new empty directory such as
     <https://support.github.com>, choosing the sensitive-data removal request.
     Send the repository (`carterworks/dotfiles`), the number of affected pull
     requests (`grep -c '^refs/pull/.*/head$' filter-repo/changed-refs` in the
-    mirror; 31 in the test) and the first changed commit from
+    mirror; 32 in the test) and the first changed commit from
     `filter-repo.log` (`0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d` in the test).
     Say that the data is personal: names of private financial and legal
     documents, not a credential that rotating would fix. Ask them to remove
