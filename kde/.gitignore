@@ -1,0 +1,3 @@
+# KDE writes its state into any file here that something links to. Track a new
+# settings file deliberately, with `git add -f` (docs/kde.md).
+*

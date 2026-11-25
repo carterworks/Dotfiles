@@ -40,52 +40,38 @@ let
   claudeSettingsFile = pkgs.writeText "claude-settings.json" (builtins.toJSON claudeSettings);
 
   inherit (config.lib.dotfiles) link linkEach;
-  kdeConfigFiles = [
+  # KDE writes state (recent files, window sizes, device IDs) into the files
+  # it reads, so a link into the checkout put that state in the repository.
+  # These are written as plain files instead: merged files get their listed
+  # keys on every switch, seeded files are layouts written only when missing.
+  kdeMergedFiles = [
     "arkrc"
-    "baloofilerc"
     "baloofileinformationrc"
-    "bluedevilglobalrc"
     "dolphinrc"
-    "drkonqirc"
     "gwenviewrc"
-    "kactivitymanagerdrc"
-    "kactivitymanagerd-statsrc"
-    "kconf_updaterc"
     "kded5rc"
-    "kded6rc"
     "kglobalshortcutsrc"
-    "khelpcenterrc"
-    "kio_fishrc"
-    "kiorc"
     "kscreenlockerrc"
-    "ksmserverrc"
-    "ktimezonedrc"
     "kwalletrc"
     "kwinrc"
-    "kwinrulesrc"
-    "kwinoutputconfig.json"
     "okularpartrc"
     "okularrc"
     "plasma-localerc"
-    "plasmanotifyrc"
-    "plasma-org.kde.plasma.desktop-appletsrc"
-    "plasmaparc"
-    "plasmarc"
-    "plasmashellrc"
     "powerdevilrc"
-    "powermanagementprofilesrc"
-    "spectaclerc"
-    "systemmonitorrc"
-    "trashrc"
     "xdg-desktop-portal-kderc"
-    "kdedefaults/kcminputrc"
-    "kdedefaults/kdeglobals"
-    "kdedefaults/ksplashrc"
-    "kdedefaults/kwinrc"
-    "kdedefaults/package"
-    "kdedefaults/plasmarc"
-    "KDE/UserFeedback.conf"
   ];
+  kdeSeededFiles = {
+    ".config/kactivitymanagerdrc" = "kactivitymanagerdrc";
+    ".config/plasma-org.kde.plasma.desktop-appletsrc" = "plasma-org.kde.plasma.desktop-appletsrc";
+    ".config/plasmashellrc" = "plasmashellrc";
+    ".local/share/user-places.xbel" = "local-share/user-places.xbel";
+  };
+  kdeJob =
+    mode: file: target:
+    "${mode} ${../../../kde + "/${file}"} ${lib.escapeShellArg "${home}/${target}"}";
+  kdeJobs =
+    map (file: kdeJob "merge" file ".config/${file}") kdeMergedFiles
+    ++ lib.mapAttrsToList (target: file: kdeJob "seed" file target) kdeSeededFiles;
 in
 {
   imports = [
@@ -121,11 +107,17 @@ in
 
   dotfiles.desktopTheme.zenProfile = ".config/zen/jhvzidh2.Default Profile";
 
+  # Before linkGeneration, so a link left by an older generation becomes a
+  # plain file instead of being deleted with that generation.
+  home.activation.kdeConfig = lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+    run ${pkgs.python3}/bin/python3 ${./apply-kde-config.py} \
+      ${lib.concatStringsSep " \\\n  " kdeJobs}
+  '';
+
   # kde/kdeglobals stays unlinked: desktopThemeKde edits the live file.
   home.file =
     lib.filterAttrs (name: _: lib.hasSuffix ".lua" name) (linkEach ".config/hypr" "hypr")
     // linkEach ".config/quickshell" "quickshell"
-    // lib.genAttrs' kdeConfigFiles (file: lib.nameValuePair ".config/${file}" (link "kde/${file}"))
     // {
       ".claude/CLAUDE.md" = link "agents/AGENTS.md";
       ".config/quickshell/wallpaper.jpg" = link "assets/wallpapers/01-miasma.jpg";
@@ -134,7 +126,6 @@ in
         link "kde/local-share/color-schemes/CosmicDark.colors";
       ".local/share/color-schemes/CosmicLight.colors" =
         link "kde/local-share/color-schemes/CosmicLight.colors";
-      ".local/share/user-places.xbel" = link "kde/local-share/user-places.xbel";
     };
 
   gtk = {
