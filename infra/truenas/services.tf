@@ -31,18 +31,30 @@ import {
   id = "ssh_config"
 }
 
+# OpenSSH 9.2 on TrueNAS has no ML-KEM; sntrup761x25519 is its only
+# post-quantum key exchange, so it is the only one offered. TrueNAS writes
+# options after the Match blocks it makes for password login, where
+# KexAlgorithms is refused and sshd would not start, so password login for
+# humans is set here, after it, instead of with passwordauth. It must not
+# name ChallengeResponseAuthentication: TrueNAS then leaves out the global
+# "ChallengeResponseAuthentication no" and every user gets keyboard-interactive.
 resource "truenas_ssh_config" "this" {
   tcpport               = 22
   bindiface             = []
-  passwordauth          = true
-  password_login_groups = ["humans"]
+  passwordauth          = false
+  password_login_groups = []
   kerberosauth          = false
   tcpfwd                = false
   compression           = false
-  weak_ciphers          = ["AES128-CBC", "NONE"]
+  weak_ciphers          = []
   sftp_log_facility     = ""
   sftp_log_level        = ""
-  options               = ""
+  options               = <<-EOT
+    KexAlgorithms sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com
+    Match Group "humans"
+    	PasswordAuthentication yes
+    	KbdInteractiveAuthentication yes
+  EOT
 }
 
 import {

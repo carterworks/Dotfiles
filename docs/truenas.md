@@ -144,6 +144,15 @@ Everything TrueNAS lets you configure that this NAS uses, file by file in
 - `apps.tf`, `vm.tf`: the Tailscale app (version pinned) and the Docker Hub
   registry, and the `devenv` VM.
 
+SSH offers only the `sntrup761x25519` post-quantum key exchange and no weak
+ciphers, so a client needs OpenSSH 9.0 or later (or another client with
+sntrup761). Members of `humans` may log in with a password; everyone else
+needs a key. Password login is set in the `options` text, not with
+`passwordauth`, because TrueNAS writes `options` after its own Match blocks
+and sshd refuses `KexAlgorithms` there. Check a change before it reaches a
+restart: `sshd -t` on a copy of `/etc/ssh/sshd_config` with a throwaway host
+key (`-h`) runs without root.
+
 Left on TrueNAS on purpose:
 
 - Secrets the provider would otherwise store: the mail OAuth credentials, the
