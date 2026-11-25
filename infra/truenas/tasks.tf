@@ -14,9 +14,7 @@ locals {
       hour           = "*"
       exclude = [
         "river-rapid/vm-data/qbittorrent-vpn/data",
-        "river-rapid/vm-data/automatic-ripping-machine/media",
         "river-rapid/vm-data/resilio-sync",
-        "river-rapid/vm-data/plexripper/downloads",
       ]
     }
   }
