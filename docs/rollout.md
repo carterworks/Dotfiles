@@ -41,11 +41,11 @@ simply be undone.
 
 ## 0. Purge KDE state from the public history
 
-Do this first. Every branch on GitHub holds the names of private documents
-that KDE wrote into `kde/` ([History rewrite](history-rewrite.md)). The fix is
-on the local branch `kde-minimal-config`, which is not pushed. Each step below
-is a step of [History rewrite, steps](history-rewrite.md#steps), with its
-commands.
+Every branch on GitHub held the names of private documents that KDE wrote
+into `kde/` ([History rewrite](history-rewrite.md)). Steps 1 to 6 are done
+(2026-11-25): the history is rewritten and force-pushed, and the fix is PR #34.
+Each step below is a step of [History rewrite, steps](history-rewrite.md#steps),
+with its commands.
 
 1. On scylla, turn the KDE links into local files (step 1). Do this before
    anything pulls, resets or re-clones `~/.config/dotfiles`, including any

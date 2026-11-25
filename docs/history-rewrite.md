@@ -298,6 +298,14 @@ Run these on scylla, in bash, in a new empty directory such as
 
 ## Other copies
 
+On 2026-11-25 scylla's checkout was moved onto the new history in place
+rather than re-cloned, which keeps every worktree working: each branch whose
+tip matched GitHub's old tip was reset to the rewritten one after checking
+that their trees differ only in `kde/`, and the stacked branches were reset
+to their copies in the bundle. Branches only scylla has, T3 Code's checkpoint
+refs and their worktrees still hold the old history until they are deleted
+and the repository garbage-collected.
+
 Every clone made before the rewrite holds the data, and a plain `git pull`
 followed by a push would publish the old history again. GitHub's advice is to
 discard and re-clone.

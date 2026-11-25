@@ -23,7 +23,10 @@ Temporary pins and workarounds, each with the condition for removing it.
 ## Follow-up work
 
 - [x] Stop tracking KDE application state: `kde/` keeps only the settings Hyprland's KDE applications read, which `nix/hosts/scylla/apply-kde-config.py` merges into the live files instead of linking them ([docs/kde.md](docs/kde.md)).
-- [ ] Purge the KDE state from the public history: stage 0 of [docs/rollout.md](docs/rollout.md#0-purge-kde-state-from-the-public-history), then GitHub Support and re-cloning scylla and the Mac.
+- [x] Purge the KDE state from the public history: rewritten and force-pushed on 2026-11-25 (stage 0 of [docs/rollout.md](docs/rollout.md#0-purge-kde-state-from-the-public-history), steps 1 to 6).
+- [ ] Ask GitHub Support to purge the old KDE commits: cached views, the 32 old pull request refs (dereference, not delete) and garbage collection ([docs/history-rewrite.md](docs/history-rewrite.md#steps) step 10).
+- [ ] scylla: delete what still holds the old history in `~/.config/dotfiles` (about 60 local-only branches, T3 Code's `refs/t3/` checkpoints, the `t3/22f72c43` and `/tmp/opencode` worktrees), then expire the reflog and `git gc --prune=now`; the branches in use are already on the new history ([Other copies](docs/history-rewrite.md#other-copies)).
+- [ ] The Mac: re-clone `~/.config/dotfiles`, or reset its branches to the rewritten ones and drop the rest ([Other copies](docs/history-rewrite.md#other-copies)).
 - [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. eltoro runs a chain-based generation, so this can be done now.
