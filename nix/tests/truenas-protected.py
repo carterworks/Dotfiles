@@ -24,6 +24,8 @@ PROTECTED = {
     ("truenas_scrub_task", "this"),
     ("truenas_cronjob", "this"),
     ("truenas_init_shutdown_script", "enable_linger_carter"),
+    ("truenas_alert_service", "snmp_trap"),
+    ("truenas_alert_service", "email"),
     ("truenas_network_interface", "enp6s18"),
 }
 
@@ -39,6 +41,8 @@ UNPROTECTED = {
     ("truenas_ntp_server", "this"),
     ("truenas_network_config", "this"),
     ("truenas_ftp_config", "this"),
+    ("truenas_mail", "this"),
+    ("truenas_alert_policy", "this"),
     ("truenas_snmp_config", "this"),
     ("truenas_ups_config", "this"),
     ("truenas_ssh_config", "this"),
