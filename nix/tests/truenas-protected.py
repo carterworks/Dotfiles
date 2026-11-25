@@ -28,6 +28,8 @@ PROTECTED = {
     ("truenas_alert_service", "email"),
     ("truenas_network_interface", "enp6s18"),
     ("truenas_app", "tailscale"),
+    ("truenas_vm", "devenv"),
+    ("truenas_vm_device", "devenv"),
 }
 
 # Destroying these only forgets them in the state, or deletes something that
