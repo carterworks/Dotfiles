@@ -49,8 +49,17 @@ let
   dockerSubnet = "172.30.0.0/24";
   lanNetwork = "192.168.4.0/22";
   # rpcbind, NFS and NFSv3's mountd.
-  nfsPorts = "111,2049,20048";
+  nfsPorts = "111,2049";
   backrestPort = 9898;
+  caddyAdminPort = 2019;
+
+  # Backrest has its own uid so that no host service running as apps can
+  # reach its mounts through /proc/<pid>/root.
+  backrestId = toString config.users.users.backrest.uid;
+  backrestExtraOptions = lib.remove "--user=${uid}:${gid}" appExtraOptions ++ [
+    "--user=${backrestId}:${backrestId}"
+    "--group-add=${toString fleet.nasIds.humans}"
+  ];
   dockerNetworkOptions = [ "--network=${dockerNetwork}" ];
   dockerNetworkService = "docker-network-${dockerNetwork}.service";
 
@@ -244,9 +253,9 @@ in
         BACKREST_CONFIG = "/config/config.json";
         BACKREST_DATA = "/data";
         # This is the bind *inside* the container's own network
-        # namespace, so it must accept the docker proxy's connection.
-        # Exposure is restricted by the published port below, which is
-        # bound to the host's loopback.
+        # namespace, so it must accept the docker proxy's connection. The
+        # port is published on the host's loopback, and the firewall below
+        # lets only Caddy and root connect to it.
         BACKREST_PORT = "0.0.0.0:${toString backrestPort}";
         XDG_CACHE_HOME = "/cache";
         TMPDIR = "/tmp";
@@ -263,11 +272,11 @@ in
         "${sharedDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
         "${sharedDataRoot}/media/games:/userdata/reservoir/media/games:ro"
         "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
-        # Read-write so a restore can put files back; see docs/truenas.md.
-        "/mnt/truenas/private/users:/userdata/reservoir/users"
+        # Read-only: restores are downloaded from Backrest's web page
+        # (docs/truenas.md).
+        "/mnt/truenas/private/users:/userdata/reservoir/users:ro"
       ];
-      extraOptions =
-        appExtraOptions ++ [ "--group-add=${toString fleet.nasIds.humans}" ] ++ dockerNetworkOptions;
+      extraOptions = backrestExtraOptions ++ dockerNetworkOptions;
     };
   };
 
@@ -277,43 +286,60 @@ in
   #
   # TrueNAS trusts prostagma's address, so anything here that can send NFS
   # from a low port can claim any user, and the users export maps everyone to
-  # root. Containers can bind low ports, so they get no NFS to the LAN at all;
-  # on the host only root and the kernel's own NFS client may send it.
+  # root. Containers can bind low ports, so they send no NFS at all; on the
+  # host only root and the kernel's own NFS client may.
   #
-  # Backrest has no login of its own and can restore over every home, so only
-  # Caddy, behind Authelia, and root may reach it: no container and no other
-  # local user.
+  # Backrest has no login of its own and can read every home, so only Caddy,
+  # behind Authelia, and root may reach it. Caddy's admin API has no login
+  # either and could route around Authelia, so only Caddy and root may reach
+  # that too.
+  #
+  # There are no stop commands: NixOS runs them at the start of every reload
+  # and after a failed start, which would leave these rules off.
   networking.firewall.extraCommands = ''
     iptables -A nixos-fw -s ${dockerSubnet} -p tcp --dport 8096 -j nixos-fw-accept
 
     iptables -N prostagma-containers 2>/dev/null || iptables -F prostagma-containers
     for proto in tcp udp; do
-      iptables -A prostagma-containers -d ${lanNetwork} -p "$proto" -m multiport --dports ${nfsPorts} -j REJECT
+      iptables -A prostagma-containers -p "$proto" -m multiport --dports ${nfsPorts} -j REJECT
     done
     iptables -A prostagma-containers -p tcp --dport ${toString backrestPort} -j REJECT
     iptables -N DOCKER-USER 2>/dev/null || true
     iptables -C DOCKER-USER -j prostagma-containers 2>/dev/null || iptables -I DOCKER-USER -j prostagma-containers
 
-    iptables -N prostagma-local 2>/dev/null || iptables -F prostagma-local
-    iptables -A prostagma-local -p tcp --dport ${toString backrestPort} -m owner --uid-owner caddy -j RETURN
-    iptables -A prostagma-local -p tcp --dport ${toString backrestPort} -m owner --uid-owner 1-4294967294 -j REJECT
-    for proto in tcp udp; do
-      iptables -A prostagma-local -d ${lanNetwork} -p "$proto" -m multiport --dports ${nfsPorts} -m owner --uid-owner 1-4294967294 -j REJECT
+    # Each family separately: ip46tables reports only ip6tables' status.
+    for ipt in iptables ip6tables; do
+      $ipt -N prostagma-local 2>/dev/null || $ipt -F prostagma-local
+      for port in ${toString backrestPort} ${toString caddyAdminPort}; do
+        $ipt -A prostagma-local -p tcp --dport "$port" -m owner --uid-owner caddy -j RETURN
+        $ipt -A prostagma-local -p tcp --dport "$port" -m owner --uid-owner 1-4294967294 -j REJECT
+      done
+      for proto in tcp udp; do
+        $ipt -A prostagma-local -p "$proto" -m multiport --dports ${nfsPorts} -m owner --uid-owner 1-4294967294 -j REJECT
+      done
+      $ipt -C OUTPUT -j prostagma-local 2>/dev/null || $ipt -I OUTPUT -j prostagma-local
     done
-    iptables -C OUTPUT -j prostagma-local 2>/dev/null || iptables -I OUTPUT -j prostagma-local
-  '';
-  networking.firewall.extraStopCommands = ''
-    iptables -D DOCKER-USER -j prostagma-containers 2>/dev/null || true
-    iptables -D OUTPUT -j prostagma-local 2>/dev/null || true
   '';
 
-  systemd.tmpfiles.rules = map (dir: "d ${appRoot}/${dir} 0775 ${uid} ${gid} -") [
-    "bazarr/config"
-    "audiobookshelf/config"
-    "audiobookshelf/metadata"
-    "backrest/cache"
-    "backrest/tmp"
-  ];
+  systemd.tmpfiles.rules =
+    map (dir: "d ${appRoot}/${dir} 0775 ${uid} ${gid} -") [
+      "bazarr/config"
+      "audiobookshelf/config"
+      "audiobookshelf/metadata"
+    ]
+    ++ map (dir: "d ${appRoot}/${dir} 0775 backrest backrest -") [
+      "backrest/cache"
+      "backrest/tmp"
+    ]
+    # Backrest ran as apps until it got its own uid.
+    ++ [ "Z ${appRoot}/backrest - backrest backrest -" ];
+
+  users.users.backrest = {
+    isSystemUser = true;
+    uid = 970;
+    group = "backrest";
+  };
+  users.groups.backrest.gid = 970;
 
   systemd.services = {
     "docker-network-${dockerNetwork}" = {

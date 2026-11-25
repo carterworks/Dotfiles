@@ -119,26 +119,32 @@ keeping the entry after `state rm` re-imports it.
 
 ## Backrest and the users export
 
-Prostagma's Backrest backs up and restores every home directory through the
-`/mnt/reservoir/users` export, which maps every client to root, so it ignores
-the homes' ACLs. TrueNAS trusts any NFS request from prostagma's address that
-comes from a low port, so three locks keep the rest of prostagma out
+Prostagma's Backrest backs up every home directory through the
+`/mnt/reservoir/users` export, which maps every client to root, read-only, so
+it ignores the homes' ACLs but cannot change anything. TrueNAS trusts any NFS
+request from prostagma's address (reserved on the router) that comes from a
+low port, so anything that holds that address can read every home. On
+prostagma these keep everything but Backrest out
 (`nix/hosts/prostagma/media-apps.nix`, `sso.nix`):
 
 - The mount is at `/mnt/truenas/private/users`, inside a directory only root
-  may enter; Backrest's container gets it as a bind mount.
-- The firewall refuses NFS to the LAN from every container and from every
-  local user but root; the kernel's own NFS client is not affected.
+  may enter; Backrest's container gets it as a read-only bind mount.
+- Backrest runs as its own user (`backrest`, uid 970), so no host service
+  running as `apps` can reach its mounts through `/proc/<pid>/root`.
+- The firewall refuses NFS from every container and from every local user but
+  root; the kernel's own NFS client is not affected.
 - Backrest has no login of its own, so the firewall lets only Caddy and root
-  connect to it, and Authelia lets only `admins` through Caddy.
+  connect to it, and Authelia lets only `admins` through Caddy. Caddy's admin
+  API, which could route around Authelia, is limited to Caddy and root too.
+
+To restore, open Backrest, browse a snapshot, restore the files into
+Backrest's own storage and download them from the restore's entry; then copy
+them into place, for example through the `users` share from scylla.
 
 Backrest's plan lives in its own `config.json` on prostagma, not here. It
-excludes `*.qcow2` and the Proxmox ISOs in `users/proxmox`, about 68 GiB: a
-running VM's disk copied file by file is not a usable backup.
-
-Files Backrest restores come back owned by root, because its container runs
-as `apps` and cannot change owners. Give them back on TrueNAS afterwards, for
-example `sudo chown -R carter:humans <restored path>`.
+excludes `*.qcow2` in every path (in `users/proxmox`, a 50 GiB VM disk) and
+the Proxmox ISOs: a running VM's disk copied file by file is not a usable
+backup.
 
 ## ACLs on existing files
 
