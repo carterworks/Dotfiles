@@ -23,13 +23,8 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 cd "$repo"
 git rev-parse --git-dir >/dev/null 2>&1 || die "$repo is not a Git repository"
+git remote get-url origin >/dev/null 2>&1 || die "this clone has no remote named origin; it should point at GitHub"
 git worktree prune
-
-if [ -z "$(git for-each-ref --contains "$first" 2>/dev/null)" ] &&
-  ! git rev-parse --verify -q "$first^{commit}" >/dev/null; then
-  say "nothing here reaches the old history; done"
-  exit 0
-fi
 
 git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r wt; do
   [ -z "$(git -C "$wt" status --porcelain)" ] ||
@@ -37,6 +32,46 @@ git worktree list --porcelain | sed -n 's/^worktree //p' | while IFS= read -r wt
 done
 # Stashes live in the reflog, which this script expires.
 [ -z "$(git stash list)" ] || die "apply or drop your stashes first (git stash list)"
+
+prune_old() {
+  say "pruning the old objects"
+  git reflog expire --expire=now --all
+  git gc -q --prune=now
+  if git rev-parse --verify -q "$first^{commit}" >/dev/null; then
+    die "the old commit is still here; something still refers to it"
+  fi
+  if git log --all --oneline -1 -S'[Recent Files]' -- kde | grep -q .; then
+    die "a recent-file list is still reachable"
+  fi
+  say "done: every branch is on the rewritten history and the old objects are gone"
+}
+
+old_refs=$(git for-each-ref --contains "$first" --format='%(refname)' 2>/dev/null || true)
+old_heads=$(git worktree list --porcelain | sed -n 's/^HEAD //p' | while IFS= read -r sha; do
+  if git merge-base --is-ancestor "$first" "$sha" 2>/dev/null; then printf '%s\n' "$sha"; fi
+done)
+if [ -z "$old_refs$old_heads" ]; then
+  if git rev-parse --verify -q "$first^{commit}" >/dev/null; then
+    # A run interrupted before pruning, or branches already reset by hand.
+    say "only the reflog still holds the old history"
+    prune_old
+  else
+    say "nothing here reaches the old history; done"
+  fi
+  exit 0
+fi
+
+others=$(printf '%s\n' "$old_refs" | grep -v -E '^refs/(heads|t3|remotes/origin)/' || true)
+[ -z "$others" ] ||
+  die "these refs reach the old history and this script does not move them; delete them, then run this again: $(printf '%s' "$others" | tr '\n' ' ')"
+if git rev-parse --verify -q "$first_new^{commit}" >/dev/null; then
+  mixed=$(printf '%s\n%s\n' "$old_refs" "$old_heads" | while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    if git merge-base --is-ancestor "$first_new" "$ref" 2>/dev/null; then printf '%s ' "$ref"; fi
+  done)
+  [ -z "$mixed" ] ||
+    die "these merge the old history into the new one, as a git pull would: $mixed; reset each to its GitHub version, or put its own commits on it, then run this again"
+fi
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-rewrite.XXXXXX")
 kept_log=${TMPDIR:-/tmp}/dotfiles-rewrite-filter-repo.log
@@ -113,7 +148,8 @@ git worktree list --porcelain | awk '
       new=$(lookup "$head")
     fi
     [ -n "$new" ] && [ "$new" != "$head" ] || continue
-    if git diff --name-only "$head" "$new" | grep -qv '^kde/'; then
+    outside=$(git diff --name-only "$head" "$new" | grep -v '^kde/' || true)
+    if [ -n "$outside" ]; then
       die "$wt would change outside kde/; stopped before pruning, so running this again is safe"
     fi
     git -C "$wt" reset -q --hard "$new"
@@ -122,15 +158,4 @@ git worktree list --porcelain | awk '
   done
 
 drop_pins
-
-say "pruning the old objects"
-git reflog expire --expire=now --all
-git gc -q --prune=now
-
-if git rev-parse --verify -q "$first^{commit}" >/dev/null; then
-  die "the old commit is still here; something still refers to it"
-fi
-if git log --all --oneline -1 -S'[Recent Files]' -- kde | grep -q .; then
-  die "a recent-file list is still reachable"
-fi
-say "done: every branch is on the rewritten history and the old objects are gone"
+prune_old
