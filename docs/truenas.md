@@ -117,6 +117,19 @@ so a plan run before `state rm` destroys the resource; for an ACL that strips
 it. Removing only a `for_each` entry is refused by `prevent_destroy`, and
 keeping the entry after `state rm` re-imports it.
 
+## ACLs on existing files
+
+`acls.tf` sets the ACL of each listed path only. Inherited entries reach new
+files, never ones that already exist, so removing or narrowing an inherited
+entry also needs every file below rewritten. The rewrites on 2026-11-24 edited
+just the one entry in each file's `system.nfs4_acl_xdr` attribute; the one for
+`users/` first wrote each file's original attribute, base64 in the `acl`
+field of a JSON line with its `path`, to
+`~carter/.local/state/acl-backups/apps-users-2026-11-24.jsonl` on TrueNAS.
+Restoring is `os.setxattr(path, "system.nfs4_acl_xdr", base64.b64decode(acl),
+follow_symlinks=False)` for each line. TrueNAS's `nfs4xdr_setfacl -m`
+rewrites far more than the named entry; do not use it for this.
+
 ## What is managed
 
 Everything TrueNAS lets you configure that this NAS uses, file by file in
@@ -159,6 +172,8 @@ Left on TrueNAS on purpose:
   passwords, and API keys (see the table above for the ones in fnox).
 - TrueNAS's own: ACL templates, boot environments, and manual snapshots such
   as `pre-proxmox`.
+- TrueNAS runs under Proxmox without nested virtualization, so it refuses
+  every VM change, deletion included; it has no VMs.
 - Nothing is configured for directory services, Kerberos, iSCSI, NVMe-oF,
   static routes, tunables, the keychain, cloud or rsync tasks, or reporting
   exporters; adopt them here if that changes.

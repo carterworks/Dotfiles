@@ -45,8 +45,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [x] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/` (`truenas-protected`).
 - [x] `infra/truenas/acls.tf`: `builtin_users` (every SMB user) only reads media and `users/`, and no longer inherits into home directories.
-- [ ] `infra/truenas/acls.tf`: decide whether `apps` (prostagma) should keep MODIFY on `users/`, inherited into every new home directory; it needs only `users/carter`, through that export's squash.
-- [ ] TrueNAS: delete the `@pre-builtin-users-read` snapshots of `reservoir/media` and `reservoir/users` (13, taken 2026-11-24 before the ACL rewrite) once nothing has turned up missing access, say after 2026-12-08.
+- [ ] TrueNAS: delete the `@pre-builtin-users-read` snapshots of `reservoir/media` and `reservoir/users` (13) and `reservoir/users@pre-apps-users-drop`, all taken 2026-11-24 before ACL rewrites, once nothing has turned up missing access, say after 2026-12-08; the rewrite of `users/` also left a restore file in carter's `~/.local/state/acl-backups` on TrueNAS.
 - [x] `infra/truenas/datasets.tf`: make `aclmode` consistent (`PASSTHROUGH`) across the media datasets.
 - [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
 - [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
@@ -54,6 +53,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] TrueNAS: rotate the credentials a verification subagent printed into a session transcript on 2026-11-24: the Gmail OAuth client secret and refresh token (mail), the UPS monitor password, the SSH host keys and the `truenas_default` certificate's key.
 ## Awaiting a decision
 
+- [ ] TrueNAS: delete `users/jerod`, or adopt it? It belongs to UID 3003 and GID 3005, which no account has, so the next user given UID 3003 would own it; its contents are mode 700 and need root to inspect.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
