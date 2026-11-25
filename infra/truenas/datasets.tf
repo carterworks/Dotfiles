@@ -36,15 +36,15 @@ locals {
     "reservoir"                      = local.pool_root
     "reservoir/users"                = local.nfsv4_restricted
     "reservoir/media"                = merge(local.nfsv4_passthrough, { snapdir = "HIDDEN" })
-    "reservoir/media/audiobooks"     = local.nfsv4_restricted
-    "reservoir/media/comics"         = local.nfsv4_restricted
-    "reservoir/media/ebooks"         = local.nfsv4_restricted
-    "reservoir/media/games"          = local.nfsv4_restricted
+    "reservoir/media/audiobooks"     = local.nfsv4_passthrough
+    "reservoir/media/comics"         = local.nfsv4_passthrough
+    "reservoir/media/ebooks"         = local.nfsv4_passthrough
+    "reservoir/media/games"          = local.nfsv4_passthrough
     "reservoir/media/movies"         = local.nfsv4_passthrough
-    "reservoir/media/music"          = local.nfsv4_restricted
+    "reservoir/media/music"          = local.nfsv4_passthrough
     "reservoir/media/photos"         = {}
     "reservoir/media/photos/immich"  = {}
-    "reservoir/media/ripped-discs"   = local.nfsv4_restricted
+    "reservoir/media/ripped-discs"   = local.nfsv4_passthrough
     "reservoir/media/tvshows"        = local.nfsv4_passthrough
     "reservoir/media/youtube-videos" = {}
 

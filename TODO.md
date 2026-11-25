@@ -45,7 +45,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [ ] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/`, since deleting a block bypasses the protection.
 - [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
-- [ ] `infra/truenas/`: make `aclmode` consistent across the media datasets (six are `RESTRICTED`, the rest `PASSTHROUGH`).
+- [x] `infra/truenas/datasets.tf`: make `aclmode` consistent (`PASSTHROUGH`) across the media datasets.
 - [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
 ## Awaiting a decision
 
