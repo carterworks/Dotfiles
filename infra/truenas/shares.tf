@@ -19,11 +19,13 @@ locals {
     "/mnt/reservoir/media/games"          = { id = 15, comment = "games" }
     "/mnt/reservoir/media/ebooks"         = { id = 16, comment = "ebooks" }
 
-    # Backrest backs up and restores every home directory through this one,
-    # so every client is mapped to root. Prostagma mounts it inside a
-    # root-only directory, and its firewall lets only root and the kernel
-    # send NFS (nix/hosts/prostagma/media-apps.nix).
+    # Backrest backs up every home directory through this one, so every
+    # client is mapped to root, read-only. Prostagma mounts it inside a
+    # root-only directory and lets only root and the kernel send NFS
+    # (nix/hosts/prostagma/media-apps.nix); on TrueNAS its only lock is
+    # prostagma's address (docs/truenas.md).
     "/mnt/reservoir/users" = {
+      ro           = true
       mapall_user  = "root"
       mapall_group = "root"
     }
@@ -57,7 +59,7 @@ resource "truenas_nfs_share" "this" {
   path             = each.key
   comment          = try(each.value.comment, "")
   enabled          = true
-  ro               = false
+  ro               = try(each.value.ro, false)
   hosts            = []
   networks         = local.nfs_clients
   security         = []
