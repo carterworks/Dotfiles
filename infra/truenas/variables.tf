@@ -17,3 +17,9 @@ variable "connectivity_check_url" {
   type        = string
   sensitive   = true
 }
+
+variable "snmp_community" {
+  description = "SNMP community (fnox: TRUENAS_SNMP_COMMUNITY)."
+  type        = string
+  sensitive   = true
+}
