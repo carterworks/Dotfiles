@@ -26,17 +26,20 @@ from every branch on GitHub. The ordered steps are stage 0 of
   (`<separator>` blocks) from `kde/local-share/user-places.xbel`.
 
 Nothing outside `kde/` changes. Tested on a mirror of GitHub on 2026-11-25,
-with `kde-minimal-config` stacked on PR #33 (`c365c85`):
+with `kde-minimal-config` on `main` (`c25cee2`) and two unpushed branches
+stacked on it:
 
-- 566 of 1,448 commits rewritten (the counts grow as branches move); no
+- 570 of 1,452 commits rewritten (the counts grow as branches move); no
   commit dropped, so every branch keeps its commit count; first changed
   commit `0bd4bb9ec54dda84ebc60b50a870a53f0c86d23d`; 32 pull request heads
   changed.
 - Every branch's tip differs from the original only in `kde/`, and
   `kde-minimal-config`'s tip tree is identical to the original.
-- Pull requests #31, #12 and #33 keep the same diff against `main`. The KDE
-  branch's diff against #33 deletes 16 lines that hold the data before the
+- Pull requests #31 and #12 keep the same diff against `main`. The KDE
+  branch's diff against `main` deletes 16 lines that hold the data before the
   rewrite and none after it, so its pull request is safe to open then.
+- The stacked branches keep their tip trees and stay stacked on the rewritten
+  `kde-minimal-config`; the bundle from step 6 restores them in a fresh clone.
 - prostagma's and eltoro's system closures from the rewritten `release` are
   the same store paths as from the original, so their nightly upgrade has
   nothing to build or switch.
@@ -109,10 +112,9 @@ Run these on scylla, in bash, in a new empty directory such as
    outside Git.
 
    From here on, run `./install` on scylla only from a branch that contains
-   `kde-minimal-config`. Every other branch, including `main` and
-   `truenas-drop-users-carter-export` (PR #33), which `~/.config/dotfiles`
-   has checked out, still links `kde/` into `~/.config`: Home Manager would rename the copies to `*.hm-backup`,
-   link the files again, and KDE would write recent files into the checkout
+   `kde-minimal-config`. Every other branch, including `main`, which
+   `~/.config/dotfiles` has checked out, still links `kde/` into `~/.config`:
+   Home Manager would rename the copies to `*.hm-backup`, link the files again, and KDE would write recent files into the checkout
    for the next `git add -A` to commit. Rebase such a branch onto the new
    `main` first.
 
@@ -146,26 +148,46 @@ Run these on scylla, in bash, in a new empty directory such as
    Rulesets**. Check there and under **Settings → Branches** for any other
    rule that blocks force pushes.
 
-4. **Rewrite a fresh mirror.** Bring in `kde-minimal-config` from the checkout,
-   which makes the mirror no longer fresh, hence `--force`. Its base is
-   `truenas-drop-users-carter-export` while PR #33 is open, and `main` once
-   #33 is merged; set `base` to match. Fetch any other unpushed branch you want
-   to keep the same way, so the rewrite carries it over instead of leaving it
-   on the old history:
+4. **Rewrite a fresh mirror.** First, in `~/.config/dotfiles`, make sure
+   every unpushed branch you want to keep sits on the current history:
+   `kde-minimal-config` on `origin/main`, and each branch stacked on it
+   (`immich-backup` and `qbittorrent-mount-binding` on 2026-11-25) on
+   `kde-minimal-config`'s current tip. Both were made from an older tip,
+   `63e1f11`, before `kde-minimal-config` moved onto `main`. One rebase of the
+   top branch moves both. First check that only the stack's own three commits
+   sit above that tip:
+
+   ```bash
+   git log --oneline 63e1f11..qbittorrent-mount-binding
+   git rebase --update-refs --onto kde-minimal-config 63e1f11 qbittorrent-mount-binding
+   ```
+
+   `git merge-base` does not find that tip once `kde-minimal-config` has been
+   rebased: it finds the older commit both started from, and the rebase would
+   replay the KDE commits too and conflict.
+
+   Then bring them into the mirror, which makes it no longer fresh, hence
+   `--force`. The rewrite carries every branch in the mirror over to the new
+   history, so the stack stays a stack:
 
    ```bash
    git clone --mirror git@github.com:carterworks/Dotfiles.git dotfiles.git
    cd dotfiles.git
-   git fetch ~/.config/dotfiles kde-minimal-config:refs/heads/kde-minimal-config
-   base=truenas-drop-users-carter-export
-   git merge-base --is-ancestor "$base" kde-minimal-config || echo "rebase kde-minimal-config onto $base first"
+   stacked="immich-backup qbittorrent-mount-binding"
+   for b in kde-minimal-config $stacked; do
+     git fetch ~/.config/dotfiles "$b:refs/heads/$b"
+   done
+   git merge-base --is-ancestor main kde-minimal-config || echo "rebase kde-minimal-config onto main first"
+   for b in $stacked; do
+     git merge-base --is-ancestor kde-minimal-config "$b" || echo "rebase $b onto kde-minimal-config first"
+   done
    nix shell nixpkgs#git-filter-repo --command \
      git filter-repo --sensitive-data-removal --force --file-info-callback ../kde-history.py \
      | tee ../filter-repo.log
    ```
 
-   If the base moved since `kde-minimal-config` was rebased, rebase the branch
-   onto it in the checkout, then start this step again.
+   If any check prints, fix that branch in the checkout and start this step
+   again.
 
 5. **Verify.** Each search must print nothing. Use the names of the private
    documents, the NAS folder they sit in, and the screenshot's name, which you
@@ -181,11 +203,20 @@ Run these on scylla, in bash, in a new empty directory such as
    git log --all --oneline -- kde/kwinoutputconfig.json kde/spectaclerc kde/bluedevilglobalrc
    ```
 
-6. **Leave the fix as its own branch.** Step 7 pushes `kde-minimal-config`
-   with every other branch, and step 9 opens its pull request, stacked on #33
-   while #33 is open. Its pull request must not exist before the rewrite: its
-   diff would show the deleted lines that hold the data. Until it is merged,
-   do not run `./install` on scylla from `main`.
+6. **Leave the fix as its own branch, and set the stacked branches aside.**
+   Step 7 pushes `kde-minimal-config` with every other branch, and step 9
+   opens its pull request against `main`. Its pull request must not exist
+   before the rewrite: its diff would show the deleted lines that hold the
+   data. Until it is merged, do not run `./install` on scylla from `main`.
+
+   The branches stacked on it stay unpushed: save them, rewritten, in a
+   bundle and take them out of the mirror, since step 7 pushes every branch
+   the mirror holds. [Other copies](#other-copies) brings them back:
+
+   ```bash
+   git bundle create ../stacked.bundle $stacked
+   git branch -D $stacked
+   ```
 
 7. **Force-push every branch.** `--mirror` also deletes any branch on GitHub
    that the mirror lacks; nothing should, since the mirror was cloned in step
@@ -222,7 +253,7 @@ Run these on scylla, in bash, in a new empty directory such as
    base as in step 4, and check that its diff holds none of the data:
 
    ```bash
-   gh pr create --base "$base" --head kde-minimal-config --fill-first
+   gh pr create --base main --head kde-minimal-config --fill-first
    gh pr diff kde-minimal-config | grep -c -E '^-.*(Recent Files\]|DirHistory|edidIdentifier|File[0-9]+\[)'
    ```
 
@@ -258,7 +289,9 @@ discard and re-clone.
   HEAD > <file>` and its untracked files), and stop any agent session working
   in one: moving the checkout breaks every worktree. Then
   move the directory aside, `git clone git@github.com:carterworks/Dotfiles.git
-  ~/.config/dotfiles`, copy the saved files back, and run `./install` from
+  ~/.config/dotfiles`, copy the saved files back, bring back the stacked
+  branches with `git fetch ~/history-rewrite/stacked.bundle
+  'refs/heads/*:refs/heads/*'`, and run `./install` from
   `kde-minimal-config`, or from `main` once the KDE pull request is merged. The
   first run warns `does not link into a Home Manager generation` for each KDE
   file that step 1 copied; that is expected. Delete the old directory when
