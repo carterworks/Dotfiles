@@ -13,6 +13,11 @@
   ],
   "mcp": {
     "servers": {
+      "browse": {
+        "type": "local",
+        "command": ["browse", "mcp"],
+        "disabled": false
+      },
       "fff": {
         "type": "local",
         "command": ["fff-mcp"],
