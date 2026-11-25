@@ -45,7 +45,8 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [ ] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/`, since deleting a block bypasses the protection.
 - [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
-- [ ] `infra/truenas/`: make `aclmode` consistent across the media datasets (six are `RESTRICTED`, the rest `PASSTHROUGH`), and give `users/carter` to carter instead of root.
+- [ ] `infra/truenas/`: make `aclmode` consistent across the media datasets (six are `RESTRICTED`, the rest `PASSTHROUGH`).
+- [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
 ## Awaiting a decision
 
 - [ ] Give Home Assistant its own TrueNAS user and key with only the access it needs? Its two API keys (`homeassistant`, `home-assistant`) belong to carter, so a compromised Home Assistant Green is a full NAS administrator.

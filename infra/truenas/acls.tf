@@ -96,12 +96,16 @@ locals {
         { tag = "GROUP", type = "ALLOW", who = "builtin_administrators", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "admins", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "apps", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit },
+        # TrueNAS refuses to set a home directory's group unless that group
+        # can traverse users/; humans owns users/carter.
+        { tag = "GROUP", type = "ALLOW", who = "humans", perms = { BASIC = "TRAVERSE" }, flags = local.ace_flags.noinherit },
       ]
     }
 
-    # Mode 750 owned by root:humans, which keeps carter (and the all-squashed
-    # NFS export) from creating entries at the top of the home directory.
+    # Mode 750 owned by carter:humans. The NFS export squashes every client to
+    # carter, so prostagma's apps user writes here as the owner.
     "/mnt/reservoir/users/carter" = {
+      uid = truenas_user.this["carter"].uid
       gid = var.fleet.nasIds.humans
       entries = [
         { tag = "owner@", type = "ALLOW", perms = local.mode_perms.rwx_owner, flags = local.ace_flags.noinherit },
@@ -110,8 +114,9 @@ locals {
       ]
     }
 
-    # Kept the ACL inherited from users/ and is owned by root, not whitley.
+    # Kept the ACL inherited from users/.
     "/mnt/reservoir/users/whitley" = {
+      uid = truenas_user.this["whitley"].uid
       gid = 0
       entries = [
         { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited },

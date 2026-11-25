@@ -131,7 +131,7 @@ Tailscale app, the `devenv` VM, alert services and mail, network, system and
 SSH/UPS settings, certificates, and pool topology.
 
 The configuration records the server as it was at adoption, inconsistencies
-included: `aclmode` differs between media datasets, `users/carter` and
-`users/whitley` are owned by root, and the snapshot task's excludes name
+included: `aclmode` differs between media datasets, and the snapshot task's
+excludes name
 datasets that no longer exist. Fix those as reviewed changes, not in the web
 interface.
