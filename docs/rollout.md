@@ -39,6 +39,34 @@ simply be undone.
    the Cloudflare tunnel. Pinning it to release tags narrows that, at the cost
    of waiting for releases and moving the tag by hand.
 
+## 0. Purge KDE state from the public history
+
+Do this first. Every branch on GitHub holds the names of private documents
+that KDE wrote into `kde/` ([History rewrite](history-rewrite.md)). The fix is
+on the local branch `kde-minimal-config`, which is not pushed. Each step below
+is a step of [History rewrite, steps](history-rewrite.md#steps), with its
+commands.
+
+1. On scylla, turn the KDE links into local files (step 1). Do this before
+   anything pulls, resets or re-clones `~/.config/dotfiles`, including any
+   pull of `kde-minimal-config` without a rewrite; otherwise scylla loses its
+   display, HDR and tiling settings.
+2. Disable Nightly, push nothing, and record the open pull requests' commit
+   counts (step 2).
+3. Disable the `release: no rewrite` ruleset (step 3). **No return** from step
+   7 on: the old history is gone from GitHub's branches.
+4. Rewrite a fresh mirror, verify it, and fast-forward `main` to
+   `kde-minimal-config` (steps 4 to 6).
+5. Force-push every branch, then re-enable the ruleset and Nightly (steps 7
+   and 8).
+6. Confirm PRs #30, #31 and #12 show the commits and diffs they had (step 9).
+7. Ask GitHub Support to purge cached views and dereference the old pull
+   request refs (step 10).
+8. Re-clone `~/.config/dotfiles` on scylla and the Mac and run `./install`
+   ([Other copies](history-rewrite.md#other-copies)). prostagma and eltoro
+   need nothing: their systems from the rewritten `release` are the same store
+   paths.
+
 ## 1. Push access
 
 These matter more now: anything that can push can create or fast-forward

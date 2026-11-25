@@ -53,8 +53,11 @@ Removing a key from a merged file stops enforcing it; it does not remove the
 key from the live file.
 
 `kglobalshortcutsrc` lists only shortcuts that differ from KDE's defaults.
-Each line is `action=active,default,description`, and a line whose active and
-default shortcuts match carries no setting.
+Most lines are `action=active,default,description`, and a line whose active
+and default shortcuts match carries no setting. The `[services][…]` groups
+are different: a line there holds only the active shortcut and exists only
+when it differs from the application's default, so `_launch=none` is what
+turns KRunner's, the emoji picker's or System Settings' default shortcut off.
 
 ## What was dropped
 
@@ -67,8 +70,14 @@ The repository no longer tracks `KDE/UserFeedback.conf`, `baloofilerc`,
 Each held only state, a default value, or something KDE derives on its own:
 `kdedefaults/` is regenerated from the global theme, `ktimezonedrc` from the
 system time zone, and `kwinoutputconfig.json` holds the monitors' EDID
-identifiers, so a fresh profile gets its display layout from KWin rather than
-from the repository.
+identifiers. `kwinrc` also lost `[Tiling]`, keyed by output and desktop IDs,
+and `[Windows_HDR]`, the HDR calibration of the TV.
+
+Scylla keeps all of these: step 1 of
+[the history rewrite](history-rewrite.md#steps) copies the live files out of
+the checkout before the change reaches it, so its display modes, HDR settings
+and tiles stay as they are, outside Git. Only a new profile starts without
+them and gets KWin's own choices.
 
 `kded5rc` stays, with the name it has always had: KDE Frameworks 6's `kded6`
 still reads `kded5rc`.

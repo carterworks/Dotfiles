@@ -134,6 +134,8 @@ must match a flake host.
 - [Zsh](docs/zsh.md): the workstation shell, and which programs start it
 - [KDE](docs/kde.md): which KDE settings the repository holds, and how they
   reach scylla
+- [History rewrite](docs/history-rewrite.md): removing the KDE application
+  state from the public history
 - [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,
   Hex
 
