@@ -10,6 +10,14 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "${here}/../.." && pwd)"
 
+# OpenTofu loads these automatically and they would override the values below,
+# and .gitignore hides them, so refuse to run while one exists.
+shopt -s nullglob
+for file in "${here}"/terraform.tfvars{,.json} "${here}"/*.auto.tfvars{,.json}; do
+  [[ -e "${file}" ]] && { printf 'refusing to run: %s would override fleet.nix and fnox\n' "${file}" >&2; exit 1; }
+done
+shopt -u nullglob
+
 export FNOX_CONFIG_DIR=/var/empty
 export FNOX_AGE_KEY_FILE="${FNOX_AGE_KEY_FILE:-${HOME}/.config/fnox/age.txt}"
 

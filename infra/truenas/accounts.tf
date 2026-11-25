@@ -1,6 +1,7 @@
 locals {
   # Keys are TrueNAS group names; `id` is the middleware's row ID, used only to
-  # import. The GIDs are the contract with prostagma (nix/hosts/prostagma).
+  # import. humans and media take their GIDs from fleet.nasIds, shared with
+  # prostagma; the others exist only on TrueNAS.
   groups = {
     truenas_admin = { id = 109, gid = 950 }
     humans        = { id = 110, gid = var.fleet.nasIds.humans, smb = true }
