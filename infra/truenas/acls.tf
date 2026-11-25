@@ -28,13 +28,17 @@ locals {
     inherited_only = { FILE_INHERIT = true, DIRECTORY_INHERIT = true, INHERITED = true, INHERIT_ONLY = true }
   }
 
-  # apps is prostagma's service user (fleet.nasIds); humans and admins are TrueNAS's.
+  # apps is prostagma's service user (fleet.nasIds); humans and admins are
+  # TrueNAS's. builtin_users is every SMB user, including service accounts
+  # such as homeassistant and proxmox, so it may only read.
   media_groups = [
-    { who = "builtin_users", perms = "MODIFY" },
-    { who = "builtin_administrators", perms = "FULL_CONTROL" },
-    { who = "humans", perms = "FULL_CONTROL" },
-    { who = "admins", perms = "FULL_CONTROL" },
-    { who = "apps", perms = "FULL_CONTROL" },
+    # rx is what the MODIFY-to-READ rewrite left on every file; TrueNAS's
+    # BASIC READ lacks SYNCHRONIZE and would not match it.
+    { who = "builtin_users", perms = local.mode_perms.rx },
+    { who = "builtin_administrators", perms = { BASIC = "FULL_CONTROL" } },
+    { who = "humans", perms = { BASIC = "FULL_CONTROL" } },
+    { who = "admins", perms = { BASIC = "FULL_CONTROL" } },
+    { who = "apps", perms = { BASIC = "FULL_CONTROL" } },
   ]
 
   mode_770 = [
@@ -48,7 +52,7 @@ locals {
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit_only },
       { tag = "group@", type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit_only },
     ],
-    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = { BASIC = g.perms }, flags = local.ace_flags.inherit }],
+    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = g.perms, flags = local.ace_flags.inherit }],
     local.mode_770,
   )
 
@@ -59,7 +63,7 @@ locals {
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited },
       { tag = "group@", type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherited },
     ],
-    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = { BASIC = g.perms }, flags = local.ace_flags.inherited }],
+    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = g.perms, flags = local.ace_flags.inherited }],
   )
 
   media_child_chmod_acl = concat(
@@ -67,7 +71,7 @@ locals {
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited_only },
       { tag = "group@", type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherited_only },
     ],
-    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = { BASIC = g.perms }, flags = local.ace_flags.inherited }],
+    [for g in local.media_groups : { tag = "GROUP", type = "ALLOW", who = g.who, perms = g.perms, flags = local.ace_flags.inherited }],
     local.mode_770,
   )
 
@@ -92,7 +96,9 @@ locals {
       entries = [
         { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "group@", type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit },
-        { tag = "GROUP", type = "ALLOW", who = "builtin_users", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit },
+        # Every SMB user lists users/ to reach its own home; not inherited, so
+        # a new home directory does not open itself to every other user.
+        { tag = "GROUP", type = "ALLOW", who = "builtin_users", perms = local.mode_perms.rx, flags = local.ace_flags.noinherit },
         { tag = "GROUP", type = "ALLOW", who = "builtin_administrators", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "admins", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "apps", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit },
@@ -121,7 +127,6 @@ locals {
       entries = [
         { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited },
         { tag = "group@", type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherited },
-        { tag = "GROUP", type = "ALLOW", who = "builtin_users", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherited },
         { tag = "GROUP", type = "ALLOW", who = "builtin_administrators", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited },
         { tag = "GROUP", type = "ALLOW", who = "admins", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherited },
         { tag = "GROUP", type = "ALLOW", who = "apps", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherited },
