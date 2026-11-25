@@ -4,14 +4,14 @@
 }:
 
 let
-  version = "3.4.4";
+  version = "3.4.5";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
   src = packageUtils.fetchGitHubRelease {
     owner = "vorssaint";
     repo = "vorssaint-utils";
     inherit version;
     asset = "Vorssaint-${version}.dmg";
-    hash = "sha256-lSWCRE/mDUYKBFPepzkqW2ZB2Yx51g6Y+fJdMjvbR9M=";
+    hash = "sha256-9PHrbMs9W046FvU1Df3Q1UHmEws+WkGPHwAXrYVA64k=";
   };
 in
 pkgs.stdenvNoCC.mkDerivation {

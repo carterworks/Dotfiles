@@ -128,7 +128,7 @@ in
 
   virtualisation.oci-containers.containers = {
     "qbittorrent-vpn" = {
-      image = "ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:211c5053fdf0eac2bea0f2cc2d85f7169356121f9ba9b29dcbfff0fa168dfbc6";
+      image = "ghcr.io/binhex/arch-qbittorrentvpn:latest@sha256:381c24a9525fbfcbdaafbee5611f68b34e5cd064abe6d40392b968775ec74a6c";
       autoStart = true;
       ports = [
         "127.0.0.1:38080:8080/tcp"

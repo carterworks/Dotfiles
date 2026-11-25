@@ -5,18 +5,18 @@
 
 let
   pname = "ardia";
-  version = "0.2.47-nightly.9";
+  version = "0.2.49-nightly.1";
   packageUtils = import ../lib/package-utils.nix { inherit lib pkgs; };
 
   # Only nightlies ship a Linux build, so both platforms follow them.
   platformPackages = {
     aarch64-darwin = {
       asset = "Ardia-${version}.zip";
-      hash = "sha256-kYDEpJE7qE9mMcd2r6i72uJu4Yf+AdkIfAxKsEr2bdU=";
+      hash = "sha256-n2+n7E2v2QlRHxyNTJTQNeW49fJ7GYQMZ6enyCIBa+U=";
     };
     x86_64-linux = {
       asset = "Ardia-${version}-linux-x64.AppImage";
-      hash = "sha256-Iav2Aq2RNQV6dtZq2ox0RxYt4WtPcKbMHwzbKPR9miw=";
+      hash = "sha256-ugpQkvdzVKxcIlYiOu4SsAselioHL6cVeIoJMHfoTsI=";
     };
   };
 
