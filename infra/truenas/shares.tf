@@ -29,14 +29,6 @@ locals {
       mapall_user  = "root"
       mapall_group = "root"
     }
-
-    # Every client is squashed to carter, so prostagma's apps user can read
-    # the home directory without an ID that matches TrueNAS's.
-    "/mnt/reservoir/users/carter" = {
-      id           = 13
-      mapall_user  = "carter"
-      mapall_group = "humans"
-    }
   }
 
   # Scylla mounts these (nix/hosts/scylla/default.nix, mkTruenasMount).
