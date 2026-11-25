@@ -298,42 +298,34 @@ Run these on scylla, in bash, in a new empty directory such as
 
 ## Other copies
 
-On 2026-11-25 scylla's checkout was moved onto the new history in place
-rather than re-cloned, which keeps every worktree working: each branch whose
-tip matched GitHub's old tip was reset to the rewritten one after checking
-that their trees differ only in `kde/`, and the stacked branches were reset
-to their copies in the bundle. Branches only scylla has, T3 Code's checkpoint
-refs and their worktrees still hold the old history until they are deleted
-and the repository garbage-collected.
-
 Every clone made before the rewrite holds the data, and a plain `git pull`
-followed by a push would publish the old history again. GitHub's advice is to
-discard and re-clone.
+followed by a push would publish the old history again.
+`docs/history-rewrite-move-clone.sh` moves such a clone onto the rewritten
+history in place. It reruns the same callback on a copy of the clone;
+filter-repo is deterministic, so every commit GitHub also had comes out with
+GitHub's new hash, while branches only that clone has, its worktrees
+(detached ones too) and T3 Code's `refs/t3/` checkpoints are rewritten
+alongside and keep their place. It changes the clone only after the copy's
+old `main` turns out to be an ancestor of GitHub's `main`, moves a checked-out
+branch only if its files change nowhere outside `kde/`, and then expires the
+reflog and prunes the old objects. It stops on uncommitted changes in any
+worktree and on stashes, which live in the reflog it expires. Untracked and
+ignored files, such as the OpenTofu state, stay where they are.
 
-- **scylla, `~/.config/dotfiles`.** Home Manager links into this path, so
-  re-clone in place. First save what Git does not track there: uncommitted
-  changes, `infra/truenas/terraform.tfstate*` and `infra/truenas/.terraform/`
-  (ignored but needed by OpenTofu), and any branch you still need, which you
-  must rebase onto the new history rather than merge. Save each worktree's
-  uncommitted work too (`git worktree list`, then `git -C <worktree> diff
-  HEAD > <file>` and its untracked files), and stop any agent session working
-  in one: moving the checkout breaks every worktree. Then
-  move the directory aside, `git clone git@github.com:carterworks/Dotfiles.git
-  ~/.config/dotfiles`, copy the saved files back, bring back the stacked
-  branches with `git fetch --no-prune ~/history-rewrite/stacked.bundle
-  immich-backup:immich-backup
-  qbittorrent-mount-binding:qbittorrent-mount-binding` (name each branch:
-  with `fetch.prune` set, as in your Git config, a `refs/heads/*` refspec
-  deletes `main`), re-create the worktrees you need, and run `./install` from
-  `kde-minimal-config`, or from `main` once the KDE pull request is merged. The
-  first run warns `does not link into a Home Manager generation` for each KDE
-  file that step 1 copied; that is expected. Delete the old directory when
-  done. It also held the worktrees under `~/Projects/code/worktrees/dotfiles/`
-  (remove them with the old checkout, and re-create the ones you need), many
-  local branches that GitHub never had, and T3 Code's checkpoint refs
-  (`refs/t3/`), all on the old history.
-- **The Mac, `~/.config/dotfiles`.** The same: save untracked files, re-clone,
-  `./install`.
+- **scylla, `~/.config/dotfiles`.** Done on 2026-11-25 with the script.
+- **The Mac, `~/.config/dotfiles`.** Commit or stash, then drop, any
+  uncommitted work, and run:
+
+  ```bash
+  cd ~/.config/dotfiles
+  git fetch origin
+  git show origin/main:docs/history-rewrite-move-clone.sh > /tmp/move-clone.sh
+  bash /tmp/move-clone.sh
+  ```
+
+  It takes a few minutes and ends with `done: every branch is on the
+  rewritten history and the old objects are gone`. The Mac needs no
+  `./install` afterwards: only `kde/` differs, which the Mac does not use.
 - **prostagma and eltoro** deploy from `github:carterworks/dotfiles/release`
   and hold no clone. Their Nix stores hold copies of old `release` sources,
   which `nix-gc` removes once no generation refers to them; nothing there is

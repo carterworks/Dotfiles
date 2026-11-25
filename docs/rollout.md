@@ -67,13 +67,11 @@ with its commands.
    open the KDE pull request against `main` (step 9).
 7. Ask GitHub Support to purge cached views and dereference the old pull
    request refs (step 10).
-8. Re-clone `~/.config/dotfiles` on scylla and the Mac and run `./install`.
-   On scylla only, first fetch the stacked branches back from the bundle,
-   which lives there, and run `./install` from `kde-minimal-config` until its
-   pull request is merged
-   ([Other copies](history-rewrite.md#other-copies)). prostagma and eltoro
-   need nothing: their systems from the rewritten `release` are the same store
-   paths.
+8. Move scylla's and the Mac's `~/.config/dotfiles` onto the rewritten
+   history with `docs/history-rewrite-move-clone.sh`
+   ([Other copies](history-rewrite.md#other-copies)); scylla is done.
+   prostagma and eltoro need nothing: their systems from the rewritten
+   `release` are the same store paths.
 
 ## 1. Push access
 
