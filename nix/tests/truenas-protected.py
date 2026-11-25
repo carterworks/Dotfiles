@@ -24,6 +24,7 @@ PROTECTED = {
     ("truenas_scrub_task", "this"),
     ("truenas_cronjob", "this"),
     ("truenas_init_shutdown_script", "enable_linger_carter"),
+    ("truenas_network_interface", "enp6s18"),
 }
 
 # Destroying these only forgets them in the state, or deletes something that
@@ -36,6 +37,7 @@ UNPROTECTED = {
     ("truenas_system_advanced", "this"),
     ("truenas_system_dataset", "this"),
     ("truenas_ntp_server", "this"),
+    ("truenas_network_config", "this"),
 }
 
 HEADER = re.compile(r'^resource\s+"([^"]+)"\s+"([^"]+)"\s*\{', re.MULTILINE)
