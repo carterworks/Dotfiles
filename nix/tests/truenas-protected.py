@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 PROTECTED = {
+    ("truenas_pool", "this"),
     ("truenas_dataset", "this"),
     ("truenas_filesystem_acl", "nfs4"),
     ("truenas_filesystem_acl", "vm_data"),
