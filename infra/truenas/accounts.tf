@@ -73,7 +73,7 @@ locals {
 }
 
 data "truenas_group" "builtin" {
-  for_each = toset(["builtin_administrators", "truenas_readonly_administrators"])
+  for_each = toset(["builtin_administrators", "truenas_readonly_administrators", "truenas_sharing_administrators"])
   name     = each.key
 }
 
