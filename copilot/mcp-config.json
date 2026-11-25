@@ -1,5 +1,11 @@
 {
   "mcpServers": {
+    "browse": {
+      "type": "stdio",
+      "command": "browse",
+      "args": ["mcp"],
+      "tools": ["*"]
+    },
     "fff": {
       "type": "stdio",
       "command": "fff-mcp",
