@@ -54,7 +54,6 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] TrueNAS: rotate the credentials a verification subagent printed into a session transcript on 2026-11-24: the Gmail OAuth client secret and refresh token (mail), the UPS monitor password, the SSH host keys and the `truenas_default` certificate's key.
 ## Awaiting a decision
 
-- [ ] Delete TrueNAS's `devenv` VM (`infra/truenas/vm.tf`)? It cannot start: its disk zvol `river-rapid/vm-data/agents/devenv-cq6c4` is gone and its NIC attaches to `br0`, which no longer exists.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?

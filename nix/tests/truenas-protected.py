@@ -29,8 +29,6 @@ PROTECTED = {
     ("truenas_alert_service", "email"),
     ("truenas_network_interface", "enp6s18"),
     ("truenas_app", "tailscale"),
-    ("truenas_vm", "devenv"),
-    ("truenas_vm_device", "devenv"),
     ("truenas_certificate", "default"),
     ("truenas_privilege", "this"),
     ("truenas_smb_share_acl", "this"),
