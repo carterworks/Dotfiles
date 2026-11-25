@@ -39,6 +39,7 @@
     nixd
     nub
     obsidian
+    opencode-browse
     opencode2
     opencode2-desktop
     ouch
