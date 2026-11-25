@@ -249,7 +249,9 @@ in
     "d /mnt/truenas/media-direct 0755 root root -"
     "d /mnt/truenas/syncthing-root 0755 root root -"
     "d /mnt/truenas/syncthing-root/media 0755 root root -"
-    "d /mnt/truenas/syncthing-root/users 0755 root root -"
+    # Only root may pass, so of everything on prostagma only Backrest, which
+    # gets it as a bind mount, reaches the root-mapped users export.
+    "d /mnt/truenas/private 0700 root root -"
     "d /srv/apps/immich-cache 0750 immich apps -"
 
     # NFS-backed paths and the directories inside them: verify only.
@@ -260,7 +262,7 @@ in
     "e /mnt/truenas/media-direct/audiobooks - - - -"
     "e /mnt/truenas/syncthing-root/media/games - - - -"
     "e /mnt/truenas/syncthing-root/media/ebooks - - - -"
-    "d /mnt/truenas/syncthing-root/users/carter - - - -"
+    "e /mnt/truenas/private/users - - - -"
     "e /mnt/truenas/vm-data - - - -"
     "d /mnt/truenas/vm-data/jellyfin - - - -"
     "e /mnt/truenas/photos - - - -"
@@ -294,7 +296,7 @@ in
         "/mnt/truenas/media-direct/audiobooks" = "reservoir/media/audiobooks";
         "/mnt/truenas/syncthing-root/media/games" = "reservoir/media/games";
         "/mnt/truenas/syncthing-root/media/ebooks" = "reservoir/media/ebooks";
-        "/mnt/truenas/syncthing-root/users/carter" = "reservoir/users/carter";
+        "/mnt/truenas/private/users" = "reservoir/users";
         "/mnt/truenas/photos" = "reservoir/media/photos";
         "/mnt/truenas/immich" = "reservoir/media/photos/immich";
       };
@@ -575,17 +577,10 @@ in
       # nothing here can create directories inside it) and no client ever used
       # it. Point a volume at /mnt/truenas/photos instead if the photos export
       # should be served, and provision that directory as the service user.
-      "/users/carter" = {
-        path = "/mnt/truenas/syncthing-root/users/carter";
-        access = {
-          A = [ "carter" ];
-        };
-      };
     };
   };
   systemd.services.copyparty.unitConfig.RequiresMountsFor = [
     "/mnt/truenas/media"
-    "/mnt/truenas/syncthing-root/users/carter"
   ];
   # The service reads these as apps from its own empty root, which is why
   # the owners and modes still matter although /run/secrets is root-only.

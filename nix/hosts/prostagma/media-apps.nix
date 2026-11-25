@@ -259,7 +259,8 @@ in
         "${sharedDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
         "${sharedDataRoot}/media/games:/userdata/reservoir/media/games:ro"
         "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
-        "${sharedDataRoot}/users/carter:/userdata/reservoir/users/carter:ro"
+        # Read-write so a restore can put files back; see docs/truenas.md.
+        "/mnt/truenas/private/users:/userdata/reservoir/users"
       ];
       extraOptions =
         appExtraOptions ++ [ "--group-add=${toString fleet.nasIds.humans}" ] ++ dockerNetworkOptions;
@@ -450,7 +451,7 @@ in
       "${sharedDataRoot}/media/ebooks"
       "${sharedDataRoot}/media/games"
       "/mnt/truenas/photos"
-      "${sharedDataRoot}/users/carter"
+      "/mnt/truenas/private/users"
     ];
   };
 

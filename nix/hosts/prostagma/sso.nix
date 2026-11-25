@@ -121,10 +121,13 @@ let
     }
 
     # Backrest has no OIDC and no header auth, and its own authentication is
-    # disabled in its config, so this gate is its only lock.
+    # disabled in its config, so this gate is its only lock. It can read,
+    # restore over and run hooks against every home directory on TrueNAS, so
+    # only admins pass.
     {
       name = "backrest";
       port = 9898;
+      adminsOnly = true;
     }
 
     # PodMaker has no login of its own. Gate the UI and management API, but
@@ -206,10 +209,33 @@ in
 
         # The gate asks Authelia about the *original* URL, so a rule has to
         # match the application hostname rather than the portal's own.
-        rules = map (app: {
-          domain = "${app.name}.${tailnetDomain}";
-          policy = "one_factor";
-        }) gatedApps;
+        # A user outside admins matches no rule for an admins-only app and
+        # would fall through to the default, so each one ends with a deny.
+        rules = lib.concatMap (
+          app:
+          let
+            domain = "${app.name}.${tailnetDomain}";
+          in
+          if app.adminsOnly or false then
+            [
+              {
+                inherit domain;
+                subject = [ "group:admins" ];
+                policy = "one_factor";
+              }
+              {
+                inherit domain;
+                policy = "deny";
+              }
+            ]
+          else
+            [
+              {
+                inherit domain;
+                policy = "one_factor";
+              }
+            ]
+        ) gatedApps;
       };
 
       identity_providers.oidc.clients = [

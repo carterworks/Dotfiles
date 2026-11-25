@@ -117,6 +117,19 @@ so a plan run before `state rm` destroys the resource; for an ACL that strips
 it. Removing only a `for_each` entry is refused by `prevent_destroy`, and
 keeping the entry after `state rm` re-imports it.
 
+## Backrest and the users export
+
+Prostagma's Backrest backs up and restores every home directory through the
+`/mnt/reservoir/users` export, which maps every client to root, so it ignores
+the homes' ACLs. Prostagma mounts it at `/mnt/truenas/private/users`, inside a
+directory only root may enter; Backrest's container gets it as a bind mount,
+so nothing else on prostagma reaches it. Authelia lets only `admins` open
+Backrest (`nix/hosts/prostagma/sso.nix`).
+
+Files Backrest restores come back owned by root, because its container runs
+as `apps` and cannot change owners. Give them back on TrueNAS afterwards, for
+example `sudo chown -R carter:humans <restored path>`.
+
 ## ACLs on existing files
 
 `acls.tf` sets the ACL of each listed path only. Inherited entries reach new
