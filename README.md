@@ -132,14 +132,20 @@ must match a flake host.
   with OpenTofu from `infra/truenas/`
 - [Rex](docs/rex.md): the macOS client
 - [Zsh](docs/zsh.md): the workstation shell, and which programs start it
+- [KDE](docs/kde.md): which KDE settings the repository holds, and how they
+  reach scylla
+- [History rewrite](docs/history-rewrite.md): removing the KDE application
+  state from the public history
 - [User services](docs/user-services.md): T3 Code and OpenCode, Obsidian Sync,
   Hex
 
 ## Config files
 
-Home Manager links config files such as `hypr/*.lua`, `quickshell/`, `bin/*`
-and the KDE files in `kde/` from the checkout, not from the Nix store, so edits
-take effect without a rebuild and programs that rewrite their own config can.
+Home Manager links config files such as `hypr/*.lua`, `quickshell/` and
+`bin/*` from the checkout, not from the Nix store, so edits take effect without
+a rebuild and programs that rewrite their own config can. The KDE files in
+`kde/` are the exception: `./install` copies their settings into the live
+files instead ([KDE](docs/kde.md)).
 Adding or removing a link takes `./install`. A new file in `bin/`,
 `agents/skills/personal/`, `agents/skills/generated/` ([Agent skills](docs/agent-skills.md)), `hypr/` (`*.lua`) or
 `quickshell/` gets its link once Git tracks it; the other links are listed in

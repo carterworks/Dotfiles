@@ -223,6 +223,14 @@ in
           python3 ${source}/nix/hosts/scylla/test-sunshine-display.py
           touch "$out"
         '';
+    kde-config =
+      let
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      in
+      pkgs.runCommandLocal "kde-config-check" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+        python3 ${source}/nix/hosts/scylla/test-apply-kde-config.py
+        touch "$out"
+      '';
     inherit (self.packages.x86_64-linux)
       bambu-studio
       nub

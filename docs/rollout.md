@@ -39,6 +39,40 @@ simply be undone.
    the Cloudflare tunnel. Pinning it to release tags narrows that, at the cost
    of waiting for releases and moving the tag by hand.
 
+## 0. Purge KDE state from the public history
+
+Every branch on GitHub held the names of private documents that KDE wrote
+into `kde/` ([History rewrite](history-rewrite.md)). Steps 1 to 6 are done
+(2026-11-25): the history is rewritten and force-pushed, and the fix is PR #34.
+Each step below is a step of [History rewrite, steps](history-rewrite.md#steps),
+with its commands.
+
+1. On scylla, turn the KDE links into local files (step 1). Do this before
+   anything pulls, resets or re-clones `~/.config/dotfiles`, including any
+   pull of `kde-minimal-config` without a rewrite; otherwise scylla loses its
+   display, HDR and tiling settings.
+   After it, run `./install` on scylla only from a branch that contains
+   `kde-minimal-config`; any other branch links `kde/` into `~/.config` again.
+2. Disable Nightly and Fleet, push nothing, and record the open pull
+   requests' commit counts (step 2).
+3. Disable the `release: no rewrite` ruleset (step 3). **No return** from step
+   7 on: the old history is gone from GitHub's branches.
+4. Stop the agent sessions on `kde-minimal-config` and the branches stacked
+   on it, rebase those unpushed branches onto its current tip, rewrite a
+   fresh mirror with all of them fetched into it, verify it, and set the
+   stacked branches aside in a bundle (steps 4 to 6).
+5. Force-push every branch, then re-enable the ruleset and both workflows
+   and run Fleet on `main` (steps 7 and 8).
+6. Confirm the open pull requests show the commits and diffs they had, then
+   open the KDE pull request against `main` (step 9).
+7. Ask GitHub Support to purge cached views and dereference the old pull
+   request refs (step 10).
+8. Move scylla's and the Mac's `~/.config/dotfiles` onto the rewritten
+   history with `docs/history-rewrite-move-clone.sh`
+   ([Other copies](history-rewrite.md#other-copies)); scylla is done.
+   prostagma and eltoro need nothing: their systems from the rewritten
+   `release` are the same store paths.
+
 ## 1. Push access
 
 These matter more now: anything that can push can create or fast-forward

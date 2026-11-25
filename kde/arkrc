@@ -1,8 +1,5 @@
-[ExtractDialog]
-
 [General]
 LockSidebar=true
-ShowSidebar=true
 
 [MainWindow]
 StatusBar=Disabled

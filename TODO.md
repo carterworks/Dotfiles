@@ -22,6 +22,11 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 ## Follow-up work
 
+- [x] Stop tracking KDE application state: `kde/` keeps only the settings Hyprland's KDE applications read, which `nix/hosts/scylla/apply-kde-config.py` merges into the live files instead of linking them ([docs/kde.md](docs/kde.md)).
+- [x] Purge the KDE state from the public history: rewritten and force-pushed on 2026-11-25 (stage 0 of [docs/rollout.md](docs/rollout.md#0-purge-kde-state-from-the-public-history), steps 1 to 6).
+- [ ] Ask GitHub Support to purge the old KDE commits: cached views, the 32 old pull request refs (dereference, not delete) and garbage collection ([docs/history-rewrite.md](docs/history-rewrite.md#steps) step 10).
+- [x] scylla: move every branch, worktree and `refs/t3/` checkpoint in `~/.config/dotfiles` onto the rewritten history and prune the old objects (`docs/history-rewrite-move-clone.sh`).
+- [ ] The Mac: run `docs/history-rewrite-move-clone.sh` on `~/.config/dotfiles` ([Other copies](docs/history-rewrite.md#other-copies)).
 - [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
 - [ ] `nix/hosts/eltoro/egress.nix`: delete the one-time block in `removeRules` that strips the pre-chain generation's rules from `OUTPUT`, together with the egress test's "no rule survives from an earlier generation" and "a switch from the generation before the chain leaves only the chain" subtests, which exercise it. eltoro runs a chain-based generation, so this can be done now.
@@ -55,7 +60,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 ## Awaiting a decision
 
 - [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
-- [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
+- [ ] Rewrite the remaining tailnet addresses out of history? PR #7 removed them from the tree, but older commits still hold several, among them the TrueNAS mount's in `nix/hosts/scylla/default.nix` and `nix/machines/scylla.nix`; the KDE rewrite leaves them ([docs/history-rewrite.md](docs/history-rewrite.md)).
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
 - [ ] Put a read-only Docker socket proxy in front of prostagma's Beszel agent, whose Docker access is equivalent to root ("What each agent collects" in `docs/monitoring.md`)?
