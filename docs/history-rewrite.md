@@ -42,6 +42,9 @@ with `kde-minimal-config` on top of `main` (`5f9857f`):
   LAN host. `[Recent Files]` remains only in the test fixtures of
   `nix/hosts/scylla/test-apply-kde-config.py`, and the tailnet address only in
   the TrueNAS mount that `nix/hosts/scylla/default.nix` used before PR #7.
+- Older versions of `kde/kwinrc` keep their `[Tiling]` groups, keyed by
+  output and desktop UUIDs that KWin generated; they identify nothing outside
+  that profile.
 
 ## The callback
 
@@ -102,11 +105,23 @@ Run these on scylla, in bash, in a new empty directory such as
    keeps its display layout, migration markers and the rest of its state, now
    outside Git.
 
-2. **Freeze pushes.** Disable Nightly (`gh workflow disable Nightly`) and push
-   nothing from any machine or agent until step 7. Record the open pull
-   requests' commit counts to compare later:
+   From here on, run `./install` on scylla only from a branch that contains
+   `kde-minimal-config`. Every other branch, including `truenas-opentofu`
+   (PR #30), which `~/.config/dotfiles` has checked out, still links `kde/`
+   into `~/.config`: Home Manager would rename the copies to `*.hm-backup`,
+   link the files again, and KDE would write recent files into the checkout
+   for the next `git add -A` to commit. Rebase such a branch onto the new
+   `main` first.
+
+2. **Freeze pushes.** Disable both workflows, then wait for or cancel any run
+   still going, and push nothing from any machine or agent until step 7.
+   Without this, the force push of about 35 branches starts as many Fleet
+   runs. Record the open pull requests' commit counts to compare later:
 
    ```bash
+   gh workflow disable Nightly
+   gh workflow disable Fleet
+   gh run list --status in_progress
    for n in $(gh pr list --state open --json number --jq '.[].number'); do
      echo "$n $(gh pr view "$n" --json commits --jq '.commits | length')"
    done | tee pr-commits-before.txt
@@ -118,7 +133,11 @@ Run these on scylla, in bash, in a new empty directory such as
    ```bash
    id=$(gh api repos/carterworks/dotfiles/rulesets --jq '.[] | select(.name == "release: no rewrite") | .id')
    gh api -X PUT "repos/carterworks/dotfiles/rulesets/$id" -f enforcement=disabled
+   gh api "repos/carterworks/dotfiles/rulesets/$id" --jq '.enforcement, [.rules[].type]'
    ```
+
+   The last command must print `disabled` and the two rules
+   (`deletion`, `non_fast_forward`).
 
    Or set its **Enforcement** to **Disabled** under **Settings → Rules →
    Rulesets**. Check there and under **Settings → Branches** for any other
@@ -172,21 +191,27 @@ Run these on scylla, in bash, in a new empty directory such as
 
    ```bash
    git push --force --mirror origin
-   git ls-remote --heads origin | sort -k2 > ../remote.txt
-   git for-each-ref --format='%(objectname)	%(refname)' refs/heads | sort -k2 | diff - ../remote.txt && echo "every branch pushed"
+   git ls-remote --heads origin | tr '\t' ' ' | sort -k2 > ../remote.txt
+   git for-each-ref --format='%(objectname) %(refname)' refs/heads | sort -k2 | diff - ../remote.txt && echo "every branch pushed"
    ```
 
    The repository has no tags.
 
-8. **Restore the ruleset and Nightly:**
+8. **Restore the ruleset and the workflows**, then run Fleet on `main`, which
+   pushes to the cache and fast-forwards `release` as usual:
 
    ```bash
+   id=$(gh api repos/carterworks/dotfiles/rulesets --jq '.[] | select(.name == "release: no rewrite") | .id')
    gh api -X PUT "repos/carterworks/dotfiles/rulesets/$id" -f enforcement=active
+   gh api "repos/carterworks/dotfiles/rulesets/$id" --jq '.enforcement, [.rules[].type]'
+   gh workflow enable Fleet
    gh workflow enable Nightly
+   gh workflow run Fleet --ref main
    ```
 
-   Pushing `main` starts Fleet, which pushes to the cache and fast-forwards
-   `release` as usual.
+   The ruleset must print `active` and both rules again; if a rule is
+   missing, re-create it with the command in [CI](ci.md#what-you-set-up-once)
+   step 3.
 
 9. **Check the open pull requests.** Each should show the same number of
    commits as in `pr-commits-before.txt`, and the same diff. PR #30
@@ -218,7 +243,10 @@ discard and re-clone.
   re-clone in place. First save what Git does not track there: uncommitted
   changes, `infra/truenas/terraform.tfstate*` and `infra/truenas/.terraform/`
   (ignored but needed by OpenTofu), and any branch you still need, which you
-  must rebase onto the new history rather than merge. Then
+  must rebase onto the new history rather than merge. Save each worktree's
+  uncommitted work too (`git worktree list`, then `git -C <worktree> diff
+  HEAD > <file>` and its untracked files), and stop any agent session working
+  in one: moving the checkout breaks every worktree. Then
   move the directory aside, `git clone git@github.com:carterworks/Dotfiles.git
   ~/.config/dotfiles`, copy the saved files back, and run `./install`. The
   first run warns `does not link into a Home Manager generation` for each KDE

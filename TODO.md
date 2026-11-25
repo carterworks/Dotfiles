@@ -58,7 +58,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 - [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
 - [ ] Track scylla's display layout? `kwinoutputconfig.json` (modes, HDR, scale) and `kwinrc`'s `[Windows_HDR]` are no longer in `kde/` because they carry the monitors' EDID identifiers; scylla keeps them locally, a new profile would not ([docs/kde.md](docs/kde.md#what-was-dropped)).
-- [ ] Rewrite the remaining tailnet address out of history? PR #7 removed tailnet addresses from the tree, but the TrueNAS mount's address is still in older commits of `nix/hosts/scylla/default.nix` and `nix/machines/scylla.nix`; the KDE rewrite leaves it ([docs/history-rewrite.md](docs/history-rewrite.md)).
+- [ ] Rewrite the remaining tailnet addresses out of history? PR #7 removed them from the tree, but older commits still hold several, among them the TrueNAS mount's in `nix/hosts/scylla/default.nix` and `nix/machines/scylla.nix`; the KDE rewrite leaves them ([docs/history-rewrite.md](docs/history-rewrite.md)).
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
 - [ ] Put a read-only Docker socket proxy in front of prostagma's Beszel agent, whose Docker access is equivalent to root ("What each agent collects" in `docs/monitoring.md`)?

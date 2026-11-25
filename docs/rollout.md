@@ -51,14 +51,16 @@ commands.
    anything pulls, resets or re-clones `~/.config/dotfiles`, including any
    pull of `kde-minimal-config` without a rewrite; otherwise scylla loses its
    display, HDR and tiling settings.
-2. Disable Nightly, push nothing, and record the open pull requests' commit
-   counts (step 2).
+   After it, run `./install` on scylla only from a branch that contains
+   `kde-minimal-config`; any other branch links `kde/` into `~/.config` again.
+2. Disable Nightly and Fleet, push nothing, and record the open pull
+   requests' commit counts (step 2).
 3. Disable the `release: no rewrite` ruleset (step 3). **No return** from step
    7 on: the old history is gone from GitHub's branches.
 4. Rewrite a fresh mirror, verify it, and fast-forward `main` to
    `kde-minimal-config` (steps 4 to 6).
-5. Force-push every branch, then re-enable the ruleset and Nightly (steps 7
-   and 8).
+5. Force-push every branch, then re-enable the ruleset and both workflows
+   and run Fleet on `main` (steps 7 and 8).
 6. Confirm PRs #30, #31 and #12 show the commits and diffs they had (step 9).
 7. Ask GitHub Support to purge cached views and dereference the old pull
    request refs (step 10).
