@@ -52,6 +52,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
 - [ ] Home Assistant: fix its nightly backups to TrueNAS; the newest backup in `users/homeassistant` is from 2025-10-13.
 - [ ] TrueNAS: rotate the credentials a verification subagent printed into a session transcript on 2026-11-24: the Gmail OAuth client secret and refresh token (mail), the UPS monitor password, the SSH host keys and the `truenas_default` certificate's key.
+- [ ] Proxmox: back up VM 101 with `vzdump` into TrueNAS's `users/proxmox/dump`, which Backrest copies off-site; its disk `users/proxmox/images/101/vm-101-disk-0.qcow2` is excluded from Backrest because a running disk copied as a file is not consistent.
 ## Awaiting a decision
 
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?

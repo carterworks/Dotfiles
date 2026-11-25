@@ -47,6 +47,10 @@ let
 
   dockerNetwork = "prostagma-media";
   dockerSubnet = "172.30.0.0/24";
+  lanNetwork = "192.168.4.0/22";
+  # rpcbind, NFS and NFSv3's mountd.
+  nfsPorts = "111,2049,20048";
+  backrestPort = 9898;
   dockerNetworkOptions = [ "--network=${dockerNetwork}" ];
   dockerNetworkService = "docker-network-${dockerNetwork}.service";
 
@@ -130,7 +134,7 @@ in
         "/etc/localtime:/etc/localtime:ro"
       ];
       environment = appEnvironment // {
-        LAN_NETWORK = "192.168.4.0/22,${dockerSubnet}";
+        LAN_NETWORK = "${lanNetwork},${dockerSubnet}";
         # Preserves the umask qBittorrent ran with as a TrueNAS app.
         UMASK = "000";
         UMASK_SET = "000";
@@ -235,7 +239,7 @@ in
     backrest = {
       image = "garethgeorge/backrest:latest@sha256:b852979754281026230cc69fb11428e6d57c9a97784ab4a444ffc7934c53a215";
       autoStart = true;
-      ports = [ "127.0.0.1:9898:9898/tcp" ];
+      ports = [ "127.0.0.1:${toString backrestPort}:${toString backrestPort}/tcp" ];
       environment = appEnvironment // {
         BACKREST_CONFIG = "/config/config.json";
         BACKREST_DATA = "/data";
@@ -243,7 +247,7 @@ in
         # namespace, so it must accept the docker proxy's connection.
         # Exposure is restricted by the published port below, which is
         # bound to the host's loopback.
-        BACKREST_PORT = "0.0.0.0:9898";
+        BACKREST_PORT = "0.0.0.0:${toString backrestPort}";
         XDG_CACHE_HOME = "/cache";
         TMPDIR = "/tmp";
       };
@@ -270,8 +274,37 @@ in
   # Bazarr asks Jellyfin, which runs on the host, to rescan an item after each
   # subtitle change. Jellyfin listens on every interface, so only the container
   # network is let in rather than opening the port to the LAN.
+  #
+  # TrueNAS trusts prostagma's address, so anything here that can send NFS
+  # from a low port can claim any user, and the users export maps everyone to
+  # root. Containers can bind low ports, so they get no NFS to the LAN at all;
+  # on the host only root and the kernel's own NFS client may send it.
+  #
+  # Backrest has no login of its own and can restore over every home, so only
+  # Caddy, behind Authelia, and root may reach it: no container and no other
+  # local user.
   networking.firewall.extraCommands = ''
     iptables -A nixos-fw -s ${dockerSubnet} -p tcp --dport 8096 -j nixos-fw-accept
+
+    iptables -N prostagma-containers 2>/dev/null || iptables -F prostagma-containers
+    for proto in tcp udp; do
+      iptables -A prostagma-containers -d ${lanNetwork} -p "$proto" -m multiport --dports ${nfsPorts} -j REJECT
+    done
+    iptables -A prostagma-containers -p tcp --dport ${toString backrestPort} -j REJECT
+    iptables -N DOCKER-USER 2>/dev/null || true
+    iptables -C DOCKER-USER -j prostagma-containers 2>/dev/null || iptables -I DOCKER-USER -j prostagma-containers
+
+    iptables -N prostagma-local 2>/dev/null || iptables -F prostagma-local
+    iptables -A prostagma-local -p tcp --dport ${toString backrestPort} -m owner --uid-owner caddy -j RETURN
+    iptables -A prostagma-local -p tcp --dport ${toString backrestPort} -m owner --uid-owner 1-4294967294 -j REJECT
+    for proto in tcp udp; do
+      iptables -A prostagma-local -d ${lanNetwork} -p "$proto" -m multiport --dports ${nfsPorts} -m owner --uid-owner 1-4294967294 -j REJECT
+    done
+    iptables -C OUTPUT -j prostagma-local 2>/dev/null || iptables -I OUTPUT -j prostagma-local
+  '';
+  networking.firewall.extraStopCommands = ''
+    iptables -D DOCKER-USER -j prostagma-containers 2>/dev/null || true
+    iptables -D OUTPUT -j prostagma-local 2>/dev/null || true
   '';
 
   systemd.tmpfiles.rules = map (dir: "d ${appRoot}/${dir} 0775 ${uid} ${gid} -") [
