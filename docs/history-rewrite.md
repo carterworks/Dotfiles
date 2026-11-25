@@ -305,10 +305,17 @@ history in place. It reruns the same callback on a copy of the clone;
 filter-repo is deterministic, so every commit GitHub also had comes out with
 GitHub's new hash, while branches only that clone has, its worktrees
 (detached ones too) and T3 Code's `refs/t3/` checkpoints are rewritten
-alongside and keep their place. It changes the clone only after the copy's
-old `main` turns out to be an ancestor of GitHub's `main`, moves a checked-out
-branch only if its files change nowhere outside `kde/`, and then expires the
-reflog and prunes the old objects. It stops on uncommitted changes in any
+alongside and keep their place. It rewrites only refs that still reach the
+old history: filter-repo strips signatures, so rewriting a commit already on
+the new history, such as a merge GitHub signed, would give it a hash GitHub
+does not have. It changes the clone only after the copy's rewrite of the
+first changed commit comes out as GitHub's (`0bd4bb9` becomes `8c071f8`),
+moves a checked-out branch only if its files change nowhere outside `kde/`,
+and then expires the reflog and prunes the old objects. Before changing
+anything it stops on a branch that merges the old history into the new one,
+as a `git pull` from such a clone would, and on old-history refs it does not
+move: tags, and remotes other than `origin`. If it stops, nothing has been
+pruned yet, and running it again is safe, also after an interrupted run. It stops on uncommitted changes in any
 worktree and on stashes, which live in the reflog it expires. Untracked and
 ignored files, such as the OpenTofu state, stay where they are.
 
