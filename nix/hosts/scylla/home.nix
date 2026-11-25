@@ -43,27 +43,21 @@ let
   # KDE writes state (recent files, window sizes, device IDs) into the files
   # it reads, so a link into the checkout put that state in the repository.
   # These are written as plain files instead: merged files get their listed
-  # keys on every switch, seeded files are layouts written only when missing.
+  # keys on every switch, seeded files are written only when missing. Only
+  # what KDE applications, the KDE file dialog and KWallet read under Hyprland
+  # is kept; the Plasma fallback session uses scylla's own files.
   kdeMergedFiles = [
     "arkrc"
     "baloofileinformationrc"
     "dolphinrc"
     "gwenviewrc"
     "kded5rc"
-    "kglobalshortcutsrc"
-    "kscreenlockerrc"
     "kwalletrc"
-    "kwinrc"
     "okularpartrc"
     "okularrc"
-    "plasma-localerc"
-    "powerdevilrc"
     "xdg-desktop-portal-kderc"
   ];
   kdeSeededFiles = {
-    ".config/kactivitymanagerdrc" = "kactivitymanagerdrc";
-    ".config/plasma-org.kde.plasma.desktop-appletsrc" = "plasma-org.kde.plasma.desktop-appletsrc";
-    ".config/plasmashellrc" = "plasmashellrc";
     ".local/share/user-places.xbel" = "local-share/user-places.xbel";
   };
   kdeJob =
@@ -122,10 +116,6 @@ in
       ".claude/CLAUDE.md" = link "agents/AGENTS.md";
       ".config/quickshell/wallpaper.jpg" = link "assets/wallpapers/01-miasma.jpg";
       ".config/vicinae/settings.json" = link "vicinae-config.jsonc";
-      ".local/share/color-schemes/CosmicDark.colors" =
-        link "kde/local-share/color-schemes/CosmicDark.colors";
-      ".local/share/color-schemes/CosmicLight.colors" =
-        link "kde/local-share/color-schemes/CosmicLight.colors";
     };
 
   gtk = {

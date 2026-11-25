@@ -1,12 +1,14 @@
 # KDE
 
-`kde/` holds the KDE settings scylla should have and nothing else: shortcuts,
-window manager behavior, the panel and desktop layout, power and lock-screen
-choices, and a few application view settings. KDE writes application state
-into the same files it reads its settings from (recently opened documents,
-window and dialog sizes, splitter positions, migration markers, device and
-monitor identifiers), and the repository is public, so none of that belongs
-here.
+Scylla runs Hyprland. What it uses from KDE is its applications (Dolphin,
+Okular, Gwenview, Ark), the KDE file dialog through the portal, KWallet,
+`kded6` when an application starts it, and `kdeglobals` through the KDE Qt
+platform theme. `kde/` holds settings for those and nothing else: no KWin,
+Plasma shell, global shortcut, activity, power or lock-screen settings, which
+only the Plasma fallback session reads. KDE also writes application state into
+the files it reads its settings from (recently opened documents, window and
+dialog sizes, splitter positions, migration markers, device and monitor
+identifiers), and the repository is public, so none of that belongs here.
 
 ## How the files reach scylla
 
@@ -19,14 +21,12 @@ modes:
 
 | Mode | Files | What it does |
 | --- | --- | --- |
-| merge | `arkrc`, `baloofileinformationrc`, `dolphinrc`, `gwenviewrc`, `kded5rc`, `kglobalshortcutsrc`, `kscreenlockerrc`, `kwalletrc`, `kwinrc`, `okularpartrc`, `okularrc`, `plasma-localerc`, `powerdevilrc`, `xdg-desktop-portal-kderc` | Sets every key the repository file lists in the live file and leaves every other key alone, so the repository file holds only the keys that matter. |
-| seed | `kactivitymanagerdrc`, `plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc`, `local-share/user-places.xbel` | Writes the file only when the live one is missing. These are whole layouts, numbered by Plasma, and merging keys into a different layout would add a second panel. |
+| merge | `arkrc`, `baloofileinformationrc`, `dolphinrc`, `gwenviewrc`, `kded5rc`, `kwalletrc`, `okularpartrc`, `okularrc`, `xdg-desktop-portal-kderc` | Sets every key the repository file lists in the live file and leaves every other key alone, so the repository file holds only the keys that matter. |
+| seed | `local-share/user-places.xbel` | Writes the file only when the live one is missing. Dolphin and the file dialog keep their places in it, and KDE adds every mounted device to it. |
 
-Two more files are handled elsewhere. `kde/kdeglobals` is the base that
-`desktopThemeKde` (`nix/modules/home/desktop-theme/`) starts from when
-`~/.config/kdeglobals` is missing; the theme then writes its own colors, so
-the base has none. The color schemes in `kde/local-share/color-schemes/` are
-still links, because KDE never writes to them.
+`kde/kdeglobals` is handled elsewhere: it is the base that `desktopThemeKde`
+(`nix/modules/home/desktop-theme/`) starts from when `~/.config/kdeglobals` is
+missing, and the theme then writes its own colors, so the base has none.
 
 The activation runs before Home Manager's `linkGeneration`. If a live file is
 still a link from an older generation, the script replaces the link with a
@@ -39,10 +39,9 @@ by mistake shows up nowhere in `git status`. Add a new file with `git add -f`.
 
 ## Changing a setting
 
-1. Change it in System Settings or the program, as usual. The change stays on
-   scylla only.
+1. Change it in the program, as usual. The change stays on scylla only.
 2. To keep it, find the key in the live file (for example
-   `grep -n FocusPolicy ~/.config/kwinrc`) and copy that line, with its
+   `grep -n MenuBar ~/.config/dolphinrc`) and copy that line, with its
    `[Group]` header, into the file in `kde/`. Copy only the setting, never a
    history, size, position, timestamp or identifier.
 3. For a merged file that is new to the repository, add its name to
@@ -52,32 +51,24 @@ by mistake shows up nowhere in `git status`. Add a new file with `git add -f`.
 Removing a key from a merged file stops enforcing it; it does not remove the
 key from the live file.
 
-`kglobalshortcutsrc` lists only shortcuts that differ from KDE's defaults.
-Most lines are `action=active,default,description`, and a line whose active
-and default shortcuts match carries no setting. The `[services][…]` groups
-are different: a line there holds only the active shortcut and exists only
-when it differs from the application's default, so `_launch=none` is what
-turns KRunner's, the emoji picker's or System Settings' default shortcut off.
+`kded5rc` keeps the name it has always had: KDE Frameworks 6's `kded6` still
+reads `kded5rc`. It stops `kded6` from mounting devices on its own.
 
 ## What was dropped
 
-The repository no longer tracks `KDE/UserFeedback.conf`, `baloofilerc`,
-`bluedevilglobalrc`, `drkonqirc`, `kactivitymanagerd-statsrc`,
-`kconf_updaterc`, `kded6rc`, `kdedefaults/`, `khelpcenterrc`, `kio_fishrc`,
-`kiorc`, `ksmserverrc`, `ktimezonedrc`, `kwinoutputconfig.json`,
-`kwinrulesrc`, `plasmanotifyrc`, `plasmaparc`, `plasmarc`,
-`powermanagementprofilesrc`, `spectaclerc`, `systemmonitorrc` and `trashrc`.
-Each held only state, a default value, or something KDE derives on its own:
-`kdedefaults/` is regenerated from the global theme, `ktimezonedrc` from the
-system time zone, and `kwinoutputconfig.json` holds the monitors' EDID
-identifiers. `kwinrc` also lost `[Tiling]`, keyed by output and desktop IDs,
-and `[Windows_HDR]`, the HDR calibration of the TV.
+The Plasma session's files are gone: `kwinrc`, `kwinoutputconfig.json`,
+`kwinrulesrc`, `kglobalshortcutsrc`, `plasma-org.kde.plasma.desktop-appletsrc`,
+`plasmashellrc`, `plasmarc`, `kactivitymanagerdrc`,
+`kactivitymanagerd-statsrc`, `kscreenlockerrc`, `ksmserverrc`,
+`powerdevilrc`, `powermanagementprofilesrc`, `plasma-localerc`,
+`plasmanotifyrc`, `kdedefaults/` and the unused Cosmic color schemes. So are
+files that held only state or a default value: `KDE/UserFeedback.conf`,
+`baloofilerc`, `bluedevilglobalrc`, `drkonqirc`, `kconf_updaterc`,
+`kded6rc`, `khelpcenterrc`, `kio_fishrc`, `kiorc`, `ktimezonedrc`,
+`plasmaparc`, `spectaclerc`, `systemmonitorrc` and `trashrc`.
 
-Scylla keeps all of these: step 1 of
+Scylla keeps all of them: step 1 of
 [the history rewrite](history-rewrite.md#steps) copies the live files out of
-the checkout before the change reaches it, so its display modes, HDR settings
-and tiles stay as they are, outside Git. Only a new profile starts without
-them and gets KWin's own choices.
-
-`kded5rc` stays, with the name it has always had: KDE Frameworks 6's `kded6`
-still reads `kded5rc`.
+the checkout before the change reaches it, so the Plasma fallback session
+keeps its panel, shortcuts, display modes and HDR settings, outside Git. A new
+profile's Plasma session starts from KDE's defaults.

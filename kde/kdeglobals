@@ -1,7 +1,5 @@
 [KDE]
 AnimationDurationFactor=0.25
-AutomaticLookAndFeel=true
-LookAndFeelPackage=org.kde.breeze.desktop
 
 [KFileDialog Settings]
 Allow Expansion=false

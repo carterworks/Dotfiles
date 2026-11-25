@@ -18,8 +18,9 @@ from every branch on GitHub. The ordered steps are stage 0 of
 [`git filter-repo`](https://github.com/newren/git-filter-repo) runs with
 `--sensitive-data-removal` and the callback below, which:
 
-- deletes from every commit the 27 `kde/` files that `kde-minimal-config`
-  stops tracking, which held only state;
+- deletes from every commit the 27 `kde/` files that held only state or
+  device identifiers (`kde-minimal-config` also stops tracking the Plasma
+  session's settings, whose history holds nothing private and stays);
 - removes the `[Recent Files]` group from every version of `kde/okularrc` and
   `kde/gwenviewrc`, `DirHistory` from `kde/arkrc`, and the device entries
   (`<separator>` blocks) from `kde/local-share/user-places.xbel`.

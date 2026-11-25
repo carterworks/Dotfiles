@@ -22,7 +22,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 
 ## Follow-up work
 
-- [x] Stop tracking KDE application state: `kde/` keeps only settings, which `nix/hosts/scylla/apply-kde-config.py` merges into the live files instead of linking them ([docs/kde.md](docs/kde.md)).
+- [x] Stop tracking KDE application state: `kde/` keeps only the settings Hyprland's KDE applications read, which `nix/hosts/scylla/apply-kde-config.py` merges into the live files instead of linking them ([docs/kde.md](docs/kde.md)).
 - [ ] Purge the KDE state from the public history: stage 0 of [docs/rollout.md](docs/rollout.md#0-purge-kde-state-from-the-public-history), then GitHub Support and re-cloning scylla and the Mac.
 - [ ] Mac `~/.copilot/mcp-config.json`: finish local MCP OAuth sign-in in Copilot and verify header-authenticated work servers from a fnox-activated shell.
 - [ ] Roll out the fleet: follow [docs/rollout.md](docs/rollout.md), which also lists the decisions still open for it.
@@ -57,7 +57,6 @@ Temporary pins and workarounds, each with the condition for removing it.
 ## Awaiting a decision
 
 - [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
-- [ ] Track scylla's display layout? `kwinoutputconfig.json` (modes, HDR, scale) and `kwinrc`'s `[Windows_HDR]` are no longer in `kde/` because they carry the monitors' EDID identifiers; scylla keeps them locally, a new profile would not ([docs/kde.md](docs/kde.md#what-was-dropped)).
 - [ ] Rewrite the remaining tailnet addresses out of history? PR #7 removed them from the tree, but older commits still hold several, among them the TrueNAS mount's in `nix/hosts/scylla/default.nix` and `nix/machines/scylla.nix`; the KDE rewrite leaves them ([docs/history-rewrite.md](docs/history-rewrite.md)).
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
