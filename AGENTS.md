@@ -13,3 +13,12 @@
 - No secret is ever committed in plain text, placed by hand on a host, or written into the Nix store.
 - A service that needs a secret gets it through the shared module, `nix/modules/nixos/secrets.nix`.
 - See `docs/secrets.md` for adding, rotating and deploying secrets, and the commands that never put a value on screen.
+
+## Reviews
+
+- Review early and often: get a fresh review after each self-contained step (a new file, a module, a fix), not one large review at the end.
+
+## When to ask the owner
+
+- Act without asking unless a change meets all three: it is high risk (it can lose data), it cannot be reverted, and its success cannot be verified automatically. Otherwise make it, verify it, and report it.
+- The owner merges pull requests; never merge one.

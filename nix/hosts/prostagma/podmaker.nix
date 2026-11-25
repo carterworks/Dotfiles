@@ -7,6 +7,7 @@
 
 let
   inherit (fleet) tailnetDomain;
+  apps = toString fleet.nasIds.apps;
   dataDir = "/srv/apps/podmaker/data";
 
   # The GHCR package is private. Docker on this host is not logged in to the
@@ -16,8 +17,8 @@ let
 in
 {
   systemd.tmpfiles.rules = [
-    "d /srv/apps/podmaker 0755 568 568 -"
-    "d ${dataDir} 0755 568 568 -"
+    "d /srv/apps/podmaker 0755 ${apps} ${apps} -"
+    "d ${dataDir} 0755 ${apps} ${apps} -"
   ];
 
   virtualisation.oci-containers.containers.podmaker = {
@@ -32,7 +33,7 @@ in
     };
     extraOptions = [
       "--pull=never"
-      "--user=568:568"
+      "--user=${apps}:${apps}"
       "--cap-drop=ALL"
       "--security-opt=no-new-privileges=true"
     ];

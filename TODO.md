@@ -4,10 +4,12 @@
 
 Temporary pins and workarounds, each with the condition for removing it.
 
+- [ ] `infra/truenas/versions.tf`: drop `insecure = true` once TrueNAS serves a certificate for its tailnet name; until then TLS is unverified and the provider trusts whichever tailnet device answers as `truenas`.
 - [ ] `nix/packages/fnox.nix` (and its entry in `nix/packages/overlay.nix`): replace with plain `pkgs.fnox` once nixpkgs declares `aws-lc` and `sqlcipher` as build inputs and `cache.nixos.org` has the build; until then nixpkgs' build fails (`aws-lc-sys` finds no system AWS-LC).
 - [ ] `nix/packages/t3code-cli.nix`: drop `dontStrip = true` once stripping keeps the embedded Node SEA payload; check `t3 --version` and `t3 serve`. On 2026-11-01, patchelf 0.19.2 still truncated the SEA `NOTE` segment.
 - [ ] `nix/hosts/carters-macbook-pro/default.nix`: lift the kubelogin 0.1.9 pin when a newer release keeps the Ethos device-code token instead of prompting on every run; upstream still recommends 0.1.9 for legacy `spn:` logins.
 - [ ] `nix/packages/fnox.nix`: fnox is held (`held = true` in its `updateInfo`), so the nightly reports new releases without taking them. Bump it deliberately with `./update --apply --held` after reading the release notes; the hold stays while fnox runs as root from an unsigned binary.
+- [ ] `infra/truenas/shares.tf`: delete the `/mnt/reservoir/users/carter` export (row 13) once prostagma runs the configuration that mounts `/mnt/truenas/private/users` instead (`findmnt /mnt/truenas/private/users` on prostagma); until then prostagma's running system still mounts it. Then check Backrest's first backup of every home for permission errors: it runs as uid 970 from then on.
 - [ ] `ATTIC_TOKEN` in the `binary-cache` GitHub Environment expires 90 days after it is minted, and nothing reminds you; on expiry every cache push fails and `release` freezes. Rotate it before then ([docs/binary-cache.md, rotate the CI token](docs/binary-cache.md#rotate-the-ci-token)). Remove this item once something rotates it or reminds you automatically.
 - [ ] `flake.nix`: the `hermes-agent` input is held at a fixed rev. Before bumping it, check that upstream's newer packaging no longer reports version `0.0.0`; then edit the rev and run `nix flake update hermes-agent`.
 - [ ] `nix/packages/hex.nix`: remove the PipeWire client override (`module.rt = false`) once PipeWire's client `module-rt` stops setting a zero `RLIMIT_RTTIME`; with the stock config the kernel kills Hex (`status=9/KILL`) as soon as it records or plays a sound.
@@ -37,8 +39,23 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `zsh/zshrc.zsh`: close the Fish parity gaps the scorecard (`tests/zsh/parity_scorecard.py`) still shows: Alt+Right stopping before `/`, Ctrl+Right accepting a whole argument, Ctrl+W deleting a path component, and `!!` expanding as you type.
 - [ ] `zsh/zshrc.zsh`: port what the Fish plugins in `workstation.nix` add: fzf-fish's key bindings (files, git log, git status, processes, variables) and `done`'s notification when a long command finishes.
 - [ ] `zsh/completions/`: add `_obsidian` once Obsidian's command-line interface is documented; running the binary to find out opens the app.
+- [x] `infra/truenas/`: create a TrueNAS API key for OpenTofu and store it as `TRUENAS_TOFU_API_KEY` in fnox ([docs/truenas.md](docs/truenas.md)).
+- [x] `infra/truenas/`: take the IDs and addresses shared with prostagma from one Nix value (`fleet.nasIds`, `fleet.lan` in `nix/lib/fleet.nix`).
+- [x] `infra/truenas/`: adopt the rest of TrueNAS (system, network, services, alerts, apps, VM, certificate, privileges, share ACLs, pools).
+- [x] `infra/truenas/shares.tf`: restrict every NFS export to prostagma.
+- [x] prostagma: pin its LAN address (`fleet.lan.prostagma`); the router reserves it.
+- [x] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/` (`truenas-protected`).
+- [x] `infra/truenas/acls.tf`: `builtin_users` (every SMB user) only reads media and `users/`, and no longer inherits into home directories.
+- [ ] TrueNAS: delete the `@pre-builtin-users-read` snapshots of `reservoir/media` and `reservoir/users` (13) and `reservoir/users@pre-apps-users-drop`, all taken 2026-11-24 before ACL rewrites, once nothing has turned up missing access, say after 2026-12-08; the rewrite of `users/` also left a restore file in carter's `~/.local/state/acl-backups` on TrueNAS.
+- [x] `infra/truenas/datasets.tf`: make `aclmode` consistent (`PASSTHROUGH`) across the media datasets.
+- [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
+- [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
+- [ ] Home Assistant: fix its nightly backups to TrueNAS; the newest backup in `users/homeassistant` is from 2025-10-13.
+- [ ] TrueNAS: rotate the credentials a verification subagent printed into a session transcript on 2026-11-24: the Gmail OAuth client secret and refresh token (mail), the UPS monitor password, the SSH host keys and the `truenas_default` certificate's key.
+- [ ] Proxmox: back up VM 101 with `vzdump` into TrueNAS's `users/proxmox/dump`, which Backrest copies off-site; its disk `users/proxmox/images/101/vm-101-disk-0.qcow2` is excluded from Backrest because a running disk copied as a file is not consistent.
 ## Awaiting a decision
 
+- [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
