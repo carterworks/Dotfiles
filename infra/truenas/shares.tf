@@ -19,6 +19,14 @@ locals {
     "/mnt/reservoir/media/games"          = { id = 15, comment = "games" }
     "/mnt/reservoir/media/ebooks"         = { id = 16, comment = "ebooks" }
 
+    # Backrest backs up and restores every home directory through this one,
+    # so every client is mapped to root. Prostagma mounts it inside a
+    # root-only directory, which keeps its other users and containers out.
+    "/mnt/reservoir/users" = {
+      mapall_user  = "root"
+      mapall_group = "root"
+    }
+
     # Every client is squashed to carter, so prostagma's apps user can read
     # the home directory without an ID that matches TrueNAS's.
     "/mnt/reservoir/users/carter" = {
@@ -35,8 +43,9 @@ locals {
   }
 }
 
+# Exports created by OpenTofu have no row ID to import.
 import {
-  for_each = local.nfs_shares
+  for_each = { for path, share in local.nfs_shares : path => share if can(share.id) }
   to       = truenas_nfs_share.this[each.key]
   id       = each.value.id
 }
