@@ -44,7 +44,9 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [x] `infra/truenas/shares.tf`: restrict every NFS export to prostagma.
 - [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [x] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/` (`truenas-protected`).
-- [ ] `infra/truenas/acls.tf`: decide whether `builtin_users` and `apps` should keep MODIFY on `users/` and inherit it into every home directory (today every home directory under `users/` inherits it).
+- [x] `infra/truenas/acls.tf`: `builtin_users` (every SMB user) only reads media and `users/`, and no longer inherits into home directories.
+- [ ] `infra/truenas/acls.tf`: decide whether `apps` (prostagma) should keep MODIFY on `users/`, inherited into every new home directory; it needs only `users/carter`, through that export's squash.
+- [ ] TrueNAS: delete the `@pre-builtin-users-read` snapshots of `reservoir/media` and `reservoir/users` (13, taken 2026-11-24 before the ACL rewrite) once nothing has turned up missing access, say after 2026-12-08.
 - [x] `infra/truenas/datasets.tf`: make `aclmode` consistent (`PASSTHROUGH`) across the media datasets.
 - [x] `infra/truenas/acls.tf`: give `users/carter` and `users/whitley` to their users instead of root.
 - [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
