@@ -38,6 +38,10 @@ UNPROTECTED = {
     ("truenas_system_dataset", "this"),
     ("truenas_ntp_server", "this"),
     ("truenas_network_config", "this"),
+    ("truenas_ftp_config", "this"),
+    ("truenas_snmp_config", "this"),
+    ("truenas_ups_config", "this"),
+    ("truenas_ssh_config", "this"),
 }
 
 HEADER = re.compile(r'^resource\s+"([^"]+)"\s+"([^"]+)"\s*\{', re.MULTILINE)

@@ -157,16 +157,3 @@ resource "truenas_init_shutdown_script" "enable_linger_carter" {
     prevent_destroy = true
   }
 }
-
-import {
-  for_each = toset(["cifs", "nfs", "ssh", "ups"])
-  to       = truenas_service.this[each.key]
-  id       = each.key
-}
-
-resource "truenas_service" "this" {
-  for_each = toset(["cifs", "nfs", "ssh", "ups"])
-
-  name    = each.key
-  enabled = true
-}

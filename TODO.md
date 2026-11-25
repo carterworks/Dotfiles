@@ -50,6 +50,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
 ## Awaiting a decision
 
+- [ ] TrueNAS SSH (`infra/truenas/services.tf`): turn off password login for `humans` and the weak ciphers `AES128-CBC` and `NONE`? Both are on today; key login already works for carter.
 - [ ] Stop tracking KDE files that hold application state rather than settings (`kconf_updaterc`, `KDE/UserFeedback.conf`, `kded6rc`, `kactivitymanagerdrc`, `kactivitymanagerd-statsrc`, `spectaclerc`, `arkrc`, `khelpcenterrc`, `dolphinrc`, `gwenviewrc`, `okularrc`, `kwinoutputconfig.json`)?
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
