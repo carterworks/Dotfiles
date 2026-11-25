@@ -103,7 +103,8 @@ git worktree list --porcelain | awk '
       die "$wt would change outside kde/; stopped before pruning, refs/rewritten/ holds the rest"
     fi
     git -C "$wt" reset -q --hard "$new"
-    say "moved ${branch:+${branch#refs/heads/}}${branch:-detached HEAD} in $wt"
+    if [ -n "$branch" ]; then what=${branch#refs/heads/}; else what="detached HEAD"; fi
+    say "moved $what in $wt"
   done
 
 git for-each-ref --format='delete %(refname)' refs/rewritten | git update-ref --stdin
