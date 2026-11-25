@@ -34,17 +34,94 @@ UNPROTECTED = {
 }
 
 HEADER = re.compile(r'^resource\s+"([^"]+)"\s+"([^"]+)"\s*\{', re.MULTILINE)
-PREVENT = re.compile(r"\blifecycle\s*\{[^}]*\bprevent_destroy\s*=\s*true\b", re.DOTALL)
+PREVENT = re.compile(r"\bprevent_destroy\s*=\s*true\b")
+LIFECYCLE = re.compile(r"\blifecycle\s*\{")
+
+
+def blank(text):
+    """Replace comments and string contents with spaces, keeping offsets and
+    newlines, so braces or prevent_destroy inside them are not code."""
+    out, i, n = list(text), 0, len(text)
+
+    def erase(start, end):
+        for k in range(start, end):
+            if out[k] != "\n":
+                out[k] = " "
+
+    def string(i):
+        # i is just past the opening quote; returns the index past the closing one.
+        start = i
+        while i < n and text[i] != '"':
+            if text[i] == "\\":
+                i += 2
+                continue
+            if text.startswith("${", i):
+                erase(start, i)
+                i = code(i + 2, closing="}")
+                start = i
+                continue
+            i += 1
+        erase(start, i)
+        return i + 1
+
+    def code(i, closing=None):
+        depth = 0
+        while i < n:
+            c = text[i]
+            if c == "#" or text.startswith("//", i):
+                end = text.find("\n", i)
+                end = n if end < 0 else end
+                erase(i, end)
+                i = end
+            elif text.startswith("/*", i):
+                end = text.find("*/", i + 2)
+                end = n if end < 0 else end + 2
+                erase(i, end)
+                i = end
+            elif c == '"':
+                i = string(i + 1)
+            elif closing and c == "{":
+                depth += 1
+                i += 1
+            elif closing and c == "}":
+                if depth == 0:
+                    return i + 1
+                depth -= 1
+                i += 1
+            else:
+                i += 1
+        return i
+
+    code(0)
+    return "".join(out)
+
+
+def matching(text, open_brace):
+    depth = 0
+    for end in range(open_brace, len(text)):
+        depth += {"{": 1, "}": -1}.get(text[end], 0)
+        if depth == 0:
+            return end
+    return len(text)
 
 
 def blocks(text):
+    # Headers are matched in the original, because blanking empties their
+    # quoted names; one inside a comment is blanked and skipped.
+    code = blank(text)
     for match in HEADER.finditer(text):
-        depth, end = 0, match.end() - 1
-        for end in range(match.end() - 1, len(text)):
-            depth += {"{": 1, "}": -1}.get(text[end], 0)
-            if depth == 0:
-                break
-        yield (match.group(1), match.group(2)), text[match.end():end]
+        if not code.startswith("resource", match.start()):
+            continue
+        end = matching(code, match.end() - 1)
+        yield (match.group(1), match.group(2)), code[match.end():end]
+
+
+def protected(body):
+    for match in LIFECYCLE.finditer(body):
+        inner = body[match.end():matching(body, match.end() - 1)]
+        if PREVENT.search(inner):
+            return True
+    return False
 
 
 def main(root):
@@ -58,7 +135,7 @@ def main(root):
     for address in sorted(PROTECTED - found.keys()):
         errors.append(f"{'.'.join(address)} is missing; deleting its block destroys what it manages")
     for address in sorted(PROTECTED & found.keys()):
-        if not PREVENT.search(found[address]):
+        if not protected(found[address]):
             errors.append(f"{'.'.join(address)} has no lifecycle {{ prevent_destroy = true }}")
     for address in sorted(found.keys() - PROTECTED - UNPROTECTED):
         if address[0].startswith("truenas_"):
