@@ -34,7 +34,8 @@ UNPROTECTED = {
 }
 
 HEADER = re.compile(r'^resource\s+"([^"]+)"\s+"([^"]+)"\s*\{', re.MULTILINE)
-PREVENT = re.compile(r"\bprevent_destroy\s*=\s*true\b")
+PREVENT = re.compile(r"^\s*prevent_destroy\s*=\s*true\s*$", re.MULTILINE)
+HEREDOC = re.compile(r"<<-?([A-Za-z_][A-Za-z0-9_]*)[ \t]*\n")
 LIFECYCLE = re.compile(r"\blifecycle\s*\{")
 
 
@@ -54,6 +55,9 @@ def blank(text):
         while i < n and text[i] != '"':
             if text[i] == "\\":
                 i += 2
+                continue
+            if text.startswith(("$${", "%%{"), i):
+                i += 3
                 continue
             if text.startswith("${", i):
                 erase(start, i)
@@ -80,6 +84,12 @@ def blank(text):
                 i = end
             elif c == '"':
                 i = string(i + 1)
+            elif heredoc := HEREDOC.match(text, i):
+                close = re.compile(r"^[ \t]*" + re.escape(heredoc.group(1)) + r"[ \t]*$", re.MULTILINE)
+                found = close.search(text, heredoc.end())
+                end = found.end() if found else n
+                erase(i, end)
+                i = end
             elif closing and c == "{":
                 depth += 1
                 i += 1
