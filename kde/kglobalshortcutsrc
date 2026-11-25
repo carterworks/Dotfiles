@@ -193,3 +193,20 @@ _launch=Ctrl+Space
 
 [services][org.kde.dolphin.desktop]
 _launch=Meta+Shift+F
+
+[services][org.kde.krunner.desktop]
+RunClipboard=none
+_launch=none
+
+[services][org.kde.kscreen.desktop]
+ShowOSD=none
+
+[services][org.kde.plasma.emojier.desktop]
+_launch=none
+
+[services][org.kde.spectacle.desktop]
+CurrentMonitorScreenShot=none
+OpenWithoutScreenshot=none
+
+[services][systemsettings.desktop]
+_launch=none
