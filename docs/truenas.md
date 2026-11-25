@@ -119,20 +119,41 @@ keeping the entry after `state rm` re-imports it.
 
 ## What is managed
 
-- Datasets on both pools, except `.system` and `ix-apps`, which TrueNAS owns,
-  including quotas and reservations
-- ACLs at the top of each shared dataset and of every home directory under
-  `users/`
-- NFS exports, SMB shares and both services' settings
-- Local users and groups, except email addresses (kept out of this public
-  repository) and supplementary memberships of unmanaged groups
-- Periodic snapshot, scrub and cron tasks (including the SMART tests 25.10
-  moved to cron), the init script, and which services are enabled at boot.
-  Whether a service is running at the moment is not managed.
+Everything TrueNAS lets you configure that this NAS uses, file by file in
+`infra/truenas/`:
 
-Not yet managed, and still set in the web interface: SMB share-level ACLs, the
-Tailscale app, the `devenv` VM, alert services and mail, network, system and
-SSH/UPS settings, certificates, and pool topology.
+- `pools.tf`: both pools and their topology. The provider refuses topology
+  and name changes; do those in TrueNAS and reconcile with
+  `tofu apply -refresh-only`.
+- `datasets.tf`, `acls.tf`: datasets (except `.system` and `ix-apps`, which
+  TrueNAS owns) and the ACLs at the top of each shared dataset and home
+  directory.
+- `shares.tf`, `access.tf`: NFS exports, SMB shares and share-level ACLs,
+  both services' settings, the builtin privileges and the web certificate.
+- `accounts.tf`: local users and groups, except email addresses and
+  supplementary memberships of unmanaged groups.
+- `tasks.tf`: snapshot, scrub and cron tasks (including the SMART tests 25.10
+  moved to cron) and the init script.
+- `services.tf`: which services start at boot (not whether one is running
+  now), and the SSH, UPS, SNMP and FTP settings.
+- `system.tf`, `network.tf`, `settings.tf`: general and advanced settings,
+  NTP, the system dataset, network settings and the interface, and the
+  Docker, catalog, audit, 2FA, TrueNAS Connect, TrueCommand, replication and
+  resilver settings.
+- `alerts.tf`: mail settings, alert services and the alert policy.
+- `apps.tf`, `vm.tf`: the Tailscale app (version pinned) and the Docker Hub
+  registry, and the `devenv` VM.
+
+Left on TrueNAS on purpose:
+
+- Secrets the provider would otherwise store: the mail OAuth credentials, the
+  from-address and name, the Tailscale auth key, the UPS monitor and SPICE
+  passwords, and API keys (see the table above for the ones in fnox).
+- TrueNAS's own: ACL templates, boot environments, and manual snapshots such
+  as `pre-proxmox`.
+- Nothing is configured for directory services, Kerberos, iSCSI, NVMe-oF,
+  static routes, tunables, the keychain, cloud or rsync tasks, or reporting
+  exporters; adopt them here if that changes.
 
 Change TrueNAS here as reviewed commits, not in the web interface; `./drift`
 shows anything changed there.

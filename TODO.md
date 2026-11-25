@@ -40,7 +40,7 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] `zsh/completions/`: add `_obsidian` once Obsidian's command-line interface is documented; running the binary to find out opens the app.
 - [x] `infra/truenas/`: create a TrueNAS API key for OpenTofu and store it as `TRUENAS_TOFU_API_KEY` in fnox ([docs/truenas.md](docs/truenas.md)).
 - [x] `infra/truenas/`: take the IDs and addresses shared with prostagma from one Nix value (`fleet.nasIds`, `fleet.lan` in `nix/lib/fleet.nix`).
-- [ ] `infra/truenas/`: adopt what is still set by hand: the Tailscale app, alert services and mail, network, system and SSH/UPS settings.
+- [x] `infra/truenas/`: adopt the rest of TrueNAS (system, network, services, alerts, apps, VM, certificate, privileges, share ACLs, pools).
 - [x] `infra/truenas/shares.tf`: restrict every NFS export to prostagma.
 - [ ] prostagma: pin its LAN address (`fleet.lan.prostagma`, DHCP today) with a reservation or a static `net0`, since the NFS exports and `tv-screensaver.nix` depend on it.
 - [x] `nix/checks.nix`: fail when a `prevent_destroy` resource block disappears from `infra/truenas/` (`truenas-protected`).
