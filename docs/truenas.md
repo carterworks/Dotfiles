@@ -149,6 +149,109 @@ excludes `*.qcow2` in every path (in `users/proxmox`, a 50 GiB VM disk) and
 the Proxmox ISOs: a running VM's disk copied file by file is not a usable
 backup.
 
+## Backrest and the Immich library
+
+Immich's library is its own dataset, `reservoir/media/photos/immich`, which
+the `photos` export does not cross into, so `basic-plan` sees only an empty
+`immich/`. Backrest's container mounts the library read-only at
+`/userdata/reservoir/media/immich`, a sibling of `photos` rather than inside
+it: `basic-plan` runs restic with `--one-file-system`, which skips a mount
+inside one of its paths. The `backrest-mounts` flake check keeps every bind
+but Backrest's own storage read-only, and every bind under `/userdata`
+un-nested and required by `docker-backrest`. It refuses mounts added through
+`extraOptions` and fails if the library's mount goes missing.
+
+What the library holds (2026-11-25):
+
+| Folder | Size | Rebuilt by Immich? |
+| --- | --- | --- |
+| `library/`, `upload/` | 529 GB | No: the originals and their XMP sidecars. |
+| `encoded-video/` | 105 GB | Mostly, but the hidden motion-photo videos (`*-MP.mp4`) stored here are originals. |
+| `thumbs/` | 44 GB | Yes, by the thumbnail job. |
+| `backups/` | 11 GB | No: the database dumps below. |
+| `profile/` | 1 KB | No: profile pictures. |
+
+The originals are useless without the database, which holds the albums,
+people, faces and every edit. Postgres keeps it in `/srv/apps/postgresql`,
+which nothing backs up (decision 1 in
+[the rollout](rollout.md#decisions-still-open)), so the
+off-site copy is Immich's own dump. Immich runs `pg_dump` of `immich` every
+night at 02:00 through `gzip --rsyncable`, writes it to
+`backups/immich-db-backup-<time>-v<immich>-pg<postgres>.sql.gz` and keeps 14.
+That is the job's default; the setting is under Administration, Settings,
+Backup.
+
+A second plan, `immich`, copies the library to the same repository as
+`basic-plan`, so it shares deduplication with the photos in carter's Google
+Takeout. Like `basic-plan`, it lives in Backrest's `config.json`; add it in
+Backrest's web interface with these values:
+
+- Repository `herodotus`, path `/userdata/reservoir/media/immich`.
+- Excludes, in this order: `/userdata/reservoir/media/immich/thumbs/*`,
+  `!/userdata/reservoir/media/immich/thumbs/.immich` and `*.tmp`. Immich
+  refuses to start when a folder's `.immich` marker is missing, so the marker
+  is kept while the thumbnails are not; restic re-includes a file only when
+  the folder's contents are excluded, not the folder. `*.tmp` is a dump Immich
+  is still writing.
+- Schedule `0 4 * * *`, local clock, after the 02:00 dump has finished
+  (it takes a few minutes).
+- Retention by time: 30 daily, 8 weekly, 12 monthly, 5 yearly.
+- Backup flags `--one-file-system`, `--no-scan`, `--exclude-caches`.
+- A hook on snapshot start with error behaviour `ON_ERROR_FATAL`, which fails
+  the run when no dump is younger than 25 hours, so at 04:00 when that
+  night's dump is missing:
+
+  ```sh
+  find /userdata/reservoir/media/immich/backups -name 'immich-db-backup-*.sql.gz' -mmin -1500 | grep -q .
+  ```
+
+  The failed run also skips that night's originals. That is deliberate: a
+  failed run is the one thing Backrest shows, and the originals still have
+  TrueNAS's snapshots. Change it to `ON_ERROR_IGNORE` if the dump job stays
+  broken for longer than you can go without an off-site copy.
+
+Running after the dump means each snapshot holds a dump and files no older
+than it. Files uploaded after the dump are restored without a database row and
+show up as untracked. Files deleted after it are still in Immich's trash,
+which keeps them 30 days, unless the trash was emptied in between. Immich does
+not need to stop.
+
+The first run uploads about 650 GB. The first `basic-plan` upload ran at
+about 22 MB/s (2025-11-11), so expect about 8 hours. At Backblaze's
+$6.95/TB/month that is about $4.50 a month, plus what retention keeps of
+deleted photos and old dumps.
+
+Single files restore like the homes do, through Backrest's own storage. A
+whole library does not fit there: that storage is on prostagma's app disk,
+which also holds Postgres. To restore all of it:
+
+1. Stop `immich-server` on prostagma.
+2. From the repository's root on scylla, restore the newest `immich`
+   snapshot straight into the `media` share, with the credentials from fnox
+   ([Secrets](secrets.md#restore-backrests-repository)). The repository's
+   address is the `uri` of `herodotus` in Backrest's `config.json`, or the
+   bucket's S3 endpoint in Backblaze's console if prostagma is gone. The tag
+   picks this plan's snapshots out of the shared repository, and the
+   `latest:<path>` form restores the folder's contents rather than the whole
+   `/userdata/...` path:
+
+   ```bash
+   repo=$(ssh prostagma 'sudo cat /srv/apps/backrest/config/config.json' | jq -r '.repos[] | select(.id == "herodotus") | .uri')
+   get() { fnox --no-daemon -c ./secrets/fnox.toml get "$1" | base64 -d; }
+   RESTIC_PASSWORD=$(get BACKREST_REPO_PASSWORD) \
+   AWS_ACCESS_KEY_ID=$(get BACKREST_AWS_ACCESS_KEY_ID) \
+   AWS_SECRET_ACCESS_KEY=$(get BACKREST_AWS_SECRET_ACCESS_KEY) \
+     nix shell nixpkgs#restic --command restic -r "$repo" restore \
+     latest:/userdata/reservoir/media/immich --tag plan:immich \
+     --target /mnt/truenas/media/photos/immich
+   ```
+
+   Files written through the share inherit the dataset's ACL, whose `apps`
+   entry lets Immich read and write them.
+3. Load the newest dump, for the Immich version in its name, following
+   [Immich's restore guide](https://docs.immich.app/administration/backup-and-restore).
+4. Start Immich and run the thumbnail job for missing thumbnails.
+
 ## ACLs on existing files
 
 `acls.tf` sets the ACL of each listed path only. Inherited entries reach new

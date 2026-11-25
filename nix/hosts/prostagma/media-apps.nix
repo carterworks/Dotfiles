@@ -272,6 +272,9 @@ in
         "${sharedDataRoot}/media/ebooks:/userdata/reservoir/media/ebooks:ro"
         "${sharedDataRoot}/media/games:/userdata/reservoir/media/games:ro"
         "/mnt/truenas/photos:/userdata/reservoir/media/photos:ro"
+        # Immich's library is a child dataset, which the photos export does
+        # not cross into (docs/truenas.md).
+        "/mnt/truenas/immich:/userdata/reservoir/media/immich:ro"
         # Read-only: restores are downloaded from Backrest's web page
         # (docs/truenas.md).
         "/mnt/truenas/private/users:/userdata/reservoir/users:ro"
@@ -514,6 +517,7 @@ in
       "${sharedDataRoot}/media/ebooks"
       "${sharedDataRoot}/media/games"
       "/mnt/truenas/photos"
+      "/mnt/truenas/immich"
       "/mnt/truenas/private/users"
     ];
   };

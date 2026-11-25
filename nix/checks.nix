@@ -242,6 +242,14 @@ in
         );
       in
       pkgs.testers.runNixOSTest ./tests/beszel.nix;
+    backrest-mounts =
+      assert import ./tests/backrest-mounts.nix {
+        inherit lib;
+        inherit (self.nixosConfigurations.prostagma) config;
+      };
+      nixpkgs.legacyPackages.x86_64-linux.runCommandLocal "backrest-mounts-check" { } ''
+        touch "$out"
+      '';
     binary-cache = import ./tests/binary-cache.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
     eltoro = eltoro.config.system.build.toplevel;
     eltoro-egress = nixpkgs.legacyPackages.x86_64-linux.testers.runNixOSTest ./tests/eltoro-egress.nix;
