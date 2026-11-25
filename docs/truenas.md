@@ -35,6 +35,7 @@ store, it prompts for carter's TrueNAS password instead.
 | `TRUENAS_TOFU_STATE_PASSPHRASE` | Encrypting the state and plan files |
 | `TRUENAS_CONNECTIVITY_CHECK_URL` | The healthchecks.io URL in the connectivity cron job |
 | `TRUENAS_TOFU_API_KEY` | Logging in to TrueNAS: the API key `opentofu`, owned by carter |
+| `HOME_ASSISTANT_TRUENAS_API_KEY` | Home Assistant's TrueNAS integration: the key `home-assistant-readonly`, owned by `homeassistant`, a read-only administrator |
 
 The key is not managed by OpenTofu. To rotate it, in a shell set up as in
 [Secrets, before any command](secrets.md#before-any-command) (which defines
