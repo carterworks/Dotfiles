@@ -190,6 +190,24 @@ Fish ([Zsh](zsh.md)). On the Mac and on scylla:
    animations.dev no longer provides) may still be in `~/.agents/skills`;
    delete it if you no longer use it.
 
+## 11. Immich off-site backup
+
+Nothing has copied the Immich library off-site yet
+([TrueNAS, Backrest and the Immich library](truenas.md#backrest-and-the-immich-library)).
+
+1. After the deploy, confirm Backrest can read the library and the dumps. This
+   prints the newest dump's name and then `readable`:
+
+   ```bash
+   sudo docker exec backrest sh -c 'd=$(ls -1 /userdata/reservoir/media/immich/backups/*.sql.gz | tail -n 1); f=$(find /userdata/reservoir/media/immich/library -type f ! -name .immich | head -n 1); echo "$d"; head -c 1 "$d" >/dev/null && head -c 1 "$f" >/dev/null && echo readable'
+   ```
+2. In Backrest, add the `immich` plan with the values in that section.
+3. Start its first backup by hand in the morning, so that its 8 hours or so
+   end before `basic-plan` runs at midnight.
+4. Test it: restore one original from `library/` and the newest dump from
+   `backups/` into Backrest's storage, download both, and check the dump with
+   `gzip -t`.
+
 ## Confirm the end state
 
 - From scylla, `./drift` lists scylla, prostagma and eltoro as `in sync` with

@@ -56,10 +56,13 @@ Temporary pins and workarounds, each with the condition for removing it.
 - [ ] Home Assistant: switch its TrueNAS integration to the key in `HOME_ASSISTANT_TRUENAS_API_KEY` (read-only, owned by `homeassistant`), then revoke carter's `home-assistant` key (id 2) once the audit log shows `home-assistant-readonly` logging in from `192.168.6.110`.
 - [ ] Home Assistant: fix its nightly backups to TrueNAS; the newest backup in `users/homeassistant` is from 2025-10-13.
 - [ ] TrueNAS: rotate the credentials a verification subagent printed into a session transcript on 2026-11-24: the Gmail OAuth client secret and refresh token (mail), the UPS monitor password, the SSH host keys and the `truenas_default` certificate's key.
+- [ ] Backrest: add the `immich` plan, run its first backup and test a restore (stage 11 in [docs/rollout.md](docs/rollout.md)); nothing has copied the Immich library off-site yet.
+- [ ] Backrest: move `basic-plan`'s start hook script out of `users/carter/.local/bin`; anything that can write carter's home runs code as Backrest, which reads every home.
+- [ ] Backrest: notify on a failed backup or check; neither plan has an error hook, so a failure shows only in its web interface.
 - [ ] Proxmox: back up VM 101 with `vzdump` into TrueNAS's `users/proxmox/dump`, which Backrest copies off-site; its disk `users/proxmox/images/101/vm-101-disk-0.qcow2` is excluded from Backrest because a running disk copied as a file is not consistent.
 ## Awaiting a decision
 
-- [ ] Backrest: back up the Immich library? `/mnt/truenas/photos` holds only an empty `immich/`, because the library is its own dataset (`reservoir/media/photos/immich`, about 743 GB), which that mount does not cross into.
+- [ ] Delete `river-rapid/vm-data/immich/pgData` on TrueNAS? It is 363 MB of Postgres data from an older Immich install (2025-12-19), which nothing mounts.
 - [ ] Rewrite the remaining tailnet addresses out of history? PR #7 removed them from the tree, but older commits still hold several, among them the TrueNAS mount's in `nix/hosts/scylla/default.nix` and `nix/machines/scylla.nix`; the KDE rewrite leaves them ([docs/history-rewrite.md](docs/history-rewrite.md)).
 - [ ] Keep or delete Handy's history and recordings (`~/.local/share/com.pais.handy` on scylla, `~/Library/Application Support/com.pais.handy` on the Mac)? Nothing removes them.
 - [ ] Give each prostagma secret unit only its own store entry, so that a change to `secrets/fnox.toml` no longer restarts every secret unit and the services that require them?
