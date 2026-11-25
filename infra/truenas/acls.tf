@@ -96,8 +96,8 @@ locals {
         { tag = "GROUP", type = "ALLOW", who = "builtin_administrators", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "admins", perms = { BASIC = "FULL_CONTROL" }, flags = local.ace_flags.inherit },
         { tag = "GROUP", type = "ALLOW", who = "apps", perms = { BASIC = "MODIFY" }, flags = local.ace_flags.inherit },
-        # TrueNAS refuses to set a home directory's group unless that group
-        # can traverse users/; humans owns users/carter.
+        # TrueNAS refuses to set a home directory's owner unless its group
+        # can traverse users/; users/carter's group is humans.
         { tag = "GROUP", type = "ALLOW", who = "humans", perms = { BASIC = "TRAVERSE" }, flags = local.ace_flags.noinherit },
       ]
     }
