@@ -40,14 +40,14 @@
     # Pinned to the tag that matches the prebuilt Linux release in
     # nix/packages/hex.nix; ./update bumps both together.
     hex = {
-      url = "github:anomalyco/hex/v3.4.0";
+      url = "github:anomalyco/hex/v3.5.0";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
     # Pinned to the release nix/packages/klad.nix builds; ./update bumps both
     # together.
     klad = {
-      url = "github:klad-app/klad/v0.4.0";
+      url = "github:klad-app/klad/v1.0.1";
       flake = false;
     };
     # Agent skills, packaged in nix/packages/agent-skills.nix. tstack has no
